@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lms_db}
+      POSTGRES_USER: ${POSTGRES_USER:-lms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lms_password_dev}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lms_user} -d ${POSTGRES_DB:-lms_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lms_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: lms_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lms_network
+
+  # Database Web Manager (Giao diện web nhẹ quản lý PostgreSQL qua trình duyệt tại http://localhost:8080)
+  adminer:
+    image: adminer:4.8.1
+    container_name: lms_adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - lms_network
+
+volumes:
+  postgres_data:
+    name: lms_postgres_data
+  redis_data:
+    name: lms_redis_data
+
+networks:
+  lms_network:
+    name: lms_network
+    driver: bridge
