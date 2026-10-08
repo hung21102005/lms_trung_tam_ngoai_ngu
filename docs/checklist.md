@@ -52,7 +52,7 @@
 
 - [x] 🔴 Tạo Git repository
 - [x] 🔴 Setup `.gitignore` monorepo cho Flutter + Node.js + Docker
-- [ ] 🔴 Tạo nhánh `develop` từ `main`
+- [x] 🔴 Tạo nhánh `develop` từ `main`
 - [ ] 🔴 Viết `README.md` cơ bản cho dự án
 
 ---
