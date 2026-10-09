@@ -44,7 +44,7 @@
 - [ ] 🔴 Bật Firebase Storage
 - [ ] 🔴 Tải `google-services.json` (Android) và `GoogleService-Info.plist` (iOS)
 - [ ] 🔴 Tải Firebase Admin SDK service account key (cho Backend)
-- [ ] 🟡 Đăng ký tài khoản VNPay Sandbox (test thanh toán)
+- [x] 🟡 Đăng ký tài khoản VNPay Sandbox (test thanh toán)
 - [ ] 🟢 Đăng ký SendGrid / cấu hình Gmail App Password (gửi email)
 - [ ] 🟢 Đăng ký SMS Gateway (Twilio / eSMS / Viettel)
 
