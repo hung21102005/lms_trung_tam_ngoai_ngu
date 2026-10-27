@@ -19,7 +19,7 @@ Updated: 2026-10-27. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Auth: splash, login, forgot password, first login | B | P2 | Audit only |
 | Shared: profile, edit profile, change password | A/B | P2 | Audit only; preserve existing dedicated layout |
 | Student home dashboard, navigation | B | P1 | Mobile dashboard implemented; device QA pending |
-| Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum Mobile implemented; other detail routes pending |
+| Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum and lesson detail Mobile implemented; class detail pending |
 | Student schedule, session/attendance | B/C | P1 | Shared Mobile agenda/session sheet and attendance history implemented; device QA pending |
 | Student assignments list (`StudentAssignmentsView`, `/assignments`) | C | P0 | Mobile view in progress |
 | Student assignment detail (`/assignments/:id`) | C | P0 | Mobile view pending |
@@ -48,7 +48,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Authentication | `splash_screen`, `login_screen`, `forgot_password_screen`, `first_login_screen` | B | Pending |
 | Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Pending |
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
-| Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum Mobile view implemented; lesson detail pending |
+| Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
 | Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule implemented; other screens pending |
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history Mobile implemented; teacher marking pending |
@@ -108,4 +108,12 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Widget tests with repository fakes: **18/18 pass** across 320, 375, 393, 430, tablet 800 and Desktop 1200. Invoice filtering and notification mark-all were exercised. These tests do not prove live payment, attendance API persistence or push delivery.
 - Scoped static analysis: **0 issues**. Combined Student regression suite: **74/74 pass**. `flutter build web`: **pass**.
 
-**Still pending:** student invoice detail/payment, exams, standalone class/lesson detail, profile/auth review; Teacher/Parent/Admin Mobile conversions; real Android/Mobile Web visual QA; backend/device end-to-end checks. The Backend was not started for this UI checkpoint. Do not mark these phases complete.
+**Still pending at this checkpoint:** student invoice detail/payment, exams, standalone class/lesson detail, profile/auth review; Teacher/Parent/Admin Mobile conversions; real Android/Mobile Web visual QA; backend/device end-to-end checks. The Backend was not started for this UI checkpoint. Do not mark these phases complete.
+
+### Checkpoint 2026-10-27 — Student lesson detail
+
+- Added a dedicated Mobile lesson reading screen with separate content, audio and document sections, sharing the existing `LessonModel`, audio player and document viewer.
+- Removed generated `example.com` audio/PDF placeholders from the Desktop and Mobile lesson when the API has no materials; both layouts now show an honest empty state. Desktop layout otherwise remains on its prior branch.
+- Scoped analyzer: **0 issues**; lesson widget tests: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px; `flutter build web`: **pass**. Actual audio playback/document downloads and device visual QA remain **unverified**.
+
+**Next:** finish Student class detail, invoice detail/payment and exams, then Teacher, Parent, Admin; run device/API regression before marking any portal complete.
