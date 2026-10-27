@@ -18,14 +18,14 @@ Updated: 2026-10-27. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | --- | --- | --- | --- |
 | Auth: splash, login, forgot password, first login | B | P2 | Audit only |
 | Shared: profile, edit profile, change password | A/B | P2 | Audit only; preserve existing dedicated layout |
-| Student home dashboard, navigation | B | P1 | Audit only |
-| Student courses, lesson detail, class detail | B/C | P1 | Audit only |
-| Student schedule, session/attendance | B/C | P1 | Audit only |
+| Student home dashboard, navigation | B | P1 | Mobile dashboard implemented; device QA pending |
+| Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum Mobile implemented; other detail routes pending |
+| Student schedule, session/attendance | B/C | P1 | Shared Mobile agenda/session sheet implemented; attendance history pending |
 | Student assignments list (`StudentAssignmentsView`, `/assignments`) | C | P0 | Mobile view in progress |
 | Student assignment detail (`/assignments/:id`) | C | P0 | Mobile view pending |
 | Student work, voice/text/file, draft and submit (`/assignments/:id/submit`) | C | P0 | Mobile view pending |
 | Student submission review, score and feedback (assignment detail) | C | P0 | Mobile view pending |
-| Student exams, take exam, results | B/C | P2 | Audit only |
+| Student exams, take exam, results | B/C | P2 | Gradebook now reads published assignment/exam results; exam UI pending |
 | Student invoices/payment, notifications | B/C | P2 | Audit only |
 | Teacher home/dashboard, reports | B/C | P1 | Audit only |
 | Teacher classes/list/detail/schedule | B/C | P1 | Audit only |
@@ -48,9 +48,9 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Authentication | `splash_screen`, `login_screen`, `forgot_password_screen`, `first_login_screen` | B | Pending |
 | Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Pending |
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
-| Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Pending |
+| Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum Mobile view implemented; lesson detail pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
-| Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Pending |
+| Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule implemented; other screens pending |
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Pending |
@@ -88,3 +88,14 @@ Also inspect private builders, dialogs, bottom sheets, and tab content in each l
 **P0 remains in progress:** run real Android and Mobile Web visual checks, exercise actual microphone recording/playback and native file picker/upload, test resubmission and grade refresh against a running backend, and inspect keyboard/safe-area behavior on devices. The student module is not marked complete until those checks pass. Desktop visual comparison and all other roles/modules remain pending.
 
 Next work order: finish P0 end-to-end device/API checks, then student dashboard/schedule/courses, teacher class/attendance/assignments, parent, admin, and cross-role regression. Update this log after each module.
+
+### Checkpoint 2026-10-27 — Student home, courses, schedule, gradebook
+
+- Extended assignment widget coverage: in-memory audio bytes and TXT/ZIP/RAR files reach upload and submit repositories; resubmission, text draft/submit, unpublished grade hiding, and a simulated 300 px keyboard inset pass. Native microphone recording/playback and operating-system file picker behavior remain **unverified** without a device. Backend on port 3000 was not running; real API persistence remains **unverified**.
+- Student home has a separate Mobile dashboard with upcoming class, touch-friendly shortcuts and profile entry. The shell uses the desktop sidebar at `>=1024` logical pixels and the compact navigation below that width. The schedule no longer shrinks mobile text to 80%.
+- Enrolled courses use a Mobile list → curriculum detail flow with progress and materials. The existing repository and API calls remain shared with Desktop.
+- Shared schedule (student, teacher, parent) now has a Mobile agenda, period/day controls, filters, and a session detail sheet. It keeps the existing Bloc and role-aware attendance action; Desktop calendar/list rendering is untouched.
+- Removed the Student gradebook's hardcoded GPA, class score, attendance, and comment. A new view displays only published assignment and graded exam results from existing repositories, and labels the normalized average as the mean of graded work rather than a course GPA. It has Mobile and Desktop layouts.
+- Changed files: scoped `flutter analyze` **0 issues**; combined Student widget suite **56/56 pass** across 320, 375, 393, 430, tablet 800, and Desktop 1200. `flutter build web` **pass**.
+
+**Still pending in Student Portal:** attendance history, invoices/payment detail, notifications, exams/take exam, standalone class/lesson detail, profile/auth verification, real-device visual QA, and backend/device end-to-end tests. Continue with these before marking the Student phase complete. Teacher, Parent, and Admin remain pending outside the shared schedule.

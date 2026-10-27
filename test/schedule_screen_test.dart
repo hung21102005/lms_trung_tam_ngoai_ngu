@@ -22,14 +22,14 @@ class _AuthRepository implements AuthRepository {
 
   @override
   Future<UserEntity> getMe() async => UserEntity(
-        id: 'student-1',
-        userCode: 'HV001',
-        fullName: 'Học viên',
-        status: 'ACTIVE',
-        isFirstLogin: false,
-        roles: roles,
-        permissions: const [],
-      );
+    id: 'student-1',
+    userCode: 'HV001',
+    fullName: 'Học viên',
+    status: 'ACTIVE',
+    isFirstLogin: false,
+    roles: roles,
+    permissions: const [],
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -46,7 +46,10 @@ class _ClassesRepository implements ClassesRepository {
   Future<List<ClassModel>> getMyClasses() async => classes;
 
   @override
-  Future<List<ClassSessionModel>> getMySchedule({String? fromDate, String? toDate}) async {
+  Future<List<ClassSessionModel>> getMySchedule({
+    String? fromDate,
+    String? toDate,
+  }) async {
     ranges.add('$fromDate/$toDate');
     final start = DateTime.parse(fromDate!);
     final end = DateTime.parse(toDate!);
@@ -61,15 +64,67 @@ class _ClassesRepository implements ClassesRepository {
 }
 
 void main() {
-  testWidgets('lịch học hiển thị buổi thật và tải tuần mới khi chuyển tuần', (tester) async {
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('lịch học thích ứng ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _ClassesRepository([
+        ClassSessionModel(
+          id: 's1',
+          classId: 'c1',
+          className: 'Lớp IELTS',
+          title: 'Buổi luyện tập',
+          date: DateTime.now(),
+          startTime: '18:00',
+          endTime: '19:30',
+        ),
+      ]);
+      final authBloc = AuthBloc(authRepository: _AuthRepository(['student']));
+      final classesBloc = ClassesBloc(repository: repository);
+      addTearDown(authBloc.close);
+      addTearDown(classesBloc.close);
+      authBloc.add(CheckAuthStatusEvent());
+      await authBloc.stream.firstWhere((state) => state is AuthenticatedState);
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthBloc>.value(value: authBloc),
+            BlocProvider<ClassesBloc>.value(value: classesBloc),
+          ],
+          child: const MaterialApp(home: ScheduleScreen(showAppBar: false)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Lớp IELTS'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('adaptive-mobile-schedule')),
+        width < 600 ? findsOneWidget : findsNothing,
+      );
+      if (width < 600) {
+        await tester.tap(find.text('Lớp IELTS'));
+        await tester.pumpAndSettle();
+        expect(find.text('Buổi luyện tập'), findsWidgets);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('lịch học hiển thị buổi thật và tải tuần mới khi chuyển tuần', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(400, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final today = DateTime.now();
-    final monday = DateTime(today.year, today.month, today.day)
-        .subtract(Duration(days: today.weekday - 1));
+    final monday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: today.weekday - 1));
     final repository = _ClassesRepository([
       ClassSessionModel(
         id: 'session-1',
@@ -97,13 +152,15 @@ void main() {
     authBloc.add(CheckAuthStatusEvent());
     await authBloc.stream.firstWhere((state) => state is AuthenticatedState);
 
-    await tester.pumpWidget(MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthBloc>.value(value: authBloc),
-        BlocProvider<ClassesBloc>.value(value: classesBloc),
-      ],
-      child: const MaterialApp(home: ScheduleScreen()),
-    ));
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ClassesBloc>.value(value: classesBloc),
+        ],
+        child: const MaterialApp(home: ScheduleScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Tiếng Anh giao tiếp'), findsOneWidget);
@@ -119,7 +176,9 @@ void main() {
     expect(repository.ranges.first, isNot(repository.ranges.last));
   });
 
-  testWidgets('giảng viên thấy lịch dạy và thao tác điểm danh cho buổi thật', (tester) async {
+  testWidgets('giảng viên thấy lịch dạy và thao tác điểm danh cho buổi thật', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -143,13 +202,15 @@ void main() {
     authBloc.add(CheckAuthStatusEvent());
     await authBloc.stream.firstWhere((state) => state is AuthenticatedState);
 
-    await tester.pumpWidget(MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthBloc>.value(value: authBloc),
-        BlocProvider<ClassesBloc>.value(value: classesBloc),
-      ],
-      child: const MaterialApp(home: ScheduleScreen()),
-    ));
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ClassesBloc>.value(value: classesBloc),
+        ],
+        child: const MaterialApp(home: ScheduleScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Lịch giảng dạy'), findsWidgets);
@@ -163,21 +224,71 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final today = DateTime.now();
-    final monday = DateTime(today.year, today.month, today.day)
-        .subtract(Duration(days: today.weekday - 1));
-    final repository = _ClassesRepository([
-      ClassSessionModel(id: 's1', classId: 'c1', className: 'Lớp của An',
-          title: 'Buổi An', date: monday, startTime: '08:00', endTime: '09:30'),
-      ClassSessionModel(id: 's2', classId: 'c2', className: 'Lớp của Bình',
-          title: 'Buổi Bình', date: monday, startTime: '10:00', endTime: '11:30'),
-    ], classes: [
-      const ClassModel(id: 'c1', code: 'C1', name: 'Lớp của An', courseId: 'course',
-          levelId: 'level', branchId: 'branch', startTime: '08:00', endTime: '09:30',
-          students: [ClassStudentModel(id: 'e1', classId: 'c1', studentId: 'an', studentName: 'Bé An')]),
-      const ClassModel(id: 'c2', code: 'C2', name: 'Lớp của Bình', courseId: 'course',
-          levelId: 'level', branchId: 'branch', startTime: '10:00', endTime: '11:30',
-          students: [ClassStudentModel(id: 'e2', classId: 'c2', studentId: 'binh', studentName: 'Bé Bình')]),
-    ]);
+    final monday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: today.weekday - 1));
+    final repository = _ClassesRepository(
+      [
+        ClassSessionModel(
+          id: 's1',
+          classId: 'c1',
+          className: 'Lớp của An',
+          title: 'Buổi An',
+          date: monday,
+          startTime: '08:00',
+          endTime: '09:30',
+        ),
+        ClassSessionModel(
+          id: 's2',
+          classId: 'c2',
+          className: 'Lớp của Bình',
+          title: 'Buổi Bình',
+          date: monday,
+          startTime: '10:00',
+          endTime: '11:30',
+        ),
+      ],
+      classes: [
+        const ClassModel(
+          id: 'c1',
+          code: 'C1',
+          name: 'Lớp của An',
+          courseId: 'course',
+          levelId: 'level',
+          branchId: 'branch',
+          startTime: '08:00',
+          endTime: '09:30',
+          students: [
+            ClassStudentModel(
+              id: 'e1',
+              classId: 'c1',
+              studentId: 'an',
+              studentName: 'Bé An',
+            ),
+          ],
+        ),
+        const ClassModel(
+          id: 'c2',
+          code: 'C2',
+          name: 'Lớp của Bình',
+          courseId: 'course',
+          levelId: 'level',
+          branchId: 'branch',
+          startTime: '10:00',
+          endTime: '11:30',
+          students: [
+            ClassStudentModel(
+              id: 'e2',
+              classId: 'c2',
+              studentId: 'binh',
+              studentName: 'Bé Bình',
+            ),
+          ],
+        ),
+      ],
+    );
     getIt.registerSingleton<ClassesRepository>(repository);
     addTearDown(() => getIt.unregister<ClassesRepository>());
     final authBloc = AuthBloc(authRepository: _AuthRepository(['parent']));
@@ -187,13 +298,15 @@ void main() {
     authBloc.add(CheckAuthStatusEvent());
     await authBloc.stream.firstWhere((state) => state is AuthenticatedState);
 
-    await tester.pumpWidget(MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthBloc>.value(value: authBloc),
-        BlocProvider<ClassesBloc>.value(value: classesBloc),
-      ],
-      child: const MaterialApp(home: ScheduleScreen()),
-    ));
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ClassesBloc>.value(value: classesBloc),
+        ],
+        child: const MaterialApp(home: ScheduleScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Lớp của An'), findsOneWidget);
     expect(find.text('Lớp của Bình'), findsOneWidget);

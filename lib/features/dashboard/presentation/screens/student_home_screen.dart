@@ -1,13 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
+import '../views/student_gradebook_view.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -71,7 +73,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isDesktop = kIsWeb ? size.width >= 640 : size.width > 900;
+    final isDesktop =
+        AdaptiveBreakpoints.fromWidth(size.width) == AdaptiveSize.desktop;
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -703,14 +706,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       case 1:
         child = BlocProvider<ClassesBloc>(
           create: (_) => getIt<ClassesBloc>(),
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: isDesktop
-                  ? const TextScaler.linear(1.0)
-                  : const TextScaler.linear(0.8),
-            ),
-            child: const ScheduleScreen(showAppBar: false),
-          ),
+          child: const ScheduleScreen(showAppBar: false),
         );
         break;
       case 2:
@@ -726,7 +722,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         );
         break;
       case 5:
-        child = _buildGradebookView(user, isDesktop);
+        child = const StudentGradebookView();
         break;
       case 6:
         child = const NotificationListScreen();
@@ -739,6 +735,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
   // ==================== TAB 0: OVERVIEW ====================
   Widget _buildOverviewContent(UserEntity? user, bool isDesktop) {
+    if (!isDesktop) return _buildMobileOverviewContent(user);
     return SingleChildScrollView(
       padding: EdgeInsets.all(isDesktop ? 24 : 16),
       child: Column(
@@ -882,26 +879,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           FutureBuilder<List<ClassSessionModel>>(
             future: _upcomingSchedule,
             builder: (context, snapshot) {
-              ClassSessionModel? nextSession;
-              if (snapshot.hasData) {
-                final now = DateTime.now();
-                for (final session in snapshot.data!) {
-                  final date = session.date;
-                  if (date == null || session.status == 'CANCELLED') continue;
-                  final parts = session.endTime.split(':');
-                  final end = DateTime(
-                    date.year,
-                    date.month,
-                    date.day,
-                    int.tryParse(parts.first) ?? 23,
-                    parts.length > 1 ? int.tryParse(parts[1]) ?? 59 : 59,
-                  );
-                  if (end.isAfter(now)) {
-                    nextSession = session;
-                    break;
-                  }
-                }
-              }
+              final nextSession = snapshot.hasData
+                  ? _findNextSession(snapshot.data!)
+                  : null;
 
               if (nextSession == null) {
                 return Card(
@@ -1066,6 +1046,221 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
+  ClassSessionModel? _findNextSession(List<ClassSessionModel> sessions) {
+    final now = DateTime.now();
+    for (final session in sessions) {
+      final date = session.date;
+      if (date == null || session.status == 'CANCELLED') continue;
+      final parts = session.endTime.split(':');
+      final end = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        int.tryParse(parts.first) ?? 23,
+        parts.length > 1 ? int.tryParse(parts[1]) ?? 59 : 59,
+      );
+      if (end.isAfter(now)) return session;
+    }
+    return null;
+  }
+
+  Widget _buildMobileOverviewContent(UserEntity? user) {
+    return ListView(
+      key: const ValueKey('student-mobile-dashboard'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        Text(
+          'Xin chào, ${user?.fullName ?? 'học viên'} 👋',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          'Cùng tiếp tục hành trình học tập hôm nay.',
+          style: TextStyle(color: AppColors.neutral600),
+        ),
+        const SizedBox(height: MobileTokens.sectionGap),
+        FutureBuilder<List<ClassSessionModel>>(
+          future: _upcomingSchedule,
+          builder: (context, snapshot) {
+            final next = snapshot.hasData
+                ? _findNextSession(snapshot.data!)
+                : null;
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryLight],
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.event_available_rounded,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Buổi học tiếp theo',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    next == null
+                        ? snapshot.hasError
+                              ? 'Chưa tải được lịch học'
+                              : snapshot.connectionState != ConnectionState.done
+                              ? 'Đang tải lịch học...'
+                              : 'Chưa có buổi học sắp tới'
+                        : next.className ?? next.classCode ?? 'Lớp học',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (next != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '${DateFormat('dd/MM').format(next.date!)} · '
+                      '${next.startTime}–${next.endTime}'
+                      '${next.roomName == null ? '' : ' · ${next.roomName}'}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() => _selectedIndex = 1),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white70),
+                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('Xem lịch học'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: MobileTokens.sectionGap),
+        const Text(
+          'Học tập nhanh',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _mobileQuickAction(
+                Icons.calendar_month_rounded,
+                'Lịch học',
+                AppColors.primary,
+                1,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _mobileQuickAction(
+                Icons.school_rounded,
+                'Khóa học',
+                AppColors.secondary,
+                2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _mobileQuickAction(
+                Icons.assignment_rounded,
+                'Bài tập',
+                AppColors.warning,
+                3,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _mobileQuickAction(
+                Icons.receipt_long_rounded,
+                'Học phí',
+                AppColors.primaryLight,
+                4,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: MobileTokens.sectionGap),
+        MobileSectionCard(
+          child: Row(
+            children: [
+              const Icon(
+                Icons.person_outline_rounded,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hồ sơ học viên',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      user?.userCode ?? 'Xem thông tin cá nhân',
+                      style: const TextStyle(color: AppColors.neutral600),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Mở hồ sơ',
+                onPressed: () => context.push(RouteNames.profile),
+                icon: const Icon(Icons.chevron_right_rounded),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _mobileQuickAction(
+    IconData icon,
+    String label,
+    Color color,
+    int index,
+  ) {
+    return MobileSectionCard(
+      child: InkWell(
+        onTap: () => setState(() => _selectedIndex = index),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 27),
+            const SizedBox(height: 12),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            const Icon(
+              Icons.arrow_forward_rounded,
+              size: 17,
+              color: AppColors.neutral500,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildShortcutCard({
     required IconData icon,
     required String title,
@@ -1107,269 +1302,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  // ==================== TAB 5: BẢNG ĐIỂM (STUDENT GRADEBOOK) ====================
-  Widget _buildGradebookView(UserEntity? user, bool isDesktop) {
-    return ListView(
-      padding: EdgeInsets.all(isDesktop ? 24 : 16),
-      children: [
-        // Overall GPA Summary Card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Kết Quả Học Tập & GPA',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '8.6 / 10.0',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'XẾP LOẠI: XUẤT SẮC',
-                      style: TextStyle(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 24, color: Colors.white24),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
-                    children: [
-                      Text(
-                        '100%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Chuyên cần',
-                        style: TextStyle(color: Colors.white60, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Text(
-                        '1 / 1',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Bài tập hoàn thành',
-                        style: TextStyle(color: Colors.white60, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Text(
-                        '1 Lớp',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Đang theo học',
-                        style: TextStyle(color: Colors.white60, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        Text(
-          'Chi Tiết Điểm Lớp Đang Theo Học',
-          style: AppTextStyles.h4(context)
-              .copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-
-        _buildSubjectGradeCard(
-          courseName: 'Lớp IELTS Foundation K01 (Mã: IELTS-F-2026-01)',
-          attendanceScore: '10.0',
-          homeworkScore: '8.5',
-          midtermScore: '8.0',
-          finalScore: '8.5',
-          overallScore: '8.5',
-          status: 'ĐẠT (PASS)',
-          comment: 'Học viên Em Lê Minh Khang đi học đầy đủ, nắm chắc ngữ pháp và phản xạ Speaking tự tin.',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSubjectGradeCard({
-    required String courseName,
-    required String attendanceScore,
-    required String homeworkScore,
-    required String midtermScore,
-    required String finalScore,
-    required String overallScore,
-    required String status,
-    required String comment,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    courseName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildGradeMiniColumn('Chuyên cần', attendanceScore),
-                _buildGradeMiniColumn('Bài tập', homeworkScore),
-                _buildGradeMiniColumn('Giữa kỳ', midtermScore),
-                _buildGradeMiniColumn('Cuối kỳ', finalScore),
-                _buildGradeMiniColumn('Tổng kết', overallScore, isBold: true),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    size: 14,
-                    color: AppColors.neutral600,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Nhận xét: $comment',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textPrimaryLight,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGradeMiniColumn(
-    String label,
-    String score, {
-    bool isBold = false,
-  }) {
-    return Column(
-      children: [
-        Text(
-          score,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: isBold ? 16 : 14,
-            color: isBold ? AppColors.primary : AppColors.textPrimaryLight,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondaryLight,
-          ),
-        ),
-      ],
     );
   }
 }

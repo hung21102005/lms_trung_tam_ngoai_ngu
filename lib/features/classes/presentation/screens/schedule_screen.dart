@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -38,6 +41,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   int _viewMode = 0; // 0: tuần, 1: tháng, 2: danh sách trong tháng
   String? _selectedClassId;
   String? _selectedChildId;
+  DateTime? _mobileSelectedDay;
   Map<String, String> _children = {};
   Map<String, Set<String>> _childClassIds = {};
 
@@ -50,6 +54,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void initState() {
     super.initState();
     _anchor = _startOfWeek(DateTime.now());
+    _mobileSelectedDay = null;
     _loadSchedule();
     if (_user?.isParent == true) _loadChildren();
   }
@@ -110,6 +115,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ? _anchor.add(Duration(days: 7 * amount))
           : DateTime(_anchor.year, _anchor.month + amount, 1);
       _selectedClassId = null;
+      _mobileSelectedDay = null;
     });
     _loadSchedule();
   }
@@ -119,6 +125,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     setState(() {
       _viewMode = mode;
       _selectedClassId = null;
+      _mobileSelectedDay = null;
     });
     _loadSchedule();
   }
@@ -133,6 +140,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final isTeacher = _user?.isTeacher == true;
+    final isMobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
     return Scaffold(
       appBar: widget.showAppBar ? AppBar(title: Text(_heading)) : null,
       body: RefreshIndicator(
@@ -143,9 +153,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(_heading, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-            _buildToolbar(),
+            if (isMobile)
+              _buildMobileHeader()
+            else ...[
+              Text(_heading, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 16),
+              _buildToolbar(),
+            ],
             const SizedBox(height: 12),
             BlocBuilder<ClassesBloc, ClassesState>(
               builder: (context, state) {
@@ -202,6 +216,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   return true;
                 }).toList();
 
+                if (isMobile) {
+                  return _buildMobileSchedule(sessions, classNames, isTeacher);
+                }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -227,6 +244,402 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileHeader() {
+    final range = _viewMode == 0
+        ? '${DateFormat('dd/MM').format(_rangeStart)} – ${DateFormat('dd/MM/yyyy').format(_rangeEnd)}'
+        : DateFormat('MM/yyyy').format(_rangeStart);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _heading,
+          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Theo dõi các buổi học và thời gian của bạn',
+          style: TextStyle(color: AppColors.neutral600),
+        ),
+        const SizedBox(height: 16),
+        MobileSectionCard(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => _move(-1),
+                icon: const Icon(Icons.chevron_left_rounded),
+                tooltip: 'Kỳ trước',
+              ),
+              Expanded(
+                child: Text(
+                  range,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                onPressed: () => _move(1),
+                icon: const Icon(Icons.chevron_right_rounded),
+                tooltip: 'Kỳ sau',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 42,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              for (final (index, label) in const [
+                (0, 'Tuần'),
+                (1, 'Tháng'),
+                (2, 'Danh sách'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(label),
+                    selected: _viewMode == index,
+                    onSelected: (_) => _changeView(index),
+                  ),
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.today_rounded, size: 17),
+                label: const Text('Hôm nay'),
+                onPressed: () {
+                  setState(() {
+                    _anchor = _startOfWeek(DateTime.now());
+                    _mobileSelectedDay = DateTime.now();
+                  });
+                  _loadSchedule();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileSchedule(
+    List<ClassSessionModel> sessions,
+    Map<String, String> classNames,
+    bool isTeacher,
+  ) {
+    final days = List.generate(
+      7,
+      (index) => _rangeStart.add(Duration(days: index)),
+    );
+    final visible = _mobileSelectedDay == null || _viewMode == 2
+        ? sessions
+        : sessions
+              .where(
+                (session) =>
+                    DateUtils.isSameDay(_day(session), _mobileSelectedDay),
+              )
+              .toList();
+    return Column(
+      key: const ValueKey('adaptive-mobile-schedule'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Buổi học',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _showMobileScheduleFilters(classNames),
+              icon: const Icon(Icons.tune_rounded, size: 18),
+              label: const Text('Lọc'),
+            ),
+          ],
+        ),
+        if (_viewMode == 0) ...[
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 68,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _mobileDayChip(null, 'Tất cả', sessions.length),
+                for (final day in days)
+                  _mobileDayChip(
+                    day,
+                    '${day.day}/${day.month}',
+                    sessions
+                        .where(
+                          (session) => DateUtils.isSameDay(_day(session), day),
+                        )
+                        .length,
+                  ),
+              ],
+            ),
+          ),
+        ] else if (_viewMode == 1) ...[
+          OutlinedButton.icon(
+            onPressed: () async {
+              final selected = await showDatePicker(
+                context: context,
+                initialDate: _mobileSelectedDay ?? _rangeStart,
+                firstDate: _rangeStart,
+                lastDate: _rangeEnd,
+              );
+              if (selected != null && mounted) {
+                setState(() => _mobileSelectedDay = selected);
+              }
+            },
+            icon: const Icon(Icons.event_rounded),
+            label: Text(
+              _mobileSelectedDay == null
+                  ? 'Chọn ngày trong tháng'
+                  : DateFormat('dd/MM/yyyy').format(_mobileSelectedDay!),
+            ),
+          ),
+          if (_mobileSelectedDay != null)
+            TextButton(
+              onPressed: () => setState(() => _mobileSelectedDay = null),
+              child: const Text('Xem cả tháng'),
+            ),
+        ],
+        const SizedBox(height: 12),
+        if (visible.isEmpty)
+          const MobileSectionCard(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.event_busy_outlined,
+                  size: 36,
+                  color: AppColors.neutral400,
+                ),
+                SizedBox(height: 8),
+                Text('Không có buổi học trong khoảng thời gian này.'),
+              ],
+            ),
+          ),
+        for (final session in visible)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildMobileSession(session, isTeacher),
+          ),
+      ],
+    );
+  }
+
+  Widget _mobileDayChip(DateTime? day, String label, int count) {
+    final selected = day == null
+        ? _mobileSelectedDay == null
+        : DateUtils.isSameDay(day, _mobileSelectedDay);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            Text('$count buổi', style: const TextStyle(fontSize: 11)),
+          ],
+        ),
+        selected: selected,
+        onSelected: (_) => setState(() => _mobileSelectedDay = day),
+      ),
+    );
+  }
+
+  Widget _buildMobileSession(ClassSessionModel session, bool isTeacher) {
+    final room = session.roomName ?? session.roomCode;
+    return MobileSectionCard(
+      child: InkWell(
+        onTap: () => _showMobileSession(session, isTeacher),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 64,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    session.startTime,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('dd/MM').format(_day(session)),
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    session.className ?? session.classCode ?? 'Lớp học',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    session.lessonTitle ?? session.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${session.startTime}–${session.endTime}'
+                    '${room == null ? '' : ' · $room'}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.neutral600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.neutral500,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMobileScheduleFilters(Map<String, String> classes) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Lọc lịch học',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: classes.containsKey(_selectedClassId)
+                    ? _selectedClassId
+                    : null,
+                decoration: const InputDecoration(labelText: 'Lớp học'),
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: null,
+                    child: Text('Tất cả lớp'),
+                  ),
+                  for (final entry in classes.entries)
+                    DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value, overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _selectedClassId = value),
+              ),
+              if (_user?.isParent == true && _children.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedChildId,
+                  decoration: const InputDecoration(labelText: 'Con'),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('Tất cả con'),
+                    ),
+                    for (final entry in _children.entries)
+                      DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedChildId = value),
+                ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text('Xem lịch'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMobileSession(ClassSessionModel session, bool isTeacher) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                session.className ?? session.classCode ?? 'Lớp học',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(session.lessonTitle ?? session.title),
+              const SizedBox(height: 12),
+              Text(
+                '${DateFormat('dd/MM/yyyy').format(_day(session))} · '
+                '${session.startTime}–${session.endTime}',
+              ),
+              if (session.roomName != null || session.roomCode != null)
+                Text('Phòng: ${session.roomName ?? session.roomCode}'),
+              if (!isTeacher && session.teacherName != null)
+                Text('Giảng viên: ${session.teacherName}'),
+              Text('Trạng thái: ${session.status}'),
+              if (isTeacher && session.status != 'CANCELLED') ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    context.push(
+                      RouteNames.attendanceMark.replaceFirst(':id', session.id),
+                    );
+                  },
+                  icon: const Icon(Icons.how_to_reg_rounded),
+                  label: const Text('Điểm danh'),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

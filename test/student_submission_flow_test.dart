@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,8 @@ class _Repository implements AssignmentsRepository {
   final AssignmentModel assignment;
   String? savedContent;
   String? submittedContent;
+  List<Map<String, dynamic>>? submittedFiles;
+  final uploadedNames = <String>[];
 
   @override
   Future<SubmissionModel> submitAssignment(
@@ -26,6 +29,7 @@ class _Repository implements AssignmentsRepository {
     List<Map<String, dynamic>>? fileUrls,
   }) async {
     submittedContent = content;
+    submittedFiles = fileUrls;
     return SubmissionModel.fromJson({
       'id': 'submitted-1',
       'assignmentId': assignmentId,
@@ -62,12 +66,15 @@ class _Repository implements AssignmentsRepository {
   Future<AssignmentAttachmentModel> uploadAttachment(
     String fileName,
     Uint8List bytes,
-  ) async => AssignmentAttachmentModel(
-    name: fileName,
-    url: '/uploads/assignments/$fileName',
-    fileType: 'DOCUMENT',
-    size: bytes.length,
-  );
+  ) async {
+    uploadedNames.add(fileName);
+    return AssignmentAttachmentModel(
+      name: fileName,
+      url: '/uploads/assignments/$fileName',
+      fileType: fileName.endsWith('.wav') ? 'AUDIO' : 'DOCUMENT',
+      size: bytes.length,
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -99,6 +106,49 @@ SubmissionModel _submission() => const SubmissionModel(
   status: 'SUBMITTED',
 );
 
+final class _MemoryFile extends PlatformFile {
+  _MemoryFile(this.name, this.bytes);
+  @override
+  final String name;
+  final Uint8List bytes;
+  @override
+  Uri get uri => Uri.dataFromBytes(bytes);
+  @override
+  Never get xFile => throw UnimplementedError();
+  @override
+  int? lengthSync() => bytes.length;
+  @override
+  Future<int?> length() async => bytes.length;
+  @override
+  Future<Uint8List> readAsBytes() async => bytes;
+  @override
+  Stream<Uint8List> readAsByteStream() => Stream.value(bytes);
+}
+
+class _Picker extends FilePickerPlatform {
+  _Picker(this.files);
+  final List<PlatformFile> files;
+  List<String>? requestedExtensions;
+
+  @override
+  Future<List<PlatformFile>> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Function(FilePickerStatus)? onFileLoading,
+    int compressionQuality = 0,
+    AndroidOptions androidOptions = const AndroidOptions(),
+    DarwinOptions darwinOptions = const DarwinOptions(),
+    WindowsOptions windowsOptions = const WindowsOptions(),
+    LinuxOptions linuxOptions = const LinuxOptions(),
+    WebOptions webOptions = const WebOptions(),
+  }) async {
+    requestedExtensions = allowedExtensions;
+    return files;
+  }
+}
+
 Future<void> _pump(WidgetTester tester, AssignmentModel assignment) async {
   final repository = _Repository(assignment);
   getIt.registerSingleton<AssignmentsRepository>(repository);
@@ -117,7 +167,123 @@ Future<void> _pump(WidgetTester tester, AssignmentModel assignment) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+Future<_Repository> _pumpMobileRoute(
+  WidgetTester tester,
+  AssignmentModel assignment,
+) async {
+  tester.view.physicalSize = const Size(393, 852);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  final repository = _Repository(assignment);
+  getIt.registerSingleton<AssignmentsRepository>(repository);
+  addTearDown(() async => getIt.reset());
+  final bloc = AssignmentsBloc(repository: repository);
+  addTearDown(bloc.close);
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const Scaffold(body: Text('Home')),
+      ),
+      GoRoute(
+        path: '/submit',
+        builder: (_, _) => BlocProvider.value(
+          value: bloc,
+          child: const SubmitAssignmentScreen(assignmentId: 'assignment-1'),
+        ),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  router.push('/submit');
+  await tester.pumpAndSettle();
+  return repository;
+}
+
 void main() {
+  testWidgets('mobile upload TXT ZIP RAR rồi nộp qua repository', (
+    tester,
+  ) async {
+    final originalPicker = FilePickerPlatform.instance;
+    final picker = _Picker([
+      _MemoryFile('notes.txt', Uint8List.fromList([1, 2])),
+      _MemoryFile('project.zip', Uint8List.fromList([3, 4])),
+      _MemoryFile('archive.rar', Uint8List.fromList([5, 6])),
+    ]);
+    FilePickerPlatform.instance = picker;
+    addTearDown(() => FilePickerPlatform.instance = originalPicker);
+    final repository = await _pumpMobileRoute(tester, _assignment('PROJECT'));
+    await tester.scrollUntilVisible(
+      find.text('Chọn tệp từ máy'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Chọn tệp từ máy'));
+    await tester.pumpAndSettle();
+    expect(picker.requestedExtensions, containsAll(['txt', 'zip', 'rar']));
+    expect(find.text('notes.txt'), findsOneWidget);
+    await tester.tap(find.text('Nộp bài'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(
+      repository.uploadedNames,
+      containsAll(['notes.txt', 'project.zip', 'archive.rar']),
+    );
+    expect(repository.submittedFiles, hasLength(3));
+    expect(find.text('Nộp bài thành công'), findsOneWidget);
+    await tester.tap(find.text('Xem bài tập'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile ghi âm chuyển bytes vào upload và submit', (
+    tester,
+  ) async {
+    final repository = await _pumpMobileRoute(tester, _assignment('SPEAKING'));
+    tester
+        .widget<AudioRecorderWidget>(find.byType(AudioRecorderWidget))
+        .onAudioRecorded('speaking.wav', Uint8List.fromList([1, 2, 3]), 3);
+    await tester.pump();
+    await tester.tap(find.text('Nộp bài'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(repository.uploadedNames, contains('speaking.wav'));
+    expect(repository.submittedFiles, hasLength(1));
+    expect(find.text('Nộp bài thành công'), findsOneWidget);
+    await tester.tap(find.text('Xem bài tập'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile sửa và nộp lại bài còn hạn', (tester) async {
+    final repository = await _pumpMobileRoute(
+      tester,
+      _assignment('WRITING', submission: _submission()),
+    );
+    await tester.enterText(find.byType(TextField).first, 'Bài viết đã sửa');
+    await tester.tap(find.text('Cập nhật bài'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(repository.submittedContent, 'Bài viết đã sửa');
+    expect(find.text('Nộp bài thành công'), findsOneWidget);
+    await tester.tap(find.text('Xem bài tập'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile bàn phím không che nút nộp', (tester) async {
+    await _pumpMobileRoute(tester, _assignment('WRITING'));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    final submit = find.widgetWithText(FilledButton, 'Nộp bài');
+    expect(submit, findsOneWidget);
+    expect(tester.getBottomLeft(submit).dy, lessThanOrEqualTo(552));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('mobile lưu nháp và nộp bài viết qua repository', (tester) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;

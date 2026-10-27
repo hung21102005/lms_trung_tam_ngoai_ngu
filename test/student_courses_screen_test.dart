@@ -92,8 +92,35 @@ void main() {
 
       await tester.tap(find.text('IELTS Foundation'));
       await tester.pumpAndSettle();
-      expect(find.text('Tiến độ: 1/2 bài học'), findsOneWidget);
+      expect(find.text('1/2 bài học đã hoàn thành'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final width in [320.0, 375.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('khóa học thích ứng ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 852);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: StudentCoursesScreen())),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Khóa học của tôi'), findsOneWidget);
+      expect(find.text('IELTS Foundation'), findsOneWidget);
+      if (width < 600) {
+        expect(
+          find.byKey(const ValueKey('student-courses-mobile-list')),
+          findsOneWidget,
+        );
+      } else {
+        expect(
+          find.byKey(const ValueKey('student-courses-mobile-list')),
+          findsNothing,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
