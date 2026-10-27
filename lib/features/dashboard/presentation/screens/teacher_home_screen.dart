@@ -1,7 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/adaptive/adaptive_layout.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -84,21 +85,13 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   }
 
   Widget _buildActiveBody() {
-    final isDesktop = MediaQuery.of(context).size.width > 900;
     Widget child;
     switch (_selectedIndex) {
       case 0:
         child = const TeacherDashboardLiveScreen(showAppBar: false);
         break;
       case 1:
-        child = MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: isDesktop
-                ? const TextScaler.linear(1.0)
-                : const TextScaler.linear(0.8),
-          ),
-          child: const ScheduleScreen(showAppBar: false),
-        );
+        child = const ScheduleScreen(showAppBar: false);
         break;
       case 2:
         child = TeacherMyClassesScreen(initialSearch: _classSearch);
@@ -129,8 +122,9 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDesktop = kIsWeb ? size.width >= 640 : size.width > 900;
+    final isDesktop =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.desktop;
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {

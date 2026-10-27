@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../data/models/class_model.dart';
 import '../../domain/repositories/classes_repository.dart';
 
@@ -65,6 +68,10 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
                   item.name.toLowerCase().contains(query) ||
                   item.code.toLowerCase().contains(query));
         }).toList();
+        if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+            AdaptiveSize.mobile) {
+          return _buildMobile(context, classes, snapshot.data ?? const []);
+        }
         return RefreshIndicator(
           onRefresh: () async {
             setState(_reload);
@@ -196,4 +203,174 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
       },
     ),
   );
+
+  Widget _buildMobile(
+    BuildContext context,
+    List<ClassModel> classes,
+    List<ClassModel> allClasses,
+  ) {
+    final activeCount = allClasses
+        .where((item) => item.status == 'IN_PROGRESS')
+        .length;
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(_reload);
+        await _classes;
+      },
+      child: ListView(
+        key: const ValueKey('teacher-classes-mobile'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          Text(
+            'Lớp học của tôi',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 12),
+          MobileSectionCard(
+            child: Row(
+              children: [
+                const Icon(Icons.groups_outlined, color: AppColors.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${allClasses.length} lớp được phân công',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '$activeCount lớp đang học',
+                        style: const TextStyle(color: AppColors.neutral600),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _search,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: 'Tìm tên hoặc mã lớp',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final (value, label) in const [
+                  ('ALL', 'Tất cả'),
+                  ('IN_PROGRESS', 'Đang học'),
+                  ('OPEN_FOR_ENROLLMENT', 'Đang tuyển sinh'),
+                  ('COMPLETED', 'Đã kết thúc'),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(label),
+                      selected: _status == value,
+                      onSelected: (_) => setState(() => _status = value),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (classes.isEmpty)
+            const MobileSectionCard(child: Text('Không có lớp học phù hợp.')),
+          for (final item in classes)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: MobileSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.school_outlined,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.code,
+                      style: const TextStyle(color: AppColors.neutral600),
+                    ),
+                    const SizedBox(height: 10),
+                    MobileStatusPill(
+                      label: _statusLabel(item.status),
+                      color: item.status == 'IN_PROGRESS'
+                          ? Colors.green
+                          : AppColors.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '${item.studentsCount} học viên · ${item.sessionsCount}/${item.totalSessions} buổi',
+                    ),
+                    if (item.scheduleDays.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${item.scheduleDays.join(', ')} · ${item.startTime}–${item.endTime}',
+                        style: const TextStyle(color: AppColors.neutral600),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.push(
+                              RouteNames.classDetail.replaceFirst(
+                                ':id',
+                                item.id,
+                              ),
+                            ),
+                            child: const Text('Xem lớp'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: () => context.push(
+                              RouteNames.classAssignments.replaceFirst(
+                                ':classId',
+                                item.id,
+                              ),
+                              extra: true,
+                            ),
+                            child: const Text('Bài tập'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _statusLabel(String status) => switch (status) {
+    'IN_PROGRESS' => 'Đang học',
+    'OPEN_FOR_ENROLLMENT' => 'Đang tuyển sinh',
+    'COMPLETED' => 'Đã kết thúc',
+    'CANCELLED' => 'Đã hủy',
+    _ => 'Đang chuẩn bị',
+  };
 }
