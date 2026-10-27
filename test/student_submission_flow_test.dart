@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lms_trung_tam_ngoai_ngu/core/di/injection.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/assignments/data/models/assignment_model.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/assignments/domain/repositories/assignments_repository.dart';
@@ -16,6 +17,25 @@ class _Repository implements AssignmentsRepository {
 
   final AssignmentModel assignment;
   String? savedContent;
+  String? submittedContent;
+
+  @override
+  Future<SubmissionModel> submitAssignment(
+    String assignmentId, {
+    String? content,
+    List<Map<String, dynamic>>? fileUrls,
+  }) async {
+    submittedContent = content;
+    return SubmissionModel.fromJson({
+      'id': 'submitted-1',
+      'assignmentId': assignmentId,
+      'studentId': 'student-1',
+      'content': content,
+      'fileUrls': fileUrls ?? [],
+      'status': 'SUBMITTED',
+      'submittedAt': '2026-10-27T12:00:00Z',
+    });
+  }
 
   @override
   Future<SubmissionModel> saveDraft(
@@ -98,7 +118,54 @@ Future<void> _pump(WidgetTester tester, AssignmentModel assignment) async {
 }
 
 void main() {
-  for (final width in [393.0, 1200.0]) {
+  testWidgets('mobile lưu nháp và nộp bài viết qua repository', (tester) async {
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _Repository(_assignment('WRITING'));
+    getIt.registerSingleton<AssignmentsRepository>(repository);
+    addTearDown(() async => getIt.reset());
+    final bloc = AssignmentsBloc(repository: repository);
+    addTearDown(bloc.close);
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: Text('Home')),
+        ),
+        GoRoute(
+          path: '/submit',
+          builder: (_, _) => BlocProvider.value(
+            value: bloc,
+            child: const SubmitAssignmentScreen(assignmentId: 'assignment-1'),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    router.push('/submit');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Bài viết mobile');
+    await tester.tap(find.text('Lưu nháp'));
+    await tester.pumpAndSettle();
+    expect(repository.savedContent, 'Bài viết mobile');
+    ScaffoldMessenger.of(tester.element(find.byType(SubmitAssignmentScreen)))
+        .removeCurrentSnackBar();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nộp bài'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(repository.submittedContent, 'Bài viết mobile');
+    expect(find.text('Nộp bài thành công'), findsOneWidget);
+    await tester.tap(find.text('Xem bài tập'));
+    await tester.pumpAndSettle();
+    expect(find.text('Home'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
     testWidgets('workspace HOMEWORK không tràn ở chiều rộng $width', (
       tester,
     ) async {
@@ -107,7 +174,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await _pump(tester, _assignment('HOMEWORK'));
-      expect(find.text('Yêu cầu bài tập'), findsOneWidget);
+      expect(
+        find.text(width < 600 ? 'Đề bài & hướng dẫn' : 'Yêu cầu bài tập'),
+        findsOneWidget,
+      );
       expect(find.text('Bài làm của bạn'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

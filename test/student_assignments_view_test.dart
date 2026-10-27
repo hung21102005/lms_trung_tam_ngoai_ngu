@@ -65,6 +65,64 @@ class _Assignments implements AssignmentsRepository {
 }
 
 void main() {
+  testWidgets('mobile tìm kiếm và mở bộ lọc bài tập', (tester) async {
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    getIt.registerSingleton<AssignmentsRepository>(_Assignments());
+    addTearDown(() async => getIt.reset());
+    final bloc = ClassesBloc(repository: _Classes())
+      ..add(const FetchMyClasses());
+    addTearDown(bloc.close);
+    await tester.pumpWidget(
+      BlocProvider.value(
+        value: bloc,
+        child: const MaterialApp(
+          home: Scaffold(body: StudentAssignmentsView()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('student-assignments-mobile-search')),
+      'Speaking',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Speaking Practice'), findsOneWidget);
+    expect(find.text('Writing Task 1'), findsNothing);
+    await tester.tap(find.byTooltip('Lọc và sắp xếp'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lọc và sắp xếp'), findsOneWidget);
+    expect(find.text('Sắp xếp'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final width in [320.0, 375.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('danh sách bài tập không tràn ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 852);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      getIt.registerSingleton<AssignmentsRepository>(_Assignments());
+      addTearDown(() async => getIt.reset());
+      final bloc = ClassesBloc(repository: _Classes())
+        ..add(const FetchMyClasses());
+      addTearDown(bloc.close);
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: Scaffold(body: StudentAssignmentsView()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Bài tập của tôi'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets(
     'danh sách dùng dữ liệu lớp thật, thống kê và lọc đúng trạng thái',
     (tester) async {
@@ -89,24 +147,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bài tập của tôi'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Writing Task 1'), 250,
-      scrollable: find.byType(Scrollable).first,
-    );
+      await tester.scrollUntilVisible(
+        find.text('Writing Task 1'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Writing Task 1'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Speaking Practice'), 250,
-      scrollable: find.byType(Scrollable).first,
-    );
+      await tester.scrollUntilVisible(
+        find.text('Speaking Practice'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Speaking Practice'), findsOneWidget);
       expect(find.text('Chờ công bố'), findsOneWidget);
-      expect(find.textContaining('Thang 20.0 điểm'), findsOneWidget);
+      expect(find.textContaining('Thang 20 điểm'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.widgetWithText(ChoiceChip, 'Cần làm'), -250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Cần làm'));
+      await tester.scrollUntilVisible(
+        find.widgetWithText(ChoiceChip, 'Cần làm'),
+        -250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Cần làm'));
       await tester.pumpAndSettle();
       expect(find.text('Writing Task 1'), findsOneWidget);
       expect(find.text('Speaking Practice'), findsNothing);

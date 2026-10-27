@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/utils/attachment_url.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -16,6 +17,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/linkified_text.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../data/models/assignment_model.dart';
 import '../../domain/repositories/assignments_repository.dart';
 import '../bloc/assignments_bloc.dart';
@@ -342,6 +344,10 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, size) {
+                    if (AdaptiveBreakpoints.fromWidth(size.maxWidth) ==
+                        AdaptiveSize.mobile) {
+                      return _buildMobileWorkspace(assignment, canEdit);
+                    }
                     if (size.maxWidth >= 900) {
                       return Row(
                         children: [
@@ -370,56 +376,384 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
                   },
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(15),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_lastSavedAt != null)
-                        Text(
-                          'Bản nháp đã lưu: ${_lastSavedAt!.toLocal().hour.toString().padLeft(2, '0')}:${_lastSavedAt!.toLocal().minute.toString().padLeft(2, '0')}',
-                          style: AppTextStyles.caption(context),
-                        ),
-                      if (assignment.mySubmission == null ||
-                          assignment.mySubmission!.status == 'DRAFT' ||
-                          _savedDraft)
-                        OutlinedButton.icon(
-                          onPressed:
-                              busy || !canEdit || !_canSaveDraft(assignment)
-                              ? null
-                              : () => _saveDraft(assignment),
-                          icon: const Icon(Icons.save_outlined),
-                          label: const Text('Lưu bản nháp'),
-                        ),
-                      AppButton(
-                        text: isEditing ? 'Cập nhật bài nộp' : 'Nộp bài tập',
-                        icon: Icons.send,
-                        isLoading: busy,
-                        onPressed: busy || !canEdit
-                            ? null
-                            : () => _submit(assignment),
+              if (AdaptiveBreakpoints.fromWidth(
+                    MediaQuery.sizeOf(context).width,
+                  ) ==
+                  AdaptiveSize.mobile)
+                _buildMobileActions(assignment, canEdit, busy, isEditing)
+              else
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(15),
+                        blurRadius: 8,
+                        offset: const Offset(0, -2),
                       ),
                     ],
                   ),
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_lastSavedAt != null)
+                          Text(
+                            'Bản nháp đã lưu: ${_lastSavedAt!.toLocal().hour.toString().padLeft(2, '0')}:${_lastSavedAt!.toLocal().minute.toString().padLeft(2, '0')}',
+                            style: AppTextStyles.caption(context),
+                          ),
+                        if (assignment.mySubmission == null ||
+                            assignment.mySubmission!.status == 'DRAFT' ||
+                            _savedDraft)
+                          OutlinedButton.icon(
+                            onPressed:
+                                busy || !canEdit || !_canSaveDraft(assignment)
+                                ? null
+                                : () => _saveDraft(assignment),
+                            icon: const Icon(Icons.save_outlined),
+                            label: const Text('Lưu bản nháp'),
+                          ),
+                        AppButton(
+                          text: isEditing ? 'Cập nhật bài nộp' : 'Nộp bài tập',
+                          icon: Icons.send,
+                          isLoading: busy,
+                          onPressed: busy || !canEdit
+                              ? null
+                              : () => _submit(assignment),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
             ],
           );
         },
       ),
     );
   }
+
+  Widget _buildMobileWorkspace(AssignmentModel assignment, bool canEdit) {
+    final type = assignment.type.toUpperCase();
+    final showAudio =
+        type == 'SPEAKING' || type == 'HOMEWORK' || type == 'PROJECT';
+    final showText =
+        type == 'WRITING' || type == 'HOMEWORK' || type == 'PROJECT';
+    final deadline = DateTime.tryParse(assignment.deadline ?? '')?.toLocal();
+    return ListView(
+      key: const ValueKey('student-submission-mobile-workspace'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        Text(
+          assignment.className ?? 'Lớp học',
+          style: const TextStyle(color: AppColors.neutral600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          assignment.title,
+          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        MobileStatusPill(
+          label: deadline == null
+              ? 'Không giới hạn hạn nộp'
+              : 'Hạn ${deadline.day}/${deadline.month}/${deadline.year}',
+          color: AppColors.primary,
+        ),
+        const SizedBox(height: MobileTokens.sectionGap),
+        MobileSectionCard(
+          child: ExpansionTile(
+            initiallyExpanded: true,
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: const Text(
+              'Đề bài & hướng dẫn',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: LinkifiedText(
+                  text: assignment.description?.isNotEmpty == true
+                      ? assignment.description!
+                      : 'Giảng viên chưa thêm hướng dẫn chi tiết.',
+                ),
+              ),
+              for (final file in assignment.attachments)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.attach_file_rounded),
+                  title: Text(
+                    file.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.open_in_new_rounded),
+                  onTap: () async {
+                    final uri = resolveAttachmentUrl(file.url);
+                    if (uri == null ||
+                        !await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        )) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Không mở được tài liệu.'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+            ],
+          ),
+        ),
+        if (!canEdit) ...[
+          const SizedBox(height: 12),
+          const MobileSectionCard(
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, color: AppColors.warning),
+                SizedBox(width: 10),
+                Expanded(child: Text('Bài nộp hiện chỉ có thể xem.')),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: MobileTokens.sectionGap),
+        const Text(
+          'Bài làm của bạn',
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _typeInstruction(type),
+          style: const TextStyle(color: AppColors.neutral600),
+        ),
+        if (showAudio) ...[
+          const SizedBox(height: 16),
+          MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.mic_rounded, color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text(
+                      'Ghi âm',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                IgnorePointer(
+                  ignoring: !canEdit,
+                  child: AudioRecorderWidget(
+                    onAudioRecorded: (name, bytes, _) => setState(() {
+                      _recordedAudioName = name;
+                      _recordedAudioBytes = bytes;
+                    }),
+                    onReset: () => setState(() {
+                      _recordedAudioName = null;
+                      _recordedAudioBytes = null;
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (showText) ...[
+          const SizedBox(height: 16),
+          MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text(
+                      'Nội dung bài viết',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: _textController,
+                  hintText: 'Viết bài làm tại đây...',
+                  maxLines: 8,
+                  readOnly: !canEdit,
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        MobileSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.attach_file_rounded, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text(
+                    'Tệp đính kèm',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'PDF, tài liệu, ảnh, TXT, ZIP, RAR hoặc âm thanh · tối đa 50 MB/tệp',
+                style: TextStyle(fontSize: 12, color: AppColors.neutral600),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: MobileTokens.touchTarget,
+                child: OutlinedButton.icon(
+                  onPressed: canEdit && !_isUploading ? _pickFiles : null,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Chọn tệp từ máy'),
+                ),
+              ),
+              for (final file in _existingFiles)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.insert_drive_file_outlined),
+                  title: Text(
+                    file.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    _isAudio(file) ? 'Bản ghi âm đã lưu' : 'Tệp đã lưu',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isAudio(file))
+                        IconButton(
+                          tooltip: _playingAudio == file.url
+                              ? 'Dừng nghe'
+                              : 'Nghe lại',
+                          onPressed: () => _playSavedAudio(file),
+                          icon: Icon(
+                            _playingAudio == file.url
+                                ? Icons.stop
+                                : Icons.play_arrow,
+                          ),
+                        ),
+                      if (canEdit)
+                        IconButton(
+                          tooltip: 'Bỏ tệp',
+                          onPressed: () =>
+                              setState(() => _existingFiles.remove(file)),
+                          icon: const Icon(Icons.close),
+                        ),
+                    ],
+                  ),
+                ),
+              for (final file in _selectedFiles)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.insert_drive_file_outlined),
+                  title: Text(
+                    file.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Bỏ tệp',
+                    onPressed: () =>
+                        setState(() => _selectedFiles.remove(file)),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileActions(
+    AssignmentModel assignment,
+    bool canEdit,
+    bool busy,
+    bool isEditing,
+  ) => Container(
+    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      border: Border(top: BorderSide(color: AppColors.borderLight)),
+    ),
+    child: SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_lastSavedAt != null)
+            Text(
+              'Bản nháp đã lưu lúc ${_lastSavedAt!.toLocal().hour.toString().padLeft(2, '0')}:${_lastSavedAt!.toLocal().minute.toString().padLeft(2, '0')}',
+              style: AppTextStyles.caption(context),
+            ),
+          Row(
+            children: [
+              if (assignment.mySubmission == null ||
+                  assignment.mySubmission!.status == 'DRAFT' ||
+                  _savedDraft) ...[
+                Expanded(
+                  child: SizedBox(
+                    height: MobileTokens.touchTarget,
+                    child: OutlinedButton(
+                      onPressed: busy || !canEdit || !_canSaveDraft(assignment)
+                          ? null
+                          : () => _saveDraft(assignment),
+                      child: const Text('Lưu nháp'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: MobileTokens.touchTarget,
+                  child: FilledButton(
+                    onPressed: busy || !canEdit
+                        ? null
+                        : () => _submit(assignment),
+                    child: busy
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(isEditing ? 'Cập nhật bài' : 'Nộp bài'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildAssignmentBrief(AssignmentModel assignment) {
     final deadline = DateTime.tryParse(assignment.deadline ?? '');

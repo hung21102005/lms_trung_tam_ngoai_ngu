@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/utils/attachment_url.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -12,6 +13,7 @@ import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/linkified_text.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../bloc/assignments_bloc.dart';
 import '../bloc/assignments_event.dart';
 import '../bloc/assignments_state.dart';
@@ -162,6 +164,11 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   }
 
   Widget _buildContent(BuildContext context, AssignmentModel assignment) {
+    if (!widget.isTeacher &&
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+            AdaptiveSize.mobile) {
+      return _buildMobileStudentDetail(assignment);
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -327,6 +334,222 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildMobileStudentDetail(AssignmentModel assignment) {
+    final sub = assignment.mySubmission;
+    final deadline = DateTime.tryParse(assignment.deadline ?? '')?.toLocal();
+    final canEdit =
+        sub == null ||
+        sub.status == 'RETURNED' ||
+        sub.status == 'DRAFT' ||
+        (sub.status != 'GRADED' &&
+            sub.status != 'GRADED_PENDING' &&
+            (deadline == null || DateTime.now().isBefore(deadline)));
+    final status = sub == null
+        ? 'Chưa nộp'
+        : switch (sub.status) {
+            'DRAFT' => 'Bản nháp',
+            'RETURNED' => 'Cần làm lại',
+            'GRADED' => 'Đã chấm',
+            'GRADED_PENDING' => 'Chờ công bố',
+            'LATE' => 'Đã nộp muộn',
+            _ => 'Chờ giảng viên chấm',
+          };
+    final statusColor = sub?.status == 'GRADED'
+        ? AppColors.success
+        : sub?.status == 'RETURNED'
+        ? AppColors.error
+        : AppColors.primary;
+    return ListView(
+      key: const ValueKey('student-assignment-mobile-detail'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        Text(
+          assignment.className ?? 'Lớp học',
+          style: const TextStyle(color: AppColors.neutral600),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          assignment.title,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            MobileStatusPill(label: status, color: statusColor),
+            MobileStatusPill(
+              label: _getTypeName(assignment.type),
+              color: AppColors.secondary,
+            ),
+          ],
+        ),
+        const SizedBox(height: MobileTokens.sectionGap),
+        MobileSectionCard(
+          child: Row(
+            children: [
+              const Icon(Icons.event_outlined, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hạn nộp',
+                      style: TextStyle(
+                        color: AppColors.neutral600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      deadline == null
+                          ? 'Không giới hạn'
+                          : '${deadline.day}/${deadline.month}/${deadline.year} · ${deadline.hour.toString().padLeft(2, '0')}:${deadline.minute.toString().padLeft(2, '0')}',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${assignment.maxScore.toStringAsFixed(0)} điểm',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: MobileTokens.sectionGap),
+        const Text(
+          'Yêu cầu bài tập',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        MobileSectionCard(
+          child: LinkifiedText(
+            text: assignment.description?.isNotEmpty == true
+                ? assignment.description!
+                : 'Giảng viên chưa thêm hướng dẫn chi tiết.',
+          ),
+        ),
+        if (assignment.attachments.isNotEmpty) ...[
+          const SizedBox(height: MobileTokens.sectionGap),
+          const Text(
+            'Tài liệu hướng dẫn',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          MobileSectionCard(
+            child: Column(
+              children: [
+                for (final file in assignment.attachments)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.attach_file_rounded),
+                    title: Text(
+                      file.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.open_in_new_rounded),
+                    onTap: () => _openAttachment(file.url),
+                  ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: MobileTokens.sectionGap),
+        const Text(
+          'Bài làm của bạn',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        if (sub == null)
+          const MobileSectionCard(child: Text('Bạn chưa nộp bài tập này.'))
+        else
+          MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (sub.status == 'GRADED' && sub.score != null) ...[
+                  Text(
+                    '${sub.score!.toStringAsFixed(1)} / ${assignment.maxScore.toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (sub.status == 'GRADED' &&
+                    sub.feedback?.isNotEmpty == true) ...[
+                  const Text(
+                    'Nhận xét của giảng viên',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(sub.feedback!),
+                  const SizedBox(height: 12),
+                ],
+                if (sub.content?.isNotEmpty == true) ...[
+                  const Text(
+                    'Nội dung đã nộp',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(sub.content!),
+                ],
+                for (final file in sub.fileUrls)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.insert_drive_file_outlined),
+                    title: Text(
+                      file.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.open_in_new_rounded),
+                    onTap: () => _openAttachment(file.url),
+                  ),
+                if (sub.content?.isNotEmpty != true && sub.fileUrls.isEmpty)
+                  const Text('Bài làm chưa có nội dung hoặc tệp.'),
+              ],
+            ),
+          ),
+        if (canEdit) ...[
+          const SizedBox(height: 20),
+          SizedBox(
+            height: MobileTokens.touchTarget,
+            child: FilledButton.icon(
+              onPressed: () async {
+                final updated = await context.push<bool>(
+                  '/assignments/${assignment.id}/submit',
+                );
+                if (mounted && updated == true) {
+                  context.read<AssignmentsBloc>().add(
+                    LoadAssignmentDetailEvent(widget.assignmentId),
+                  );
+                }
+              },
+              icon: Icon(
+                sub == null ? Icons.edit_note_rounded : Icons.edit_rounded,
+              ),
+              label: Text(
+                sub == null
+                    ? 'Bắt đầu làm bài'
+                    : sub.status == 'DRAFT'
+                    ? 'Tiếp tục làm bài'
+                    : 'Sửa bài nộp',
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
