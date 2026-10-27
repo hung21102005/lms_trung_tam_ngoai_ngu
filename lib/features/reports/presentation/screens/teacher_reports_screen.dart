@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../classes/data/models/class_model.dart';
 import '../../../classes/domain/repositories/classes_repository.dart';
 import '../../data/models/report_model.dart';
@@ -128,6 +131,12 @@ class _TeacherReportsScreenState extends State<TeacherReportsScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             final (attendance, academic) = snapshot.data!;
+            if (AdaptiveBreakpoints.fromWidth(
+                  MediaQuery.sizeOf(context).width,
+                ) ==
+                AdaptiveSize.mobile) {
+              return _buildMobileReports(attendance, academic);
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -213,6 +222,161 @@ class _TeacherReportsScreenState extends State<TeacherReportsScreen> {
             Text(label, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 8),
             Text(value, style: Theme.of(context).textTheme.titleLarge),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildMobileReports(
+    AttendanceReportModel attendance,
+    AcademicReportModel academic,
+  ) => Column(
+    key: const ValueKey('teacher-reports-mobile'),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(MobileTokens.radius),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Chuyên cần', style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 4),
+            Text(
+              '${attendance.attendanceRate.toStringAsFixed(1)}%',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              '${attendance.presentCount}/${attendance.totalRecords} lượt có mặt',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 14),
+      SizedBox(
+        height: 110,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            _mobileMetric(
+              'Lượt thi',
+              '${academic.totalAttempts}',
+              Icons.quiz_outlined,
+            ),
+            _mobileMetric(
+              'Điểm trung bình',
+              academic.averageScore.toStringAsFixed(1),
+              Icons.grade_outlined,
+            ),
+            _mobileMetric(
+              'Tỷ lệ đạt',
+              '${academic.passRate.toStringAsFixed(1)}%',
+              Icons.trending_up_outlined,
+            ),
+            _mobileMetric(
+              'Lượt vắng',
+              '${attendance.absentCount}',
+              Icons.person_off_outlined,
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+      Text(
+        'Chuyên cần theo lớp',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      const SizedBox(height: 10),
+      if (attendance.byClass.isEmpty)
+        const MobileSectionCard(child: Text('Chưa có dữ liệu điểm danh.')),
+      for (final item in attendance.byClass)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${item.present}/${item.total} lượt có mặt · ${item.attendanceRate.toStringAsFixed(1)}%',
+                ),
+              ],
+            ),
+          ),
+        ),
+      const SizedBox(height: 20),
+      Text('Kết quả học tập', style: Theme.of(context).textTheme.titleLarge),
+      const SizedBox(height: 10),
+      if (academic.topStudents.isEmpty)
+        const MobileSectionCard(child: Text('Chưa có bài kiểm tra được chấm.')),
+      for (final item in academic.topStudents)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: MobileSectionCard(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.studentName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${item.studentCode} · ${item.examTitle}',
+                        style: const TextStyle(color: AppColors.neutral600),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  item.score.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+    ],
+  );
+
+  Widget _mobileMetric(String label, String value, IconData icon) => Padding(
+    padding: const EdgeInsets.only(right: 10),
+    child: SizedBox(
+      width: 145,
+      child: MobileSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),

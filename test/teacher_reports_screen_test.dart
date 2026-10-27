@@ -97,4 +97,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(reports.filters.last, 'class-1');
   });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('báo cáo giảng dạy ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: TeacherReportsScreen())),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('80.0%'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('teacher-reports-mobile')),
+        width < 600 ? findsOneWidget : findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

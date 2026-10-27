@@ -27,7 +27,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Student submission review, score and feedback (assignment detail) | C | P0 | Mobile view pending |
 | Student exams, take exam, results | B/C | P2 | Mobile exam list/taking and personal results implemented; real API/device QA pending |
 | Student invoices/payment, notifications | B/C | P2 | Mobile invoice list/detail and payment control layout plus shared notification list implemented; live payment/device QA pending |
-| Teacher home/dashboard, reports | B/C | P1 | Mobile live dashboard implemented; reports pending |
+| Teacher home/dashboard, reports | B/C | P1 | Mobile live dashboard and teaching reports implemented; device/API QA pending |
 | Teacher classes/list/detail/schedule | B/C | P1 | My classes list, shared class detail and schedule Mobile implemented; other class screens pending |
 | Teacher attendance and class workflow | B/C | P1 | Attendance roster/logbook Mobile implemented; other class workflows pending |
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Assignment workflow list and submission review Mobile implemented; create/edit/gradebook pending |
@@ -54,7 +54,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history and embedded Teacher attendance Mobile implemented; standalone marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Embedded workflow and review Mobile implemented; remaining screens pending |
-| Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard and embedded attendance Mobile implemented; reports pending |
+| Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard, embedded attendance and teaching reports Mobile implemented; legacy dashboard pending |
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
@@ -166,3 +166,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - The existing create/edit form already used one scrollable column and real repository/Bloc submit actions, so it was preserved. On Mobile, maximum score and deadline now stack vertically; Tablet/Desktop keep the prior side-by-side fields. File selection/upload and description link preview were not rewritten.
 - Form and upload/link tests: **9/9 pass** across 320, 375, 393, 430, 800 and 1200 px, including a simulated 300 px keyboard inset at 320 px. Existing edit workflow: **pass** (included in a prior 4/4 focused run). Scoped analyzer: **0 issues**; `flutter build web --no-wasm-dry-run`: **pass** (39.9 seconds).
 - Native file picker, upload against a running Backend and actual keyboard/device behavior remain **unverified**. Source audit found `teacher_gradebook_view.dart` still contains hardcoded student/score data; the current Teacher shell instead routes “Kết quả bài tập” to the API-backed `TeacherClassWorkflowView`. Do not treat the old gradebook view as verified or expose it as live data without replacing the mock source. Teacher reports/exams and Parent/Admin phases remain pending.
+
+### Checkpoint 2026-10-28 — Teacher teaching reports Mobile
+
+- Added a dedicated Mobile reports layout with a prominent attendance summary, horizontal academic metrics, class attendance cards and graded student cards. The existing `ReportsRepository` attendance/academic calls and class filter supply both layouts; Desktop retains its existing report content.
+- Existing class-filter test plus six width tests: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px. Scoped analyzer: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass** (40.5 seconds).
+- Report values against a running Backend, physical device presentation and Desktop screenshot comparison remain **unverified**. Teacher exam management/secondary views and Parent/Admin phases remain pending.
