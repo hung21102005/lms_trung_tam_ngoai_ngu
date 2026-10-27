@@ -42,6 +42,7 @@ import '../../features/exams/presentation/bloc/exams_bloc.dart';
 import '../../features/exams/presentation/screens/exam_list_screen.dart';
 import '../../features/exams/presentation/screens/take_exam_screen.dart';
 import '../../features/exams/presentation/screens/exam_result_screen.dart';
+import '../../features/exams/presentation/screens/my_exam_results_screen.dart';
 import '../../features/exams/presentation/screens/create_exam_screen.dart';
 import '../../features/exams/presentation/screens/question_bank_list_screen.dart';
 import '../../features/notifications/presentation/bloc/notification_bloc.dart';
@@ -300,9 +301,16 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.exams,
       builder: (context, state) {
         final classId = state.extra as String?;
+        final authState = context.read<AuthBloc>().state;
+        final user = authState is AuthenticatedState ? authState.user : null;
+        final canManageExams =
+            user?.isTeacher == true ||
+            user?.isAcademicStaff == true ||
+            user?.isBranchAdmin == true ||
+            user?.isSuperAdmin == true;
         return BlocProvider<ExamsBloc>(
           create: (_) => getIt<ExamsBloc>(),
-          child: ExamListScreen(classId: classId),
+          child: ExamListScreen(classId: classId, isTeacher: canManageExams),
         );
       },
     ),
@@ -335,6 +343,13 @@ final GoRouter appRouter = GoRouter(
           child: ExamResultScreen(examId: id),
         );
       },
+    ),
+    GoRoute(
+      path: RouteNames.myExamResults,
+      builder: (context, state) => BlocProvider<ExamsBloc>(
+        create: (_) => getIt<ExamsBloc>(),
+        child: const MyExamResultsScreen(),
+      ),
     ),
     GoRoute(
       path: RouteNames.questionBanks,

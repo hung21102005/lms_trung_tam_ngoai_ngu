@@ -21,11 +21,11 @@ class QuestionOptionModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'text': text,
-        'audioUrl': audioUrl,
-        'imageUrl': imageUrl,
-      };
+    'id': id,
+    'text': text,
+    'audioUrl': audioUrl,
+    'imageUrl': imageUrl,
+  };
 }
 
 class QuestionModel {
@@ -71,7 +71,9 @@ class QuestionModel {
       options: opts,
       correctAnswers: json['correctAnswers'],
       explanation: json['explanation'] as String?,
-      points: (json['points'] != null) ? (json['points'] as num).toDouble() : 1.0,
+      points: (json['points'] != null)
+          ? (json['points'] as num).toDouble()
+          : 1.0,
     );
   }
 }
@@ -145,8 +147,12 @@ class ExamQuestionModel {
       examId: json['examId'] as String? ?? '',
       questionId: json['questionId'] as String? ?? '',
       orderIndex: json['orderIndex'] as int? ?? 0,
-      points: (json['points'] != null) ? (json['points'] as num).toDouble() : 1.0,
-      question: QuestionModel.fromJson(json['question'] as Map<String, dynamic>? ?? json),
+      points: (json['points'] != null)
+          ? (json['points'] as num).toDouble()
+          : 1.0,
+      question: QuestionModel.fromJson(
+        json['question'] as Map<String, dynamic>? ?? json,
+      ),
     );
   }
 }
@@ -185,7 +191,9 @@ class ExamAnswerModel {
       teacherFeedback: json['teacherFeedback'] as String?,
       gradedAt: json['gradedAt'] as String?,
       examQuestion: json['examQuestion'] != null
-          ? ExamQuestionModel.fromJson(json['examQuestion'] as Map<String, dynamic>)
+          ? ExamQuestionModel.fromJson(
+              json['examQuestion'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -194,6 +202,8 @@ class ExamAnswerModel {
 class ExamAttemptModel {
   final String id;
   final String examId;
+  final String? examTitle;
+  final String? className;
   final String studentId;
   final String? studentName;
   final String? studentCode;
@@ -210,6 +220,8 @@ class ExamAttemptModel {
   const ExamAttemptModel({
     required this.id,
     required this.examId,
+    this.examTitle,
+    this.className,
     required this.studentId,
     this.studentName,
     this.studentCode,
@@ -244,6 +256,10 @@ class ExamAttemptModel {
     return ExamAttemptModel(
       id: json['id'] as String? ?? '',
       examId: json['examId'] as String? ?? '',
+      examTitle: json['exam'] is Map ? json['exam']['title'] as String? : null,
+      className: json['exam'] is Map && json['exam']['class'] is Map
+          ? json['exam']['class']['name'] as String?
+          : null,
       studentId: json['studentId'] as String? ?? '',
       studentName: sName,
       studentCode: sCode,
@@ -252,7 +268,9 @@ class ExamAttemptModel {
       startedAt: json['startedAt'] as String? ?? '',
       submittedAt: json['submittedAt'] as String?,
       score: json['score'] != null ? (json['score'] as num).toDouble() : null,
-      maxScore: (json['maxScore'] != null) ? (json['maxScore'] as num).toDouble() : 10.0,
+      maxScore: (json['maxScore'] != null)
+          ? (json['maxScore'] as num).toDouble()
+          : 10.0,
       isPassed: json['isPassed'] as bool?,
       status: json['status'] as String? ?? 'IN_PROGRESS',
       answers: ans,
@@ -328,7 +346,9 @@ class ExamModel {
 
     ExamAttemptModel? latest;
     if (json['latestAttempt'] is Map) {
-      latest = ExamAttemptModel.fromJson(json['latestAttempt'] as Map<String, dynamic>);
+      latest = ExamAttemptModel.fromJson(
+        json['latestAttempt'] as Map<String, dynamic>,
+      );
     }
 
     return ExamModel(
@@ -339,10 +359,12 @@ class ExamModel {
       className: cName,
       classCode: cCode,
       durationMinutes: json['durationMinutes'] as int? ?? 45,
-      passPercentage:
-          json['passPercentage'] != null ? (json['passPercentage'] as num).toDouble() : 50.0,
-      totalPoints:
-          json['totalPoints'] != null ? (json['totalPoints'] as num).toDouble() : 10.0,
+      passPercentage: json['passPercentage'] != null
+          ? (json['passPercentage'] as num).toDouble()
+          : 50.0,
+      totalPoints: json['totalPoints'] != null
+          ? (json['totalPoints'] as num).toDouble()
+          : 10.0,
       shuffleQuestions: json['shuffleQuestions'] as bool? ?? false,
       maxAttempts: json['maxAttempts'] as int? ?? 1,
       status: json['status'] as String? ?? 'DRAFT',
@@ -377,9 +399,12 @@ class ExamResultsSummaryModel {
       totalAttempts: json['totalAttempts'] as int? ?? 0,
       gradedCount: json['gradedCount'] as int? ?? 0,
       passedCount: json['passedCount'] as int? ?? 0,
-      passRate: (json['passRate'] != null) ? (json['passRate'] as num).toDouble() : 0.0,
-      averageScore:
-          (json['averageScore'] != null) ? (json['averageScore'] as num).toDouble() : 0.0,
+      passRate: (json['passRate'] != null)
+          ? (json['passRate'] as num).toDouble()
+          : 0.0,
+      averageScore: (json['averageScore'] != null)
+          ? (json['averageScore'] as num).toDouble()
+          : 0.0,
     );
   }
 }
@@ -402,7 +427,9 @@ class ExamResultsResponseModel {
 
     return ExamResultsResponseModel(
       exam: ExamModel.fromJson(json['exam'] as Map<String, dynamic>),
-      summary: ExamResultsSummaryModel.fromJson(json['summary'] as Map<String, dynamic>),
+      summary: ExamResultsSummaryModel.fromJson(
+        json['summary'] as Map<String, dynamic>,
+      ),
       attempts: attemptsList,
     );
   }

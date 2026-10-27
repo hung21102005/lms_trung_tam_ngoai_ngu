@@ -1,12 +1,17 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/adaptive/adaptive_layout.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../bloc/exams_bloc.dart';
 import '../bloc/exams_event.dart';
 import '../bloc/exams_state.dart';
@@ -50,10 +55,9 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
           .map((e) => {'examQuestionId': e.key, 'studentAnswer': e.value})
           .toList();
 
-      context.read<ExamsBloc>().add(SaveExamAnswersEvent(
-            attemptId: state.attempt.id,
-            answers: answersList,
-          ));
+      context.read<ExamsBloc>().add(
+        SaveExamAnswersEvent(attemptId: state.attempt.id, answers: answersList),
+      );
     });
   }
 
@@ -90,7 +94,10 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
     context.read<ExamsBloc>().add(SubmitExamEvent(widget.examId));
   }
 
-  void _showQuestionGridSheet(List<ExamQuestionModel> questions, Map<String, dynamic> answers) {
+  void _showQuestionGridSheet(
+    List<ExamQuestionModel> questions,
+    Map<String, dynamic> answers,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -106,7 +113,13 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Danh sách câu hỏi (${questions.length})', style: AppTextStyles.h4(context)),
+                  Expanded(
+                    child: Text(
+                      'Danh sách câu hỏi (${questions.length})',
+                      maxLines: 2,
+                      style: AppTextStyles.h4(context),
+                    ),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(ctx),
@@ -114,12 +127,12 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
                 children: [
                   _buildLegend(AppColors.primary, 'Đã làm'),
-                  const SizedBox(width: 16),
                   _buildLegend(AppColors.warning, 'Cần xem lại'),
-                  const SizedBox(width: 16),
                   _buildLegend(AppColors.neutral300, 'Chưa làm'),
                 ],
               ),
@@ -159,7 +172,12 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                         decoration: BoxDecoration(
                           color: bg,
                           borderRadius: BorderRadius.circular(8),
-                          border: isCurrent ? Border.all(color: AppColors.neutral900, width: 2) : null,
+                          border: isCurrent
+                              ? Border.all(
+                                  color: AppColors.neutral900,
+                                  width: 2,
+                                )
+                              : null,
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -208,14 +226,16 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
       child: BlocConsumer<ExamsBloc, ExamsState>(
         listener: (context, state) {
           if (state is ExamSubmittedState) {
-            context.pushReplacement('/exams/${widget.examId}/results');
+            context.pushReplacement(RouteNames.myExamResults);
           }
         },
         builder: (context, state) {
           if (state is ExamsLoadingState) {
             return const Scaffold(
               body: Center(
-                child: LoadingWidget(message: 'Đang tải đề thi & chuẩn bị phòng thi...'),
+                child: LoadingWidget(
+                  message: 'Đang tải đề thi & chuẩn bị phòng thi...',
+                ),
               ),
             );
           }
@@ -225,7 +245,9 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
               appBar: AppBar(title: const Text('Phòng Thi Trực Tuyến')),
               body: AppErrorWidget(
                 message: state.message,
-                onRetry: () => context.read<ExamsBloc>().add(StartExamEvent(widget.examId)),
+                onRetry: () => context.read<ExamsBloc>().add(
+                  StartExamEvent(widget.examId),
+                ),
               ),
             );
           }
@@ -243,8 +265,25 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
 
             final currentQuestionModel = questions[_currentIndex];
             final currentAnswer = state.currentAnswers[currentQuestionModel.id];
-            final isFlagged = _flaggedQuestionIds.contains(currentQuestionModel.id);
-            final startedAtDate = DateTime.tryParse(state.attempt.startedAt) ?? DateTime.now();
+            final isFlagged = _flaggedQuestionIds.contains(
+              currentQuestionModel.id,
+            );
+            final startedAtDate =
+                DateTime.tryParse(state.attempt.startedAt) ?? DateTime.now();
+
+            if (AdaptiveBreakpoints.fromWidth(
+                  MediaQuery.sizeOf(context).width,
+                ) ==
+                AdaptiveSize.mobile) {
+              return _buildMobileExam(
+                state,
+                questions,
+                currentQuestionModel,
+                currentAnswer,
+                isFlagged,
+                startedAtDate,
+              );
+            }
 
             return Scaffold(
               appBar: AppBar(
@@ -253,10 +292,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                   tooltip: 'Nộp bài thi',
                   onPressed: _confirmSubmit,
                 ),
-                title: Text(
-                  exam.title,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                title: Text(exam.title, style: const TextStyle(fontSize: 16)),
                 actions: [
                   Center(
                     child: CountdownTimerWidget(
@@ -269,7 +305,8 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                   IconButton(
                     icon: const Icon(Icons.grid_view_rounded),
                     tooltip: 'Danh sách câu hỏi',
-                    onPressed: () => _showQuestionGridSheet(questions, state.currentAnswers),
+                    onPressed: () =>
+                        _showQuestionGridSheet(questions, state.currentAnswers),
                   ),
                 ],
               ),
@@ -279,46 +316,66 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                   LinearProgressIndicator(
                     value: (_currentIndex + 1) / questions.length,
                     backgroundColor: AppColors.neutral200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
 
                   // Header question bar
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     color: Theme.of(context).cardColor,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'Câu ${_currentIndex + 1} / ${questions.length}',
-                          style: AppTextStyles.h4(context).copyWith(color: AppColors.primary),
+                          style: AppTextStyles.h4(context)
+                              .copyWith(color: AppColors.primary),
                         ),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.neutral100,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 '${currentQuestionModel.points.toStringAsFixed(1)} điểm',
-                                style: AppTextStyles.caption(context).copyWith(fontWeight: FontWeight.bold),
+                                style: AppTextStyles.caption(context)
+                                    .copyWith(fontWeight: FontWeight.bold),
                               ),
                             ),
                             const SizedBox(width: 10),
                             IconButton(
                               icon: Icon(
-                                isFlagged ? Icons.bookmark : Icons.bookmark_border,
-                                color: isFlagged ? AppColors.warning : AppColors.neutral500,
+                                isFlagged
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: isFlagged
+                                    ? AppColors.warning
+                                    : AppColors.neutral500,
                               ),
-                              tooltip: isFlagged ? 'Bỏ đánh dấu' : 'Đánh dấu cần xem lại',
+                              tooltip: isFlagged
+                                  ? 'Bỏ đánh dấu'
+                                  : 'Đánh dấu cần xem lại',
                               onPressed: () {
                                 setState(() {
                                   if (isFlagged) {
-                                    _flaggedQuestionIds.remove(currentQuestionModel.id);
+                                    _flaggedQuestionIds.remove(
+                                      currentQuestionModel.id,
+                                    );
                                   } else {
-                                    _flaggedQuestionIds.add(currentQuestionModel.id);
+                                    _flaggedQuestionIds.add(
+                                      currentQuestionModel.id,
+                                    );
                                   }
                                 });
                               },
@@ -338,10 +395,12 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                           currentQuestionModel.question,
                           currentAnswer,
                           (newAns) {
-                            context.read<ExamsBloc>().add(UpdateStudentAnswerEvent(
-                                  examQuestionId: currentQuestionModel.id,
-                                  answer: newAns,
-                                ));
+                            context.read<ExamsBloc>().add(
+                              UpdateStudentAnswerEvent(
+                                examQuestionId: currentQuestionModel.id,
+                                answer: newAns,
+                              ),
+                            );
                             _scheduleAutoSave(state);
                           },
                         ),
@@ -378,10 +437,18 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                               SizedBox(
                                 width: 12,
                                 height: 12,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                               SizedBox(width: 6),
-                              Text('Đang lưu...', style: TextStyle(fontSize: 12, color: AppColors.neutral500)),
+                              Text(
+                                'Đang lưu...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.neutral500,
+                                ),
+                              ),
                             ],
                           ),
                         if (_currentIndex < questions.length - 1)
@@ -414,6 +481,164 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
 
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildMobileExam(
+    ExamInProgressState state,
+    List<ExamQuestionModel> questions,
+    ExamQuestionModel currentQuestion,
+    dynamic currentAnswer,
+    bool isFlagged,
+    DateTime startedAt,
+  ) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Làm bài kiểm tra'),
+        leading: IconButton(
+          onPressed: _confirmSubmit,
+          tooltip: 'Nộp bài thi',
+          icon: const Icon(Icons.close),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.grid_view_rounded),
+            tooltip: 'Danh sách câu hỏi',
+            onPressed: () =>
+                _showQuestionGridSheet(questions, state.currentAnswers),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          key: const ValueKey('take-exam-mobile'),
+          children: [
+            LinearProgressIndicator(
+              value: (_currentIndex + 1) / questions.length,
+              minHeight: 5,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Câu ${_currentIndex + 1}/${questions.length}',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  CountdownTimerWidget(
+                    startedAt: startedAt,
+                    durationMinutes: state.exam.durationMinutes,
+                    onTimeExpired: _submit,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                children: [
+                  MobileSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '${currentQuestion.points.toStringAsFixed(1)} điểm',
+                              style: const TextStyle(
+                                color: AppColors.neutral600,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () => setState(() {
+                                if (isFlagged) {
+                                  _flaggedQuestionIds.remove(
+                                    currentQuestion.id,
+                                  );
+                                } else {
+                                  _flaggedQuestionIds.add(currentQuestion.id);
+                                }
+                              }),
+                              tooltip: isFlagged
+                                  ? 'Bỏ đánh dấu'
+                                  : 'Đánh dấu cần xem lại',
+                              icon: Icon(
+                                isFlagged
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildQuestionRenderer(
+                          currentQuestion.question,
+                          currentAnswer,
+                          (answer) {
+                            context.read<ExamsBloc>().add(
+                              UpdateStudentAnswerEvent(
+                                examQuestionId: currentQuestion.id,
+                                answer: answer,
+                              ),
+                            );
+                            _scheduleAutoSave(state);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (state.isSaving)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Đang lưu câu trả lời...',
+                  style: TextStyle(color: AppColors.neutral600),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _currentIndex > 0
+                          ? () => setState(() => _currentIndex--)
+                          : null,
+                      child: const FittedBox(child: Text('Câu trước')),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _currentIndex < questions.length - 1
+                          ? () => setState(() => _currentIndex++)
+                          : _confirmSubmit,
+                      child: FittedBox(
+                        child: Text(
+                          _currentIndex < questions.length - 1
+                              ? 'Câu tiếp'
+                              : 'Nộp bài thi',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

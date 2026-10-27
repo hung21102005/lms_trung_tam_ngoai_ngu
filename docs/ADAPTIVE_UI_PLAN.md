@@ -25,7 +25,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Student assignment detail (`/assignments/:id`) | C | P0 | Mobile view pending |
 | Student work, voice/text/file, draft and submit (`/assignments/:id/submit`) | C | P0 | Mobile view pending |
 | Student submission review, score and feedback (assignment detail) | C | P0 | Mobile view pending |
-| Student exams, take exam, results | B/C | P2 | Gradebook now reads published assignment/exam results; exam UI pending |
+| Student exams, take exam, results | B/C | P2 | Mobile exam list/taking and personal results implemented; real API/device QA pending |
 | Student invoices/payment, notifications | B/C | P2 | Mobile invoice list/detail and payment control layout plus shared notification list implemented; live payment/device QA pending |
 | Teacher home/dashboard, reports | B/C | P1 | Audit only |
 | Teacher classes/list/detail/schedule | B/C | P1 | Audit only |
@@ -56,7 +56,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Pending |
 | Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Pending |
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
-| Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen` | B/C | Pending |
+| Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
 | Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Pending |
 | Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | C | Pending |
@@ -132,3 +132,11 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Widget tests with repository fakes: **12/12 pass** across 320, 375, 393, 430, tablet 800 and Desktop 1200. Tests cover student action visibility, payment history, and switching to VNPay. Scoped analyzer: **0 issues**.
 - **Payment integration remains unverified.** The existing VietQR branch contains a hardcoded bank/account in `pay_online_screen.dart`; no backend-managed bank account was found during this source check. Do not use the displayed QR for real money transfers until the account details are verified and moved to trusted configuration. VNPay gateway return/callback and real payment state were not exercised because the Backend was not running.
 - `flutter build web`: **pass** (275 seconds). Combined focused Student Adaptive regression: **98/98 pass**. Real payment, native device rendering and API persistence remain **unverified**.
+
+### Checkpoint 2026-10-28 — Student exams and personal results
+
+- Added dedicated Mobile exam list and exam-taking layouts. The Mobile exam flow uses the existing `ExamsBloc`, question widgets, timer, autosave and submit actions. The list hides draft exams from students and keeps teacher controls role-aware. The Desktop exam list and taking layout remain on their existing branches.
+- Fixed a broken student result route: the old student “Xem lại bài làm” action and post-submit redirect opened the all-student results API, which is restricted to staff/teachers. Students now open a registered `/my-exam-results` route using the existing personal-results API. The new screen shows only each student's attempts, grades when available, and pending state. The label is “Xem kết quả” because that API does not provide a full answer review.
+- Fixed 320 px overflow in the essay question header and question-grid bottom-sheet title. Mobile tests exercise answer selection, moving to an essay, entering text with a simulated 300 px keyboard inset, and opening the question grid.
+- Focused widget tests: **18/18 pass** across 320, 375, 393, 430, tablet 800 and Desktop 1200, including the bottom-sheet assertion; focused analyzer: **0 issues**. Combined Student Adaptive regression: **116/116 pass**. `flutter build web --no-wasm-dry-run`: **pass** (184.8 seconds).
+- Real countdown expiry, autosave persistence, exam submission, grading publication and device keyboard behavior against a running Backend remain **unverified**. Teacher exam management/results and role-specific device QA remain pending.

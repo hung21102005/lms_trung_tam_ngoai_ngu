@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -68,14 +69,15 @@ class _EssayQuestionWidgetState extends State<EssayQuestionWidget> {
         ),
         const SizedBox(height: 16),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          alignment: WrapAlignment.spaceBetween,
           children: [
             Text(
               'Bài làm tự luận:',
-              style: AppTextStyles.bodyMedium(context).copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.bodyMedium(context)
+                  .copyWith(fontWeight: FontWeight.w600),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
