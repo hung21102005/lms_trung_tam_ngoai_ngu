@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../assignments/data/models/assignment_model.dart';
@@ -46,6 +47,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
   String? _selectedClassId;
   String? _selectedSessionId;
   int _filter = 0;
+  int _mobileSection = 0;
   bool _loading = true;
   bool _savingAttendance = false;
   bool _savingLogbook = false;
@@ -437,6 +439,10 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
 
   @override
   Widget build(BuildContext context) {
+    if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile) {
+      return _buildMobile(context);
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
       body: RefreshIndicator(
@@ -504,7 +510,72 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
     );
   }
 
+  Widget _buildMobile(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFFF8F9FF),
+    body: RefreshIndicator(
+      onRefresh: _loadClasses,
+      child: ListView(
+        key: const ValueKey('teacher-attendance-mobile'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          Text(
+            'Điểm danh buổi học',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 12),
+          _buildSelectors(),
+          const SizedBox(height: 14),
+          if (_loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(48),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_error != null)
+            _buildError()
+          else if (_classes.isEmpty)
+            _empty('Chưa có lớp học để điểm danh.')
+          else if (_sessions.isEmpty)
+            _empty('Lớp này chưa có buổi học trong thời khóa biểu.')
+          else if (_attendance != null) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _buildSummary(),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Học viên'),
+                    selected: _mobileSection == 0,
+                    onSelected: (_) => setState(() => _mobileSection = 0),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Sổ đầu bài'),
+                    selected: _mobileSection == 1,
+                    onSelected: (_) => setState(() => _mobileSection = 1),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_mobileSection == 0) _buildRoster() else _buildLogbook(),
+          ],
+        ],
+      ),
+    ),
+  );
+
   Widget _buildSelectors() {
+    final mobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
     return _card(
       child: Column(
         children: [
@@ -513,7 +584,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
             runSpacing: 12,
             children: [
               SizedBox(
-                width: 360,
+                width: mobile ? MediaQuery.sizeOf(context).width - 64 : 360,
                 child: DropdownButtonFormField<String>(
                   isExpanded: true,
                   initialValue: _selectedClassId,
@@ -542,7 +613,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                 ),
               ),
               SizedBox(
-                width: 390,
+                width: mobile ? MediaQuery.sizeOf(context).width - 64 : 390,
                 child: DropdownButtonFormField<String>(
                   isExpanded: true,
                   initialValue:
@@ -587,9 +658,16 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                     '${_attendance!.startTime} - ${_attendance!.endTime}',
                   ),
                 ),
-                _statusBadge(_attendance!.status),
+                if (!mobile) _statusBadge(_attendance!.status),
               ],
             ),
+            if (mobile) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _statusBadge(_attendance!.status),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
@@ -659,6 +737,9 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
   }
 
   Widget _buildRoster() {
+    final mobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
     final students = _attendance!.students.where((student) {
       if (_filter == 1) return student.status == 'PRESENT';
       if (_filter == 2) return student.status == 'LATE';
@@ -673,28 +754,38 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Danh sách điểm danh',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            child: mobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Danh sách điểm danh',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: _rosterFilter(),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Danh sách điểm danh',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      _rosterFilter(),
+                    ],
                   ),
-                ),
-                SegmentedButton<int>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(value: 0, label: Text('Tất cả')),
-                    ButtonSegment(value: 1, label: Text('Có mặt')),
-                    ButtonSegment(value: 2, label: Text('Đi trễ')),
-                    ButtonSegment(value: 3, label: Text('Vắng')),
-                  ],
-                  selected: {_filter},
-                  onSelectionChanged: (value) =>
-                      setState(() => _filter = value.first),
-                ),
-              ],
-            ),
           ),
           const Divider(height: 1),
           if (students.isEmpty)
@@ -708,6 +799,18 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
       ),
     );
   }
+
+  Widget _rosterFilter() => SegmentedButton<int>(
+    showSelectedIcon: false,
+    segments: const [
+      ButtonSegment(value: 0, label: Text('Tất cả')),
+      ButtonSegment(value: 1, label: Text('Có mặt')),
+      ButtonSegment(value: 2, label: Text('Đi trễ')),
+      ButtonSegment(value: 3, label: Text('Vắng')),
+    ],
+    selected: {_filter},
+    onSelectionChanged: (value) => setState(() => _filter = value.first),
+  );
 
   Widget _studentRow(StudentAttendanceItemModel student) {
     return Container(
@@ -799,27 +902,51 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
   }
 
   Widget _buildLogbook() {
+    final mobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
     return _card(
       padding: EdgeInsets.zero,
       child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Sổ đầu bài & Nhật ký giảng dạy',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            child: mobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Sổ đầu bài & Nhật ký giảng dạy',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (_reportSubmitted)
+                        const Chip(
+                          label: Text('Đã gửi học vụ'),
+                          avatar: Icon(Icons.verified, size: 16),
+                        ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Sổ đầu bài & Nhật ký giảng dạy',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (_reportSubmitted)
+                        const Chip(
+                          label: Text('Đã gửi học vụ'),
+                          avatar: Icon(Icons.verified, size: 16),
+                        ),
+                    ],
                   ),
-                ),
-                if (_reportSubmitted)
-                  const Chip(
-                    label: Text('Đã gửi học vụ'),
-                    avatar: Icon(Icons.verified, size: 16),
-                  ),
-              ],
-            ),
           ),
           const Divider(height: 1),
           Padding(

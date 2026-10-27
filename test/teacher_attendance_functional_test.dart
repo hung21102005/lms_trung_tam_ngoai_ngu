@@ -233,4 +233,45 @@ void main() {
     expect(classes.savedNotes, contains('Lớp học tập trung'));
     expect(find.text('Đã lưu nháp sổ đầu bài.'), findsOneWidget);
   });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('teacher attendance layout ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final attendance = _AttendanceFake();
+      final classes = _ClassesFake(attendance);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TeacherAttendanceView(
+            classesRepository: classes,
+            attendanceRepository: attendance,
+            assignmentsRepository: _AssignmentsFake(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Nguyễn Minh Anh'), findsOneWidget);
+      if (width < 600) {
+        expect(
+          find.byKey(const ValueKey('teacher-attendance-mobile')),
+          findsOneWidget,
+        );
+        await tester.ensureVisible(find.text('Sổ đầu bài'));
+        await tester.tap(find.text('Sổ đầu bài'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('1. Nội dung kiến thức đã giảng dạy *'),
+          findsOneWidget,
+        );
+      } else {
+        expect(
+          find.byKey(const ValueKey('teacher-attendance-mobile')),
+          findsNothing,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

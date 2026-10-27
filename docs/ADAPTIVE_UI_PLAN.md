@@ -29,7 +29,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Student invoices/payment, notifications | B/C | P2 | Mobile invoice list/detail and payment control layout plus shared notification list implemented; live payment/device QA pending |
 | Teacher home/dashboard, reports | B/C | P1 | Mobile live dashboard implemented; reports pending |
 | Teacher classes/list/detail/schedule | B/C | P1 | My classes list, shared class detail and schedule Mobile implemented; other class screens pending |
-| Teacher attendance and class workflow | B/C | P1 | Audit only |
+| Teacher attendance and class workflow | B/C | P1 | Attendance roster/logbook Mobile implemented; other class workflows pending |
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Audit only |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Audit only; embedded home tabs require screen-by-screen audit |
@@ -51,10 +51,10 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
 | Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule/class detail and Teacher my-classes list implemented; management screens pending |
-| Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history Mobile implemented; teacher marking pending |
+| Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history and embedded Teacher attendance Mobile implemented; standalone marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Pending |
-| Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard Mobile implemented; attendance/reports pending |
+| Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard and embedded attendance Mobile implemented; reports pending |
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
@@ -147,3 +147,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - “Lớp học của tôi” now has a separate Mobile summary, search, horizontal status filters and touch-sized class cards/actions. It reuses `ClassesRepository.getMyClasses()` and the existing detail/assignment routes. Desktop retains its previous list.
 - Widget tests for these two screens: **12/12 pass** at 320, 375, 393, 430, 800 and 1200 px. Tests cover a populated dashboard, class status filter and no reported widget exceptions. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass** (179.2 seconds). `git diff --check`: **pass**.
 - Real API/session navigation, physical Android/Mobile Web visuals, screen-reader semantics and Desktop screenshot comparison remain **unverified**. Teacher attendance, assignments/grading, reports and exam management remain pending. Next priority: Teacher attendance Mobile, including roster controls and logbook forms.
+
+### Checkpoint 2026-10-28 — Teacher attendance Mobile
+
+- The embedded Teacher attendance view now has a Mobile screen with class/session selectors sized to the phone, horizontally scrollable summary and roster filters, and separate Học viên / Sổ đầu bài sections. The same attendance statuses, mark-all, save-and-lock, notes, attachment and logbook methods serve both layouts. Desktop retains its prior two-column arrangement.
+- Existing functional test still verifies marking all present, locking attendance and saving the logbook through repository fakes. Added responsive coverage at 320, 375, 393, 430, 800 and 1200 px, including opening the Mobile logbook. **8/8 tests pass** in the focused attendance file. Scoped analyzer: **0 issues**; `git diff --check`: **pass**; `flutter build web --no-wasm-dry-run`: **pass** (69.8 seconds).
+- Physical device interaction, real file picker/upload, API persistence and visual screenshots remain **unverified**. Standalone attendance-mark route and other Teacher class workflows are not covered by this checkpoint. Next priority: Teacher assignment/grading Mobile screens.
