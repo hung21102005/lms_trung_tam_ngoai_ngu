@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
+import '../../../auth/domain/entities/user_entity.dart';
+import '../../../classes/data/models/class_model.dart';
 import '../../../classes/domain/repositories/classes_repository.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -24,6 +29,11 @@ class ParentHomeScreen extends StatelessWidget {
       },
       builder: (context, state) {
         final user = state is AuthenticatedState ? state.user : null;
+
+        if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+            AdaptiveSize.mobile) {
+          return _ParentMobileHome(user: user);
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -236,4 +246,206 @@ class ParentHomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ParentMobileHome extends StatefulWidget {
+  const _ParentMobileHome({required this.user});
+
+  final UserEntity? user;
+
+  @override
+  State<_ParentMobileHome> createState() => _ParentMobileHomeState();
+}
+
+class _ParentMobileHomeState extends State<_ParentMobileHome> {
+  late Future<List<ClassModel>> _classes;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() => _classes = getIt<ClassesRepository>().getMyClasses();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Góc Phụ Huynh'),
+      actions: [
+        IconButton(
+          tooltip: 'Thông báo',
+          onPressed: () => context.push(RouteNames.notifications),
+          icon: const Icon(Icons.notifications_outlined),
+        ),
+        IconButton(
+          tooltip: 'Hồ sơ cá nhân',
+          onPressed: () => context.push(RouteNames.profile),
+          icon: const Icon(Icons.person_outline),
+        ),
+      ],
+    ),
+    backgroundColor: const Color(0xFFF8FAFC),
+    body: FutureBuilder<List<ClassModel>>(
+      future: _classes,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData && !snapshot.hasError) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Không tải được thông tin con em.'),
+                TextButton(
+                  onPressed: () => setState(_reload),
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          );
+        }
+        final children = <String, String>{};
+        final classesByChild = <String, List<ClassModel>>{};
+        for (final studyClass in snapshot.data!) {
+          for (final student in studyClass.students) {
+            if (student.status != 'ENROLLED' || student.studentId.isEmpty) {
+              continue;
+            }
+            children[student.studentId] =
+                student.studentName ?? student.studentCode ?? 'Học viên';
+            classesByChild
+                .putIfAbsent(student.studentId, () => [])
+                .add(studyClass);
+          }
+        }
+        return RefreshIndicator(
+          onRefresh: () async {
+            setState(_reload);
+            await _classes;
+          },
+          child: ListView(
+            key: const ValueKey('parent-home-mobile'),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+            children: [
+              Text(
+                'Xin chào, ${widget.user?.fullName ?? 'Phụ huynh'}',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Theo dõi việc học của con tại EduLMS.',
+                style: TextStyle(color: AppColors.neutral600),
+              ),
+              const SizedBox(height: 18),
+              MobileSectionCard(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.family_restroom_outlined,
+                      color: AppColors.primary,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${children.length} con được liên kết',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          Text(
+                            '${snapshot.data!.length} lớp đang theo dõi',
+                            style: const TextStyle(color: AppColors.neutral600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => context.push(RouteNames.schedule),
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: const Text('Xem lịch học của con'),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Con em của tôi',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 10),
+              if (children.isEmpty)
+                const MobileSectionCard(
+                  child: Text('Chưa có học viên được liên kết trong lớp học.'),
+                ),
+              for (final child in children.entries)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: MobileSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              child: Text(
+                                child.value.isEmpty
+                                    ? '?'
+                                    : child.value[0].toUpperCase(),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                child.value,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        for (final studyClass
+                            in classesByChild[child.key] ?? [])
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '• ${studyClass.name}',
+                              style: const TextStyle(
+                                color: AppColors.neutral600,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => context.push(
+                            RouteNames.myAttendance,
+                            extra: child.key,
+                          ),
+                          icon: const Icon(Icons.fact_check_outlined),
+                          label: const Text('Xem chuyên cần'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () =>
+                    context.read<AuthBloc>().add(LogoutRequestedEvent()),
+                icon: const Icon(Icons.logout_outlined),
+                label: const Text('Đăng xuất'),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
 }

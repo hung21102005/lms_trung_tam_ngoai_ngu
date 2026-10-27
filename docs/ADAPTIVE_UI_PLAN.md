@@ -32,7 +32,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher attendance and class workflow | B/C | P1 | Attendance roster/logbook Mobile implemented; other class workflows pending |
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Assignment workflow list and submission review Mobile implemented; create/edit/gradebook pending |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
-| Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Audit only; embedded home tabs require screen-by-screen audit |
+| Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
 | Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Audit only |
 | Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Audit only |
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
@@ -46,7 +46,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Feature | Screens / views (filenames without `.dart`) | Type | State |
 | --- | --- | --- | --- |
 | Authentication | `splash_screen`, `login_screen`, `forgot_password_screen`, `first_login_screen` | B | Pending |
-| Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Student/Teacher breakpoint aligned; Parent/Admin pending |
+| Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Student/Teacher breakpoint aligned; Parent Mobile home implemented; Admin pending |
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
@@ -172,3 +172,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Added a dedicated Mobile reports layout with a prominent attendance summary, horizontal academic metrics, class attendance cards and graded student cards. The existing `ReportsRepository` attendance/academic calls and class filter supply both layouts; Desktop retains its existing report content.
 - Existing class-filter test plus six width tests: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px. Scoped analyzer: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass** (40.5 seconds).
 - Report values against a running Backend, physical device presentation and Desktop screenshot comparison remain **unverified**. Teacher exam management/secondary views and Parent/Admin phases remain pending.
+
+### Checkpoint 2026-10-28 — Parent child-first Mobile home
+
+- Added a dedicated Mobile home that lists linked children and their classes from the existing parent-scoped `ClassesRepository.getMyClasses()` response. It exposes working schedule, attendance history per child, notifications, profile and logout actions. Desktop home remains on its previous branch. The Mobile view omits the Desktop's grade and fee tiles because those tiles had no action or parent-specific data flow.
+- Six widget tests with two linked children: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px. Scoped analyzer: **0 issues**; `flutter build web --no-wasm-dry-run`: **pass** (40.2 seconds).
+- Parent-specific grade and finance views remain a **functional gap**, not an Adaptive UI completion. Parent timetable/attendance use shared Mobile screens but have not been verified against a live parent account. Device visuals and Backend persistence remain **unverified**. Admin Mobile is next.
