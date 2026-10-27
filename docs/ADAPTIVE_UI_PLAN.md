@@ -1,6 +1,6 @@
 # EduLMS Adaptive UI — audit and progress
 
-Updated: 2026-10-27. Baseline rollback commit: `f84c81c627e05711b367248911db2f167fc71478`.
+Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f167fc71478`.
 
 ## Architecture audit
 
@@ -19,7 +19,7 @@ Updated: 2026-10-27. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Auth: splash, login, forgot password, first login | B | P2 | Audit only |
 | Shared: profile, edit profile, change password | A/B | P2 | Audit only; preserve existing dedicated layout |
 | Student home dashboard, navigation | B | P1 | Mobile dashboard implemented; device QA pending |
-| Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum and lesson detail Mobile implemented; class detail pending |
+| Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum, lesson detail and class detail Mobile implemented; device QA pending |
 | Student schedule, session/attendance | B/C | P1 | Shared Mobile agenda/session sheet and attendance history implemented; device QA pending |
 | Student assignments list (`StudentAssignmentsView`, `/assignments`) | C | P0 | Mobile view in progress |
 | Student assignment detail (`/assignments/:id`) | C | P0 | Mobile view pending |
@@ -50,7 +50,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
-| Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule implemented; other screens pending |
+| Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule and class detail implemented; other screens pending |
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history Mobile implemented; teacher marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Pending |
@@ -117,3 +117,10 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Scoped analyzer: **0 issues**; lesson widget tests: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px; `flutter build web`: **pass**. Actual audio playback/document downloads and device visual QA remain **unverified**.
 
 **Next:** finish Student class detail, invoice detail/payment and exams, then Teacher, Parent, Admin; run device/API regression before marking any portal complete.
+
+### Checkpoint 2026-10-28 — Class detail Mobile
+
+- Added a dedicated Mobile class overview and session cards. Role-aware sections keep the student view focused on sessions and curriculum, while teacher/admin retain roster and attendance/edit actions. The existing `ClassesBloc`, class detail repository, curriculum API and action handlers remain shared. Desktop retains its previous nested tab layout.
+- Curriculum is requested only when its Mobile section opens. The screen no longer resolves `ApiClient` before it is needed.
+- Widget tests: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px. Student role tests cover hidden roster/attendance actions and opening the curriculum section with an empty response. Scoped `flutter analyze`: **0 issues**.
+- `flutter build web`: **pass** (204 seconds). Real-device/API checks remain **unverified**. Do not mark the entire class workflow complete from widget tests alone.

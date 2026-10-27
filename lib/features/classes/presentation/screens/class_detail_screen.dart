@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/di/injection.dart';
@@ -14,6 +15,7 @@ import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../../shared/widgets/searchable_entity_field.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -33,8 +35,9 @@ class ClassDetailScreen extends StatefulWidget {
 
 class _ClassDetailScreenState extends State<ClassDetailScreen>
     with SingleTickerProviderStateMixin {
-  final ApiClient _apiClient = getIt<ApiClient>();
+  ApiClient get _apiClient => getIt<ApiClient>();
   late TabController _tabController;
+  int _mobileSection = 0;
   String? _curriculumLevelId;
   Future<List<Map<String, dynamic>>>? _curriculumFuture;
   final NumberFormat _currencyFormat = NumberFormat.currency(
@@ -575,6 +578,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
+    final isMobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
 
     return Scaffold(
       backgroundColor: isDark
@@ -649,6 +655,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
             );
           } else if (state is ClassDetailLoaded) {
             final classObj = state.classDetail;
+            if (isMobile) return _buildMobileClassDetail(classObj);
             return NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) {
                 return [
@@ -716,6 +723,179 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
           return const SizedBox.shrink();
         },
       ),
+    );
+  }
+
+  Widget _buildMobileClassDetail(ClassModel classObj) {
+    final canViewRoster = _canMarkAttendance;
+    final labels = ['Buổi học', if (canViewRoster) 'Học viên', 'Giáo trình'];
+    final section = _mobileSection.clamp(0, labels.length - 1);
+    return SafeArea(
+      child: Column(
+        key: const ValueKey('class-detail-mobile'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: MobileSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    classObj.code,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    classObj.name,
+                    style: const TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (classObj.courseTitle?.isNotEmpty == true) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      classObj.courseTitle!,
+                      style: const TextStyle(color: AppColors.neutral600),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  _mobileClassFact(
+                    Icons.person_outline,
+                    classObj.mainTeacherName ?? 'Chưa phân công giảng viên',
+                  ),
+                  _mobileClassFact(
+                    Icons.schedule_outlined,
+                    '${classObj.startTime}–${classObj.endTime} · ${classObj.totalSessions} buổi',
+                  ),
+                  if (classObj.roomName?.isNotEmpty == true)
+                    _mobileClassFact(
+                      Icons.meeting_room_outlined,
+                      classObj.roomName!,
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${classObj.studentsCount} học viên · ${classObj.sessions.length} buổi đã lên lịch',
+                    style: const TextStyle(
+                      color: AppColors.neutral600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 46,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: labels.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) => ChoiceChip(
+                label: Text(labels[index]),
+                selected: section == index,
+                onSelected: (_) => setState(() => _mobileSection = index),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: labels[section] == 'Buổi học'
+                ? _buildMobileSessions(classObj)
+                : labels[section] == 'Học viên'
+                ? _buildStudentsTab(context, classObj)
+                : _buildCurriculumTab(classObj),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileClassFact(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileSessions(ClassModel classObj) {
+    if (classObj.sessions.isEmpty) {
+      return const Center(
+        child: Text('Lớp chưa có buổi học nào được lên lịch.'),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+      itemCount: classObj.sessions.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final session = classObj.sessions[index];
+        return MobileSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Buổi ${session.sessionNumber}',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                session.title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${session.date == null ? 'Chưa xếp ngày' : DateFormat('dd/MM/yyyy').format(session.date!)} · ${session.startTime}–${session.endTime}',
+                style: const TextStyle(color: AppColors.neutral600),
+              ),
+              if (session.roomName?.isNotEmpty == true) ...[
+                const SizedBox(height: 4),
+                Text(
+                  session.roomName!,
+                  style: const TextStyle(color: AppColors.neutral600),
+                ),
+              ],
+              if (_canMarkAttendance || _canEditSession) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (_canMarkAttendance)
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            context.push('/sessions/${session.id}/attendance'),
+                        icon: const Icon(Icons.how_to_reg_outlined),
+                        label: const Text('Điểm danh'),
+                      ),
+                    if (_canEditSession)
+                      OutlinedButton.icon(
+                        onPressed: () => _showEditSessionDialog(session),
+                        icon: const Icon(Icons.edit_calendar_outlined),
+                        label: const Text('Điều chỉnh'),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
