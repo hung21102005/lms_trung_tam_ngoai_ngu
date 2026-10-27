@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../assignments/data/models/assignment_model.dart';
 import '../../../assignments/domain/repositories/assignments_repository.dart';
 import '../../../classes/data/models/class_model.dart';
@@ -157,6 +160,10 @@ class _TeacherClassWorkflowViewState extends State<TeacherClassWorkflowView> {
 
   @override
   Widget build(BuildContext context) {
+    if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile) {
+      return _buildMobile();
+    }
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 960),
@@ -224,6 +231,176 @@ class _TeacherClassWorkflowViewState extends State<TeacherClassWorkflowView> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMobile() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+    child: Column(
+      key: const ValueKey('teacher-workflow-mobile'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(_title, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          initialValue: _classId,
+          decoration: const InputDecoration(labelText: 'Lớp học'),
+          items: _classes
+              .map(
+                (item) => DropdownMenuItem(
+                  value: item.id,
+                  child: Text(item.name, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            setState(() => _classId = value);
+            _loadItems();
+          },
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            if (_classId != null &&
+                widget.mode == TeacherWorkflowMode.assignments)
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _open(
+                    RouteNames.createAssignment.replaceFirst(
+                      ':classId',
+                      _classId!,
+                    ),
+                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Giao bài tập'),
+                ),
+              ),
+            IconButton(
+              tooltip: 'Tải lại',
+              onPressed: _loadClasses,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Expanded(child: _buildMobileList()),
+      ],
+    ),
+  );
+
+  Widget _buildMobileList() {
+    if (_loading || _error != null || _classes.isEmpty) return _buildList();
+    if (widget.mode == TeacherWorkflowMode.attendance) {
+      if (_sessions.isEmpty) return _buildList();
+      return ListView.separated(
+        itemCount: _sessions.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final session = _sessions[index];
+          return MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  session.title,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${session.date?.day ?? ''}/${session.date?.month ?? ''} · ${session.startTime}–${session.endTime}',
+                  style: const TextStyle(color: AppColors.neutral600),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: session.status == 'CANCELLED'
+                        ? null
+                        : () => _open(
+                            RouteNames.attendanceMark.replaceFirst(
+                              ':id',
+                              session.id,
+                            ),
+                          ),
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('Điểm danh'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+    if (widget.mode == TeacherWorkflowMode.results) {
+      if (_gradedResults.isEmpty) return _buildList();
+      return ListView.separated(
+        itemCount: _gradedResults.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final result = _gradedResults[index];
+          final submission = result.student.submission!;
+          return MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.student.fullName,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(result.assignment.title),
+                const SizedBox(height: 8),
+                MobileStatusPill(
+                  label:
+                      '${submission.score!.toStringAsFixed(1)}/${result.assignment.maxScore.toStringAsFixed(0)}',
+                  color: AppColors.primary,
+                ),
+                if (submission.feedback?.isNotEmpty == true) ...[
+                  const SizedBox(height: 8),
+                  Text(submission.feedback!),
+                ],
+              ],
+            ),
+          );
+        },
+      );
+    }
+    if (_assignments.isEmpty) return _buildList();
+    return ListView.separated(
+      itemCount: _assignments.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final assignment = _assignments[index];
+        return MobileSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                assignment.title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${assignment.gradedCount}/${assignment.totalSubmissions} bài đã chấm · Thang ${assignment.maxScore.toStringAsFixed(0)} điểm',
+                style: const TextStyle(color: AppColors.neutral600),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => _open(
+                    '${RouteNames.assignmentDetail.replaceFirst(':id', assignment.id)}?teacher=true',
+                    extra: true,
+                  ),
+                  icon: const Icon(Icons.chevron_right_rounded),
+                  label: const Text('Xem bài tập'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

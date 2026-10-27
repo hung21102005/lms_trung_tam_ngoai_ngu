@@ -174,4 +174,53 @@ void main() {
       '8.5',
     );
   });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0]) {
+    testWidgets('xem và chấm bài trên Mobile $width px', (tester) async {
+      tester.view.physicalSize = Size(width, width == 320 ? 600 : 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _AssignmentsRepository();
+      final bloc = AssignmentsBloc(repository: repository);
+      addTearDown(bloc.close);
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: SubmissionReviewScreen(
+              assignmentId: 'assignment-1',
+              studentId: 'student-1',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('submission-review-mobile')),
+        findsOneWidget,
+      );
+      expect(find.text('Bài làm của học viên'), findsOneWidget);
+      await tester.tap(find.text('Chấm điểm'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chấm điểm & nhận xét'), findsOneWidget);
+      if (width == 320) {
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextFormField).first, '7.5');
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Lưu điểm và nhận xét'),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.tap(find.text('Lưu điểm và nhận xét'));
+        await tester.pumpAndSettle();
+        expect(repository.score, 7.5);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

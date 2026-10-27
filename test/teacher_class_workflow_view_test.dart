@@ -169,4 +169,29 @@ void main() {
     expect(find.text('8.5/10'), findsOneWidget);
     expect(find.text('Giao bài tập'), findsNothing);
   });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('danh sách bài tập Teacher ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 850);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TeacherClassWorkflowView(
+              mode: TeacherWorkflowMode.assignments,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Writing Task 1'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('teacher-workflow-mobile')),
+        width < 600 ? findsOneWidget : findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

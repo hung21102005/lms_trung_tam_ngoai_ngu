@@ -30,7 +30,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher home/dashboard, reports | B/C | P1 | Mobile live dashboard implemented; reports pending |
 | Teacher classes/list/detail/schedule | B/C | P1 | My classes list, shared class detail and schedule Mobile implemented; other class screens pending |
 | Teacher attendance and class workflow | B/C | P1 | Attendance roster/logbook Mobile implemented; other class workflows pending |
-| Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Audit only |
+| Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Assignment workflow list and submission review Mobile implemented; create/edit/gradebook pending |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Audit only; embedded home tabs require screen-by-screen audit |
 | Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Audit only |
@@ -53,7 +53,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule/class detail and Teacher my-classes list implemented; management screens pending |
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history and embedded Teacher attendance Mobile implemented; standalone marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
-| Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Pending |
+| Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Embedded workflow and review Mobile implemented; remaining screens pending |
 | Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard and embedded attendance Mobile implemented; reports pending |
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
@@ -153,3 +153,10 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - The embedded Teacher attendance view now has a Mobile screen with class/session selectors sized to the phone, horizontally scrollable summary and roster filters, and separate Học viên / Sổ đầu bài sections. The same attendance statuses, mark-all, save-and-lock, notes, attachment and logbook methods serve both layouts. Desktop retains its prior two-column arrangement.
 - Existing functional test still verifies marking all present, locking attendance and saving the logbook through repository fakes. Added responsive coverage at 320, 375, 393, 430, 800 and 1200 px, including opening the Mobile logbook. **8/8 tests pass** in the focused attendance file. Scoped analyzer: **0 issues**; `git diff --check`: **pass**; `flutter build web --no-wasm-dry-run`: **pass** (69.8 seconds).
 - Physical device interaction, real file picker/upload, API persistence and visual screenshots remain **unverified**. Standalone attendance-mark route and other Teacher class workflows are not covered by this checkpoint. Next priority: Teacher assignment/grading Mobile screens.
+
+### Checkpoint 2026-10-28 — Teacher assignment workflow and submission review Mobile
+
+- The embedded Teacher assignment workflow now uses dedicated Mobile cards for assigned work, graded results and session attendance; class selection and action placement are sized for touch. It keeps the same repositories, counts, routes and Desktop list branch. The existing grade-submission student list already has compact status/action cards and was preserved.
+- The submission review screen now switches between “Bài làm” and “Chấm điểm” on Mobile. The grading form and actions scroll together at short heights. The previous 320×600 layout overflowed by 128 px with a simulated 300 px keyboard; the new layout passes that case. Desktop keeps its fixed two-column work/grading layout. Grading, publishing and redo operations still use the existing Bloc/repository methods.
+- Focused workflow and review suite: **15/15 pass**, including Mobile grade save, the short-height keyboard case and Desktop grading regression. Scoped analyzer: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass** (41.9 seconds).
+- Assignment create/edit, other embedded grading/gradebook views, real recorder/file upload, Backend persistence, physical device visual QA and Desktop screenshot comparison remain **unverified or pending**. The Teacher assignment module is not marked complete.

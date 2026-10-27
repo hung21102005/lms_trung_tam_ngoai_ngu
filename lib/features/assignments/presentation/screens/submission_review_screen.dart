@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -41,10 +42,12 @@ class _SubmissionReviewScreenState extends State<SubmissionReviewScreen> {
   String? _scoreError;
   bool _publishing = false;
   bool _returning = false;
+  int _mobilePane = 0;
 
   @override
   void initState() {
     super.initState();
+    _mobilePane = widget.focusScore ? 1 : 0;
     _scoreController = TextEditingController();
     _feedbackController = TextEditingController();
     _reload();
@@ -222,31 +225,62 @@ class _SubmissionReviewScreenState extends State<SubmissionReviewScreen> {
                 .copyWith(color: AppColors.neutral600),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final gradingPane = _buildGradingPane(isGrading);
-                final workPane = _buildWorkPane();
-                if (constraints.maxWidth >= 760) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+          if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+              AdaptiveSize.mobile) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Bài làm'),
+                    selected: _mobilePane == 0,
+                    onSelected: (_) => setState(() => _mobilePane = 0),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Chấm điểm'),
+                    selected: _mobilePane == 1,
+                    onSelected: (_) => setState(() => _mobilePane = 1),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: KeyedSubtree(
+                key: const ValueKey('submission-review-mobile'),
+                child: _mobilePane == 0
+                    ? _buildWorkPane()
+                    : _buildGradingPane(isGrading),
+              ),
+            ),
+          ] else
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final gradingPane = _buildGradingPane(isGrading);
+                  final workPane = _buildWorkPane();
+                  if (constraints.maxWidth >= 760) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: workPane),
+                        const SizedBox(width: 16),
+                        SizedBox(width: 350, child: gradingPane),
+                      ],
+                    );
+                  }
+                  return Column(
                     children: [
                       Expanded(child: workPane),
-                      const SizedBox(width: 16),
-                      SizedBox(width: 350, child: gradingPane),
+                      const SizedBox(height: 12),
+                      SizedBox(height: 300, child: gradingPane),
                     ],
                   );
-                }
-                return Column(
-                  children: [
-                    Expanded(child: workPane),
-                    const SizedBox(height: 12),
-                    SizedBox(height: 300, child: gradingPane),
-                  ],
-                );
-              },
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -373,6 +407,85 @@ class _SubmissionReviewScreenState extends State<SubmissionReviewScreen> {
   }
 
   Widget _buildGradingPane(bool isGrading) {
+    if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile) {
+      return Card(
+        clipBehavior: Clip.antiAlias,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Chấm điểm & nhận xét', style: AppTextStyles.h4(context)),
+            const Divider(),
+            const SizedBox(height: 8),
+            AppTextField(
+              controller: _scoreController,
+              label: 'Điểm số / ${_maxScore.toStringAsFixed(1)}',
+              autofocus: widget.focusScore,
+              hintText: 'Ví dụ: 8.5',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              onChanged: (_) {
+                if (_scoreError != null) setState(() => _scoreError = null);
+              },
+            ),
+            if (_scoreError != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _scoreError!,
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ],
+            const SizedBox(height: 18),
+            AppTextField(
+              controller: _feedbackController,
+              label: 'Nhận xét cho học viên',
+              hintText: 'Góp ý về bài làm và những điểm cần cải thiện...',
+              maxLines: 6,
+            ),
+            const SizedBox(height: 16),
+            if (_submission?.status == 'GRADED') ...[
+              Text(
+                _submission!.resultPublishedAt == null
+                    ? 'Điểm đã lưu, chưa công bố cho học viên.'
+                    : 'Điểm đã được công bố.',
+                style: AppTextStyles.caption(context),
+              ),
+              if (_submission!.resultPublishedAt == null)
+                OutlinedButton.icon(
+                  onPressed: _publishing || isGrading ? null : _publishResult,
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: Text(_publishing ? 'Đang công bố...' : 'Công bố điểm'),
+                ),
+            ],
+            if (_submission?.status == 'SUBMITTED' ||
+                _submission?.status == 'LATE')
+              OutlinedButton.icon(
+                onPressed: isGrading || _returning ? null : _requestRedo,
+                icon: const Icon(Icons.replay_outlined),
+                label: Text(_returning ? 'Đang gửi...' : 'Yêu cầu làm lại'),
+              ),
+            if (_submission?.status == 'RETURNED')
+              const Text('Đang chờ học viên nộp lại bài.'),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: isGrading || _submission?.status == 'RETURNED'
+                  ? null
+                  : _saveGrade,
+              icon: isGrading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(isGrading ? 'Đang lưu...' : 'Lưu điểm và nhận xét'),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    }
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Padding(
