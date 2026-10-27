@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -303,43 +304,7 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        controller: _maxScoreController,
-                        label: 'Thang điểm tối đa',
-                        hintText: '10',
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Nhập điểm tối đa';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: AppDatePicker(
-                        label: 'Hạn nộp bài (Deadline)',
-                        initialDate: _selectedDeadline,
-                        onDateSelected: (date) {
-                          setState(() {
-                            _selectedDeadline = DateTime(
-                              date.year,
-                              date.month,
-                              date.day,
-                              23,
-                              59,
-                              59,
-                            );
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                _buildScoreAndDeadline(context),
                 if (widget.assignmentId != null && _selectedDeadline != null)
                   Align(
                     alignment: Alignment.centerLeft,
@@ -447,6 +412,50 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildScoreAndDeadline(BuildContext context) {
+    final scoreField = AppTextField(
+      controller: _maxScoreController,
+      label: 'Thang điểm tối đa',
+      hintText: '10',
+      keyboardType: TextInputType.number,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Nhập điểm tối đa';
+        }
+        return null;
+      },
+    );
+    final deadlineField = AppDatePicker(
+      label: 'Hạn nộp bài (Deadline)',
+      initialDate: _selectedDeadline,
+      onDateSelected: (date) {
+        setState(() {
+          _selectedDeadline = DateTime(
+            date.year,
+            date.month,
+            date.day,
+            23,
+            59,
+            59,
+          );
+        });
+      },
+    );
+    if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile) {
+      return Column(
+        children: [scoreField, const SizedBox(height: 16), deadlineField],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: scoreField),
+        const SizedBox(width: 16),
+        Expanded(child: deadlineField),
+      ],
     );
   }
 }

@@ -93,7 +93,9 @@ void main() {
     expect((spans.last as TextSpan).text, '.');
   });
 
-  testWidgets('form giao bài tập dùng nút chọn tệp và xem trước URL', (tester) async {
+  testWidgets('form giao bài tập dùng nút chọn tệp và xem trước URL', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -124,4 +126,32 @@ void main() {
     await tester.pump();
     expect(find.byType(LinkifiedText), findsOneWidget);
   });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('form giao bài tập ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final bloc = AssignmentsBloc(repository: _AssignmentsRepository());
+      addTearDown(bloc.close);
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: CreateAssignmentScreen(classId: 'class-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Thang điểm tối đa'), findsOneWidget);
+      expect(find.text('Hạn nộp bài (Deadline)'), findsOneWidget);
+      if (width == 320) {
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
