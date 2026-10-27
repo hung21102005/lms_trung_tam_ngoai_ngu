@@ -26,7 +26,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Student work, voice/text/file, draft and submit (`/assignments/:id/submit`) | C | P0 | Mobile view pending |
 | Student submission review, score and feedback (assignment detail) | C | P0 | Mobile view pending |
 | Student exams, take exam, results | B/C | P2 | Gradebook now reads published assignment/exam results; exam UI pending |
-| Student invoices/payment, notifications | B/C | P2 | Mobile invoice list and shared notification list implemented; payment/detail pending |
+| Student invoices/payment, notifications | B/C | P2 | Mobile invoice list/detail and payment control layout plus shared notification list implemented; live payment/device QA pending |
 | Teacher home/dashboard, reports | B/C | P1 | Audit only |
 | Teacher classes/list/detail/schedule | B/C | P1 | Audit only |
 | Teacher attendance and class workflow | B/C | P1 | Audit only |
@@ -57,7 +57,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Pending |
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen` | B/C | Pending |
-| Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list Mobile implemented; detail/payment and admin screens pending |
+| Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
 | Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Pending |
 | Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | C | Pending |
 
@@ -124,3 +124,11 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Curriculum is requested only when its Mobile section opens. The screen no longer resolves `ApiClient` before it is needed.
 - Widget tests: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px. Student role tests cover hidden roster/attendance actions and opening the curriculum section with an empty response. Scoped `flutter analyze`: **0 issues**.
 - `flutter build web`: **pass** (204 seconds). Real-device/API checks remain **unverified**. Do not mark the entire class workflow complete from widget tests alone.
+
+### Checkpoint 2026-10-28 — Student invoice detail and payment layout
+
+- Added a dedicated Mobile invoice detail with balance summary, due date, class, payment history and a bottom online-payment action. The existing FinanceBloc and invoice/payment routes are reused. Desktop keeps its existing detail layout. Cash collection and cancellation controls are now visible only to system/branch admin or academic staff; student users no longer see those actions on Desktop or Mobile.
+- The payment screen has a horizontally scrollable Mobile method selector and stacked copyable transfer details to avoid small-width overflow; the same existing payment Bloc actions remain in use. This is a Mobile layout adjustment, not a payment integration rewrite.
+- Widget tests with repository fakes: **12/12 pass** across 320, 375, 393, 430, tablet 800 and Desktop 1200. Tests cover student action visibility, payment history, and switching to VNPay. Scoped analyzer: **0 issues**.
+- **Payment integration remains unverified.** The existing VietQR branch contains a hardcoded bank/account in `pay_online_screen.dart`; no backend-managed bank account was found during this source check. Do not use the displayed QR for real money transfers until the account details are verified and moved to trusted configuration. VNPay gateway return/callback and real payment state were not exercised because the Backend was not running.
+- `flutter build web`: **pass** (275 seconds). Combined focused Student Adaptive regression: **98/98 pass**. Real payment, native device rendering and API persistence remain **unverified**.
