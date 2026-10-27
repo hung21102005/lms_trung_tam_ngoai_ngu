@@ -22,7 +22,11 @@ class FakeReportsRepository implements ReportsRepository {
         MonthlyTrendItem(month: 'T6/2026', revenue: 75000000),
       ],
       courseDistribution: const [
-        CourseDistributionItem(courseId: 'c1', courseName: 'IELTS Foundation', studentCount: 60),
+        CourseDistributionItem(
+          courseId: 'c1',
+          courseName: 'IELTS Foundation',
+          studentCount: 60,
+        ),
       ],
       upcomingClasses: [
         UpcomingClassItem(
@@ -50,17 +54,29 @@ class FakeReportsRepository implements ReportsRepository {
   }
 
   @override
-  Future<RevenueReportModel> getRevenueReport({int? year, String? branchId}) async {
+  Future<RevenueReportModel> getRevenueReport({
+    int? year,
+    String? branchId,
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<AttendanceReportModel> getAttendanceReport({String? classId, String? startDate, String? endDate}) async {
+  Future<AttendanceReportModel> getAttendanceReport({
+    String? classId,
+    String? startDate,
+    String? endDate,
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<DebtsReportModel> getDebtsReport({String? branchId, String? search, int page = 1, int limit = 20}) async {
+  Future<DebtsReportModel> getDebtsReport({
+    String? branchId,
+    String? search,
+    int page = 1,
+    int limit = 20,
+  }) async {
     throw UnimplementedError();
   }
 
@@ -74,7 +90,9 @@ class FakeReportsRepository implements ReportsRepository {
 }
 
 void main() {
-  testWidgets('AdminDashboardScreen renders KPIs, charts, and tables', (tester) async {
+  testWidgets('AdminDashboardScreen renders KPIs, charts, and tables', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -115,4 +133,27 @@ void main() {
     expect(find.text('Top công nợ cần đôn đốc'), findsOneWidget);
     expect(find.text('Trần Văn Nam'), findsOneWidget);
   });
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('Admin dashboard ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<ReportsBloc>(
+            create: (_) => ReportsBloc(repository: FakeReportsRepository()),
+            child: const AdminDashboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('admin-dashboard-mobile')),
+        width < 600 ? findsOneWidget : findsNothing,
+      );
+      expect(find.text('150'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

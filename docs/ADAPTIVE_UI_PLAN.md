@@ -33,7 +33,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Assignment workflow list and submission review Mobile implemented; create/edit/gradebook pending |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
-| Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Audit only |
+| Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Mobile dashboard and shell breakpoint implemented; management views pending audit |
 | Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Audit only |
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
 
@@ -46,7 +46,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Feature | Screens / views (filenames without `.dart`) | Type | State |
 | --- | --- | --- | --- |
 | Authentication | `splash_screen`, `login_screen`, `forgot_password_screen`, `first_login_screen` | B | Pending |
-| Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Student/Teacher breakpoint aligned; Parent Mobile home implemented; Admin pending |
+| Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Student/Teacher/Admin breakpoint aligned; Parent Mobile home implemented; device QA pending |
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
@@ -58,7 +58,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
-| Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Pending |
+| Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Admin dashboard Mobile implemented; other reports pending |
 | Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | C | Pending |
 
 Also inspect private builders, dialogs, bottom sheets, and tab content in each listed file during that feature's phase; they are not separate Dart screen files. There is no separate reset-password route or standalone parent child screen in the current route table, so no new business module is assumed.
@@ -178,3 +178,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Added a dedicated Mobile home that lists linked children and their classes from the existing parent-scoped `ClassesRepository.getMyClasses()` response. It exposes working schedule, attendance history per child, notifications, profile and logout actions. Desktop home remains on its previous branch. The Mobile view omits the Desktop's grade and fee tiles because those tiles had no action or parent-specific data flow.
 - Six widget tests with two linked children: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px. Scoped analyzer: **0 issues**; `flutter build web --no-wasm-dry-run`: **pass** (40.2 seconds).
 - Parent-specific grade and finance views remain a **functional gap**, not an Adaptive UI completion. Parent timetable/attendance use shared Mobile screens but have not been verified against a live parent account. Device visuals and Backend persistence remain **unverified**. Admin Mobile is next.
+
+### Checkpoint 2026-10-28 — Admin dashboard and shell Mobile
+
+- Admin shell now uses the Desktop sidebar from 1024 logical pixels; smaller widths use its existing drawer/bottom navigation. Corrected the bottom navigation's selected item mapping for Classes, Courses and Reports. The Mobile dashboard has its own hierarchy for active students, operating classes, revenue/debt, upcoming classes and debtors, using the existing `ReportsBloc` data. Desktop charts and tables remain on the old branch.
+- Dashboard widget tests: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px, including the existing Desktop KPI/chart/table regression. Scoped analyzer: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass** (40.5 seconds).
+- Shell navigation taps and live Backend values remain **unverified**. Source audit shows `UsersManagementView` already switches to Mobile cards below its threshold, so preserve and verify it instead of duplicating that UI. Admin management views/reports/forms, physical device visuals and Desktop screenshots remain pending.

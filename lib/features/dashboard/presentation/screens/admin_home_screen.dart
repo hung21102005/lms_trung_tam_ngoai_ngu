@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/router/route_names.dart';
@@ -111,10 +111,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    // Trên nền tảng Web: Mặc định luôn là giao diện Website Cố Định (Sidebar 260px + Header + Canvas),
-    // trừ khi mở trên trình duyệt mobile có bề ngang cực hẹp (< 640px).
-    final isDesktop = kIsWeb ? size.width >= 640 : size.width > 900;
+    final isDesktop =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.desktop;
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -228,9 +227,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                             ),
                                           ],
                                         ),
-                                        Text(
+                                        const Text(
                                           'Hệ thống Đào tạo Ngoại ngữ',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11,
                                             color: AppColors.textSecondaryLight,
                                           ),
@@ -742,7 +741,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               child: SizedBox.expand(child: _buildActiveBody()),
             ),
             bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _selectedIndex > 3 ? 0 : _selectedIndex,
+              currentIndex: switch (_selectedIndex) {
+                5 => 1,
+                4 => 2,
+                7 => 3,
+                _ => 0,
+              },
               type: BottomNavigationBarType.fixed,
               selectedItemColor: AppColors.primary,
               unselectedItemColor: AppColors.textSecondaryLight,
