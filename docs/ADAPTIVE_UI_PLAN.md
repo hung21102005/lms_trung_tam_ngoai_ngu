@@ -20,13 +20,13 @@ Updated: 2026-10-27. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Shared: profile, edit profile, change password | A/B | P2 | Audit only; preserve existing dedicated layout |
 | Student home dashboard, navigation | B | P1 | Mobile dashboard implemented; device QA pending |
 | Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum Mobile implemented; other detail routes pending |
-| Student schedule, session/attendance | B/C | P1 | Shared Mobile agenda/session sheet implemented; attendance history pending |
+| Student schedule, session/attendance | B/C | P1 | Shared Mobile agenda/session sheet and attendance history implemented; device QA pending |
 | Student assignments list (`StudentAssignmentsView`, `/assignments`) | C | P0 | Mobile view in progress |
 | Student assignment detail (`/assignments/:id`) | C | P0 | Mobile view pending |
 | Student work, voice/text/file, draft and submit (`/assignments/:id/submit`) | C | P0 | Mobile view pending |
 | Student submission review, score and feedback (assignment detail) | C | P0 | Mobile view pending |
 | Student exams, take exam, results | B/C | P2 | Gradebook now reads published assignment/exam results; exam UI pending |
-| Student invoices/payment, notifications | B/C | P2 | Audit only |
+| Student invoices/payment, notifications | B/C | P2 | Mobile invoice list and shared notification list implemented; payment/detail pending |
 | Teacher home/dashboard, reports | B/C | P1 | Audit only |
 | Teacher classes/list/detail/schedule | B/C | P1 | Audit only |
 | Teacher attendance and class workflow | B/C | P1 | Audit only |
@@ -51,13 +51,13 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum Mobile view implemented; lesson detail pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
 | Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule implemented; other screens pending |
-| Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Pending |
+| Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history Mobile implemented; teacher marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Pending |
 | Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Pending |
-| Notifications | `notification_list_screen` | B/C | Pending |
+| Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen` | B/C | Pending |
-| Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Pending |
+| Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list Mobile implemented; detail/payment and admin screens pending |
 | Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Pending |
 | Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | C | Pending |
 
@@ -99,3 +99,13 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Changed files: scoped `flutter analyze` **0 issues**; combined Student widget suite **56/56 pass** across 320, 375, 393, 430, tablet 800, and Desktop 1200. `flutter build web` **pass**.
 
 **Still pending in Student Portal:** attendance history, invoices/payment detail, notifications, exams/take exam, standalone class/lesson detail, profile/auth verification, real-device visual QA, and backend/device end-to-end tests. Continue with these before marking the Student phase complete. Teacher, Parent, and Admin remain pending outside the shared schedule.
+
+### Checkpoint 2026-10-27 — Student attendance, invoice list, shared notifications
+
+- Student invoices now use a dedicated Mobile summary, horizontal status chips, and touch-friendly invoice cards. Existing FinanceBloc, repository calls, invoice detail and payment routes are reused. Tablet and Desktop retain their original tab/list layout.
+- Student attendance history now has a Mobile progress summary, wrapped status counts, and one-column session cards. The same AttendanceBloc data supplies both layouts. The existing makeup-request button on the Desktop branch still shows a local success notice without a request; this is a **pre-existing functional gap**, not verified as completed.
+- The shared notifications screen now uses a Mobile unread summary, filter chips, compact metadata and an icon action for marking all read. The same NotificationBloc and notification navigation are used for all roles. A 320 px overflow in the original notification card metadata was found and corrected on the Mobile branch.
+- Widget tests with repository fakes: **18/18 pass** across 320, 375, 393, 430, tablet 800 and Desktop 1200. Invoice filtering and notification mark-all were exercised. These tests do not prove live payment, attendance API persistence or push delivery.
+- Scoped static analysis: **0 issues**. Combined Student regression suite: **74/74 pass**. `flutter build web`: **pass**.
+
+**Still pending:** student invoice detail/payment, exams, standalone class/lesson detail, profile/auth review; Teacher/Parent/Admin Mobile conversions; real Android/Mobile Web visual QA; backend/device end-to-end checks. The Backend was not started for this UI checkpoint. Do not mark these phases complete.

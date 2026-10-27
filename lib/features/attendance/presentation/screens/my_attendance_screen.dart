@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../bloc/attendance_bloc.dart';
 import '../bloc/attendance_event.dart';
 import '../bloc/attendance_state.dart';
@@ -68,11 +70,139 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
 
           if (state is StudentAttendanceLoadedState) {
             final data = state.data;
+            if (AdaptiveBreakpoints.fromWidth(
+                  MediaQuery.sizeOf(context).width,
+                ) ==
+                AdaptiveSize.mobile) {
+              return _buildMobileContent(data);
+            }
             return _buildContent(context, data);
           }
 
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildMobileContent(StudentAttendanceHistoryResponseModel data) {
+    final summary = data.summary;
+    final rate = summary.attendanceRate.clamp(0, 100).toDouble();
+    return ListView(
+      key: const ValueKey('student-attendance-mobile'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        const Text(
+          'Chuyên cần của tôi',
+          style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '${summary.totalSessions} buổi học đã được điểm danh',
+          style: const TextStyle(color: AppColors.neutral600),
+        ),
+        const SizedBox(height: 18),
+        MobileSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Tỷ lệ chuyên cần',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${rate.toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 35,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              LinearProgressIndicator(
+                value: rate / 100,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildMobileStat('Có mặt', summary.present, AppColors.success),
+            _buildMobileStat('Đi muộn', summary.late, AppColors.warning),
+            _buildMobileStat('Vắng', summary.absent, AppColors.error),
+            _buildMobileStat('Có phép', summary.excused, AppColors.primary),
+            _buildMobileStat('Học bù', summary.makeup, Colors.purple),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Text('Các buổi học', style: AppTextStyles.h4(context)),
+        const SizedBox(height: 10),
+        if (data.records.isEmpty)
+          const MobileSectionCard(
+            child: Text('Chưa có buổi học nào được ghi nhận điểm danh.'),
+          ),
+        for (final record in data.records)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: MobileSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          record.sessionTitle,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      Text(
+                        _getStatusText(record.status),
+                        style: TextStyle(
+                          color: _getStatusColor(record.status),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${record.className} · Buổi ${record.sessionNumber}',
+                    style: const TextStyle(color: AppColors.neutral600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${record.sessionDate.split('T')[0]} · ${record.startTime}–${record.endTime}',
+                    style: const TextStyle(color: AppColors.neutral600),
+                  ),
+                  if (record.notes?.isNotEmpty == true) ...[
+                    const SizedBox(height: 8),
+                    Text('Ghi chú: ${record.notes}'),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMobileStat(String label, int value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withAlpha(18),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        '$label $value',
+        style: TextStyle(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }

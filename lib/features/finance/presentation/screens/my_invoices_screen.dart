@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../data/models/invoice_model.dart';
 import '../bloc/finance_bloc.dart';
 
@@ -34,17 +37,22 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isMobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Học phí của tôi'),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondaryLight,
-          tabs: _filters.map((f) => Tab(text: f)).toList(),
-          onTap: (_) => setState(() {}),
-        ),
+        bottom: isMobile
+            ? null
+            : TabBar(
+                controller: _tabController,
+                indicatorColor: AppColors.primary,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondaryLight,
+                tabs: _filters.map((f) => Tab(text: f)).toList(),
+                onTap: (_) => setState(() {}),
+              ),
       ),
       body: BlocBuilder<FinanceBloc, FinanceState>(
         builder: (context, state) {
@@ -57,9 +65,16 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.error,
+                  ),
                   const SizedBox(height: 12),
-                  Text('Lỗi: ${state.message}', style: AppTextStyles.bodyMedium(context)),
+                  Text(
+                    'Lỗi: ${state.message}',
+                    style: AppTextStyles.bodyMedium(context),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -73,7 +88,11 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
           }
 
           if (state is MyInvoicesLoadedState) {
-            final invoices = _filterInvoices(state.invoices, _filters[_tabController.index]);
+            if (isMobile) return _buildMobileInvoices(state.invoices);
+            final invoices = _filterInvoices(
+              state.invoices,
+              _filters[_tabController.index],
+            );
 
             if (invoices.isEmpty) {
               return RefreshIndicator(
@@ -87,7 +106,8 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
                     const EmptyStateWidget(
                       icon: Icons.receipt_long_outlined,
                       title: 'Không có hóa đơn học phí',
-                      description: 'Bạn không có khoản học phí nào trong danh mục này.',
+                      description:
+                          'Bạn không có khoản học phí nào trong danh mục này.',
                     ),
                   ],
                 ),
@@ -101,7 +121,8 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: invoices.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final inv = invoices[index];
                   return _buildInvoiceCard(inv);
@@ -116,9 +137,202 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
     );
   }
 
+  Widget _buildMobileInvoices(List<InvoiceModel> all) {
+    final invoices = _filterInvoices(all, _filters[_tabController.index]);
+    final outstanding = all
+        .where((item) => item.status != 'CANCELLED')
+        .fold<double>(0, (sum, item) => sum + item.balance);
+    return RefreshIndicator(
+      onRefresh: () async =>
+          context.read<FinanceBloc>().add(FetchMyInvoicesEvent()),
+      child: ListView(
+        key: const ValueKey('student-invoices-mobile'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+        children: [
+          const Text(
+            'Học phí của tôi',
+            style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Theo dõi hóa đơn và các khoản cần thanh toán',
+            style: TextStyle(color: AppColors.neutral600),
+          ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primaryDark, AppColors.primary],
+              ),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tổng còn phải nộp',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatCurrency(outstanding),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${all.length} hóa đơn',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          SizedBox(
+            height: 42,
+            child: SingleChildScrollView(
+              key: const ValueKey('student-invoices-filter-scroll'),
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var index = 0; index < _filters.length; index++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(_filters[index]),
+                        selected: _tabController.index == index,
+                        onSelected: (_) =>
+                            setState(() => _tabController.animateTo(index)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (invoices.isEmpty)
+            const MobileSectionCard(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.receipt_long_outlined,
+                    size: 36,
+                    color: AppColors.neutral400,
+                  ),
+                  SizedBox(height: 8),
+                  Text('Không có hóa đơn trong danh mục này.'),
+                ],
+              ),
+            ),
+          for (final invoice in invoices)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildMobileInvoiceCard(invoice),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileInvoiceCard(InvoiceModel invoice) {
+    final status = _getStatusConfig(invoice.status);
+    return MobileSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  invoice.code,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              MobileStatusPill(label: status.label, color: status.color),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            invoice.title,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            invoice.classInfo?['name']?.toString() ?? 'Học phí',
+            style: const TextStyle(color: AppColors.neutral600),
+          ),
+          if (invoice.dueDate != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Hạn thanh toán: ${_formatDate(invoice.dueDate!)}',
+              style: TextStyle(
+                color: invoice.status == 'OVERDUE'
+                    ? AppColors.error
+                    : AppColors.neutral600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+          const Divider(height: 24),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Còn phải nộp',
+                  style: TextStyle(color: AppColors.neutral600),
+                ),
+              ),
+              Text(
+                _formatCurrency(invoice.balance),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: invoice.balance > 0
+                      ? AppColors.error
+                      : AppColors.success,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.push('/invoices/${invoice.id}'),
+                  child: const Text('Chi tiết'),
+                ),
+              ),
+              if (invoice.balance > 0 && invoice.status != 'CANCELLED') ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () =>
+                        context.push('/invoices/${invoice.id}/pay-online'),
+                    child: const Text('Thanh toán'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   List<InvoiceModel> _filterInvoices(List<InvoiceModel> list, String filter) {
     if (filter == 'Chưa thanh toán') {
-      return list.where((i) => i.balance > 0 && i.status != 'CANCELLED').toList();
+      return list
+          .where((i) => i.balance > 0 && i.status != 'CANCELLED')
+          .toList();
     } else if (filter == 'Đã thanh toán') {
       return list.where((i) => i.status == 'PAID').toList();
     }
@@ -151,7 +365,10 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
             children: [
               Text(
                 inv.code,
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -179,7 +396,10 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
           const SizedBox(height: 4),
           Text(
             'Lớp: $className',
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondaryLight),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondaryLight,
+            ),
           ),
           if (inv.dueDate != null) ...[
             const SizedBox(height: 2),
@@ -187,8 +407,12 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
               'Hạn nộp: ${_formatDate(inv.dueDate!)}',
               style: TextStyle(
                 fontSize: 12,
-                color: inv.status == 'OVERDUE' ? AppColors.error : AppColors.textMutedLight,
-                fontWeight: inv.status == 'OVERDUE' ? FontWeight.bold : FontWeight.normal,
+                color: inv.status == 'OVERDUE'
+                    ? AppColors.error
+                    : AppColors.textMutedLight,
+                fontWeight: inv.status == 'OVERDUE'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
               ),
             ),
           ],
@@ -199,20 +423,40 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Tổng học phí', style: TextStyle(fontSize: 11, color: AppColors.textMutedLight)),
-                  Text(_formatCurrency(inv.totalAmount), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Tổng học phí',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMutedLight,
+                    ),
+                  ),
+                  Text(
+                    _formatCurrency(inv.totalAmount),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text('Còn lại phải nộp', style: TextStyle(fontSize: 11, color: AppColors.textMutedLight)),
+                  const Text(
+                    'Còn lại phải nộp',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMutedLight,
+                    ),
+                  ),
                   Text(
                     _formatCurrency(inv.balance),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: inv.balance > 0 ? AppColors.error : AppColors.success,
+                      color: inv.balance > 0
+                          ? AppColors.error
+                          : AppColors.success,
                     ),
                   ),
                 ],
@@ -228,7 +472,9 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
                     context.push('/invoices/${inv.id}');
                   },
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text('Xem chi tiết'),
                 ),
@@ -243,7 +489,9 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: const Text('Thanh toán ngay'),
                   ),
@@ -261,7 +509,10 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
       case 'PAID':
         return _StatusConfig(label: 'ĐÃ NỘP ĐỦ', color: AppColors.success);
       case 'PARTIALLY_PAID':
-        return _StatusConfig(label: 'ĐÃ NỘP 1 PHẦN', color: const Color(0xFF0284C7));
+        return _StatusConfig(
+          label: 'ĐÃ NỘP 1 PHẦN',
+          color: const Color(0xFF0284C7),
+        );
       case 'OVERDUE':
         return _StatusConfig(label: 'QUÁ HẠN', color: AppColors.error);
       case 'CANCELLED':
@@ -278,10 +529,7 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
   }
 
   String _formatCurrency(double amount) {
-    return '${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        )} đ';
+    return '${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} đ';
   }
 }
 

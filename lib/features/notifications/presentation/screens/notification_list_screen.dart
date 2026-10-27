@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/adaptive/adaptive_layout.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../data/models/notification_model.dart';
 import '../bloc/notification_bloc.dart';
 
@@ -19,7 +22,14 @@ class NotificationListScreen extends StatefulWidget {
 class _NotificationListScreenState extends State<NotificationListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<String> _filters = ['Tất cả', 'Chưa đọc', 'Học phí', 'Điểm danh', 'Đề thi', 'Học vụ'];
+  final List<String> _filters = [
+    'Tất cả',
+    'Chưa đọc',
+    'Học phí',
+    'Điểm danh',
+    'Đề thi',
+    'Học vụ',
+  ];
 
   @override
   void initState() {
@@ -36,27 +46,43 @@ class _NotificationListScreenState extends State<NotificationListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isMobile =
+        AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
+        AdaptiveSize.mobile;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Thông báo'),
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              context.read<NotificationBloc>().add(MarkAllNotificationsAsReadEvent());
-            },
-            icon: const Icon(Icons.done_all, size: 20),
-            label: const Text('Đọc tất cả'),
-          ),
+          if (isMobile)
+            IconButton(
+              tooltip: 'Đánh dấu đã đọc tất cả',
+              onPressed: () => context.read<NotificationBloc>().add(
+                MarkAllNotificationsAsReadEvent(),
+              ),
+              icon: const Icon(Icons.done_all),
+            )
+          else
+            TextButton.icon(
+              onPressed: () {
+                context.read<NotificationBloc>().add(
+                  MarkAllNotificationsAsReadEvent(),
+                );
+              },
+              icon: const Icon(Icons.done_all, size: 20),
+              label: const Text('Đọc tất cả'),
+            ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondaryLight,
-          tabs: _filters.map((f) => Tab(text: f)).toList(),
-          onTap: (_) => setState(() {}),
-        ),
+        bottom: isMobile
+            ? null
+            : TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicatorColor: AppColors.primary,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondaryLight,
+                tabs: _filters.map((f) => Tab(text: f)).toList(),
+                onTap: (_) => setState(() {}),
+              ),
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
@@ -69,13 +95,22 @@ class _NotificationListScreenState extends State<NotificationListScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.error,
+                  ),
                   const SizedBox(height: 12),
-                  Text('Lỗi: ${state.message}', style: AppTextStyles.bodyMedium(context)),
+                  Text(
+                    'Lỗi: ${state.message}',
+                    style: AppTextStyles.bodyMedium(context),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      context.read<NotificationBloc>().add(FetchNotificationsEvent());
+                      context.read<NotificationBloc>().add(
+                        FetchNotificationsEvent(),
+                      );
                     },
                     child: const Text('Thử lại'),
                   ),
@@ -85,12 +120,18 @@ class _NotificationListScreenState extends State<NotificationListScreen>
           }
 
           if (state is NotificationLoadedState) {
-            final filtered = _filterNotifications(state.notifications, _filters[_tabController.index]);
+            if (isMobile) return _buildMobileNotifications(state);
+            final filtered = _filterNotifications(
+              state.notifications,
+              _filters[_tabController.index],
+            );
 
             if (filtered.isEmpty) {
               return RefreshIndicator(
                 onRefresh: () async {
-                  context.read<NotificationBloc>().add(FetchNotificationsEvent());
+                  context.read<NotificationBloc>().add(
+                    FetchNotificationsEvent(),
+                  );
                 },
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -99,7 +140,8 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                     const EmptyStateWidget(
                       icon: Icons.notifications_off_outlined,
                       title: 'Không có thông báo nào',
-                      description: 'Bạn đã xem hết các thông báo trong danh mục này.',
+                      description:
+                          'Bạn đã xem hết các thông báo trong danh mục này.',
                     ),
                   ],
                 ),
@@ -111,7 +153,10 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                 context.read<NotificationBloc>().add(FetchNotificationsEvent());
               },
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 itemCount: filtered.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
@@ -128,7 +173,70 @@ class _NotificationListScreenState extends State<NotificationListScreen>
     );
   }
 
-  List<NotificationModel> _filterNotifications(List<NotificationModel> list, String filter) {
+  Widget _buildMobileNotifications(NotificationLoadedState state) {
+    final filtered = _filterNotifications(
+      state.notifications,
+      _filters[_tabController.index],
+    );
+    return RefreshIndicator(
+      onRefresh: () async =>
+          context.read<NotificationBloc>().add(FetchNotificationsEvent()),
+      child: ListView(
+        key: const ValueKey('notifications-mobile'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+        children: [
+          const Text(
+            'Thông báo của tôi',
+            style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${state.unreadCount} thông báo chưa đọc',
+            style: const TextStyle(color: AppColors.neutral600),
+          ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          SizedBox(
+            height: 42,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var index = 0; index < _filters.length; index++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(_filters[index]),
+                        selected: _tabController.index == index,
+                        onSelected: (_) =>
+                            setState(() => _tabController.animateTo(index)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (filtered.isEmpty)
+            const MobileSectionCard(
+              child: Center(
+                child: Text('Không có thông báo trong danh mục này.'),
+              ),
+            ),
+          for (final notification in filtered)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _buildNotificationCard(notification),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<NotificationModel> _filterNotifications(
+    List<NotificationModel> list,
+    String filter,
+  ) {
     switch (filter) {
       case 'Chưa đọc':
         return list.where((n) => !n.isRead).toList();
@@ -152,7 +260,9 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       borderRadius: BorderRadius.circular(12),
       onTap: () {
         if (!notif.isRead) {
-          context.read<NotificationBloc>().add(MarkNotificationAsReadEvent(notif.id));
+          context.read<NotificationBloc>().add(
+            MarkNotificationAsReadEvent(notif.id),
+          );
         }
         _handleNotificationTap(notif);
       },
@@ -162,7 +272,9 @@ class _NotificationListScreenState extends State<NotificationListScreen>
           color: notif.isRead ? Colors.white : config.color.withAlpha(15),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: notif.isRead ? AppColors.borderLight : config.color.withAlpha(80),
+            color: notif.isRead
+                ? AppColors.borderLight
+                : config.color.withAlpha(80),
             width: notif.isRead ? 1 : 1.5,
           ),
           boxShadow: [
@@ -189,50 +301,88 @@ class _NotificationListScreenState extends State<NotificationListScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: config.color.withAlpha(25),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
+                  if (AdaptiveBreakpoints.fromWidth(
+                        MediaQuery.sizeOf(context).width,
+                      ) ==
+                      AdaptiveSize.mobile)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
                           config.label,
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
                             color: config.color,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _formatTime(notif.createdAt),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textMutedLight,
+                        Text(
+                          _formatTime(notif.createdAt),
+                          style: const TextStyle(
+                            color: AppColors.textMutedLight,
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                      if (!notif.isRead) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
+                        if (!notif.isRead)
+                          const Icon(
+                            Icons.circle,
+                            size: 8,
                             color: AppColors.primary,
-                            shape: BoxShape.circle,
+                          ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: config.color.withAlpha(25),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            config.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: config.color,
+                            ),
                           ),
                         ),
+                        const Spacer(),
+                        Text(
+                          _formatTime(notif.createdAt),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMutedLight,
+                          ),
+                        ),
+                        if (!notif.isRead) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
                   const SizedBox(height: 6),
                   Text(
                     notif.title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: notif.isRead ? FontWeight.w600 : FontWeight.bold,
+                      fontWeight: notif.isRead
+                          ? FontWeight.w600
+                          : FontWeight.bold,
                       color: AppColors.textPrimaryLight,
                     ),
                   ),
@@ -241,7 +391,9 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                     notif.body,
                     style: TextStyle(
                       fontSize: 13,
-                      color: notif.isRead ? AppColors.textSecondaryLight : AppColors.textPrimaryLight,
+                      color: notif.isRead
+                          ? AppColors.textSecondaryLight
+                          : AppColors.textPrimaryLight,
                       height: 1.3,
                     ),
                   ),
@@ -322,9 +474,5 @@ class _NotifConfig {
   final IconData icon;
   final Color color;
 
-  _NotifConfig({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
+  _NotifConfig({required this.label, required this.icon, required this.color});
 }
