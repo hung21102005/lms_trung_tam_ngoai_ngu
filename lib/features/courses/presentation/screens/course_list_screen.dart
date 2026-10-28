@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
@@ -164,7 +166,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
-                  value: dialogLang,
+                  initialValue: dialogLang,
                   decoration: const InputDecoration(
                     labelText: 'Ngôn ngữ đào tạo',
                     border: OutlineInputBorder(),
@@ -277,6 +279,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
           List<CourseModel> liveCourses = [];
           if (state is CoursesLoaded) {
             liveCourses = state.courses;
+          }
+
+          if (width < 1024) {
+            return _buildMobileCourses(state, liveCourses);
           }
 
           return SingleChildScrollView(
@@ -792,8 +798,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                   ),
                                 ],
                                 onChanged: (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _selectedLevel = v);
+                                  }
                                 },
                               ),
                             ),
@@ -830,8 +837,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                   ),
                                 ],
                                 onChanged: (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _selectedDuration = v);
+                                  }
                                 },
                               ),
                             ),
@@ -868,8 +876,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                   ),
                                 ],
                                 onChanged: (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _selectedStatus = v);
+                                  }
                                 },
                               ),
                             ),
@@ -905,6 +914,209 @@ class _CourseListScreenState extends State<CourseListScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildMobileCourses(CoursesState state, List<CourseModel> courses) {
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = courses.where((course) {
+      final matchesText =
+          query.isEmpty ||
+          course.title.toLowerCase().contains(query) ||
+          course.code.toLowerCase().contains(query);
+      final matchesStatus =
+          _selectedStatus == 'ALL' ||
+          (_selectedStatus == 'ACTIVE' && course.isActive) ||
+          (_selectedStatus == 'INACTIVE' && !course.isActive);
+      return matchesText && matchesStatus;
+    }).toList();
+    final activeCount = courses.where((course) => course.isActive).length;
+
+    return SafeArea(
+      top: false,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        children: [
+          Text(
+            'Chương trình đào tạo',
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Quản lý khóa học và cấp độ',
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AppColors.textSecondaryLight),
+          ),
+          const SizedBox(height: 16),
+          MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Khóa học hiện có',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${courses.length}',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$activeCount đang hoạt động · ${courses.fold<int>(0, (sum, course) => sum + course.levelsCount)} cấp độ',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          FilledButton.icon(
+            onPressed: _showCreateCourseDialog,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Tạo khóa học mới'),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              hintText: 'Tìm tên hoặc mã khóa học',
+              prefixIcon: Icon(Icons.search_rounded),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final entry in const [
+                  ('ALL', 'Tất cả'),
+                  ('ACTIVE', 'Đang hoạt động'),
+                  ('INACTIVE', 'Tạm ngưng'),
+                ]) ...[
+                  ChoiceChip(
+                    label: Text(entry.$2),
+                    selected: _selectedStatus == entry.$1,
+                    onSelected: (_) =>
+                        setState(() => _selectedStatus = entry.$1),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (state is CoursesLoading || state is CoursesInitial)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (state is CoursesError)
+            MobileSectionCard(
+              child: Column(
+                children: [
+                  Text('Không tải được khóa học: ${state.message}'),
+                  TextButton.icon(
+                    onPressed: () => context.read<CoursesBloc>().add(
+                      const FetchCourses(refresh: true),
+                    ),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            )
+          else if (filtered.isEmpty)
+            const MobileSectionCard(child: Text('Không có khóa học phù hợp'))
+          else
+            for (final course in filtered) ...[
+              _mobileCourseCard(course),
+              const SizedBox(height: 12),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileCourseCard(CourseModel course) {
+    return MobileSectionCard(
+      child: InkWell(
+        onTap: () => context.push('/courses/${course.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    course.code,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelMedium
+                        ?.copyWith(color: AppColors.primary),
+                  ),
+                ),
+                MobileStatusPill(
+                  label: course.isActive ? 'Hoạt động' : 'Tạm ngưng',
+                  color: course.isActive
+                      ? AppColors.success
+                      : AppColors.textSecondaryLight,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              course.title,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            if (course.description?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 6),
+              Text(
+                course.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                Text('${course.levelsCount} cấp độ'),
+                Text('${course.classesCount} lớp'),
+                Text(course.language),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Xem chi tiết',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1446,7 +1658,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: textColor.withOpacity(0.2)),
+        border: Border.all(color: textColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1499,21 +1711,25 @@ class _CourseListScreenState extends State<CourseListScreen> {
     final filtered = liveCourses.where((lc) {
       if (_activeCategoryIndex == 1 &&
           !lc.code.toUpperCase().contains('IELTS') &&
-          !lc.title.toUpperCase().contains('IELTS'))
+          !lc.title.toUpperCase().contains('IELTS')) {
         return false;
+      }
       if (_activeCategoryIndex == 2 &&
           !lc.code.toUpperCase().contains('TOEIC') &&
-          !lc.title.toUpperCase().contains('TOEIC'))
+          !lc.title.toUpperCase().contains('TOEIC')) {
         return false;
+      }
       if (_activeCategoryIndex == 3 &&
           !lc.code.toUpperCase().contains('COMM') &&
-          !lc.title.toLowerCase().contains('giao tiếp'))
+          !lc.title.toLowerCase().contains('giao tiếp')) {
         return false;
+      }
       if (_activeCategoryIndex == 4 &&
           !lc.code.toUpperCase().contains('KIDS') &&
           !lc.title.toLowerCase().contains('thiếu nhi') &&
-          !lc.title.toLowerCase().contains('cambridge'))
+          !lc.title.toLowerCase().contains('cambridge')) {
         return false;
+      }
       if (query.isNotEmpty) {
         return lc.code.toLowerCase().contains(query) ||
             lc.title.toLowerCase().contains(query);

@@ -34,7 +34,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
 | Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Dashboard, users, branches/rooms and admissions Mobile checkpoints complete; settings pending |
-| Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Class list/create form and debts report Mobile checkpoints complete; edit class, schedules, courses and wider reports pending |
+| Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Class list/create form, course list and debts report Mobile checkpoints complete; course detail/create form, edit class, schedules and wider reports pending |
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
 
 Route inventory source: `lib/core/router/route_names.dart`; screen inventory: `lib/features/**/presentation/screens/` and `lib/features/dashboard/presentation/views/`. Nested home tabs and dialogs are included in each module above, rather than counted as standalone routes. Reclassify after visual QA.
@@ -49,7 +49,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Role shells | `student_home_screen`, `teacher_home_screen`, `parent_home_screen`, `admin_home_screen` | B | Student/Teacher/Admin breakpoint aligned; Parent Mobile home implemented; device QA pending |
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
-| Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
+| Course management | `course_list_screen`, `course_detail_screen` | C | Admin course list Mobile implemented; detail and create dialog pending |
 | Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Admin class list/create form, shared Mobile schedule/class detail and Teacher my-classes list implemented; edit and secondary management pending |
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history and embedded Teacher attendance Mobile implemented; standalone marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
@@ -222,3 +222,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - `SearchableEntityField` now opens a searchable Mobile bottom sheet when the user taps the field or its label. It filters existing records by name/code and returns their IDs; the Desktop dropdown remains unchanged. Tests cover selection, empty options, long selected labels and a 320×600 screen with a simulated 300 px keyboard inset.
 - Form tests: **10/10 pass** (320, 375, 393, 430, 800, 1200 px, keyboard, Mobile course/level selection, validation and repository ID submit). Shared picker tests: **5/5 pass**. Combined class list/form/picker regression: **27/27 pass**. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
 - Real class creation and scheduling persistence, native date/time/file interactions, screen-reader/device visual QA and Desktop screenshot comparison remain **unverified** without a running Backend/device. The class edit route and secondary Admin class panels still need a separate audit.
+
+### Checkpoint 2026-10-28 — Admin course list Mobile
+
+- Added a dedicated Mobile/Tablet course list below 1024 px. Its summary, search, status chips and course cards use only loaded `CourseModel` fields; cards open the existing course detail route. Loading, empty, API error and retry states have dedicated presentations. Desktop keeps its existing layout.
+- Widget tests with a repository fake: **10/10 pass** at 320, 375, 393, 430, 800 and 1200 px, including a simulated 300 px keyboard inset, search/status filtering, loading, empty/error and detail navigation. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
+- The current create-course dialog is still a Desktop-style popup on Mobile, and the detail screen needs a separate Adaptive pass. Existing Desktop curriculum cards include inferred/static tuition, capacity, duration and student-count values, and its export button only displays a notice. These are **not completed** by this Mobile list checkpoint. API-backed creation/detail, Excel export, physical device QA and Desktop screenshot comparison remain **unverified**.
