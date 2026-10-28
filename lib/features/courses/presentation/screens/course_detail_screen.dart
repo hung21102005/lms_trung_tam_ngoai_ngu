@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_card.dart';
@@ -8,6 +9,7 @@ import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
@@ -24,7 +26,10 @@ class CourseDetailScreen extends StatefulWidget {
 }
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
-  final NumberFormat _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+  final NumberFormat _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: 'đ',
+  );
 
   @override
   void initState() {
@@ -43,7 +48,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Thêm Cấp Độ Đào Tạo Mới', style: AppTextStyles.h4(context)),
+        title: Text(
+          'Thêm Cấp Độ Đào Tạo Mới',
+          style: AppTextStyles.h4(context),
+        ),
         content: SingleChildScrollView(
           child: SizedBox(
             width: 480,
@@ -86,7 +94,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 const SizedBox(height: 14),
                 AppTextField(
                   label: 'Mục tiêu chuẩn đầu ra',
-                  hintText: 'Chuẩn đầu ra của học viên sau khi hoàn thành level...',
+                  hintText:
+                      'Chuẩn đầu ra của học viên sau khi hoàn thành level...',
                   controller: descCtrl,
                   maxLines: 2,
                 ),
@@ -101,9 +110,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (codeCtrl.text.trim().isEmpty || nameCtrl.text.trim().isEmpty) {
+              if (codeCtrl.text.trim().isEmpty ||
+                  nameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập đầy đủ mã và tên cấp độ')),
+                  const SnackBar(
+                    content: Text('Vui lòng nhập đầy đủ mã và tên cấp độ'),
+                  ),
                 );
                 return;
               }
@@ -111,19 +123,25 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               final sessions = int.tryParse(sessionsCtrl.text.trim()) ?? 24;
               final fee = double.tryParse(feeCtrl.text.trim()) ?? 0;
 
-              context.read<CoursesBloc>().add(CreateCourseLevelEvent(
-                courseId: widget.courseId,
-                code: codeCtrl.text.trim().toUpperCase(),
-                name: nameCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
-                estimatedSessions: sessions,
-                tuitionFee: fee,
-              ));
+              context.read<CoursesBloc>().add(
+                CreateCourseLevelEvent(
+                  courseId: widget.courseId,
+                  code: codeCtrl.text.trim().toUpperCase(),
+                  name: nameCtrl.text.trim(),
+                  description: descCtrl.text.trim().isEmpty
+                      ? null
+                      : descCtrl.text.trim(),
+                  estimatedSessions: sessions,
+                  tuitionFee: fee,
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Thêm cấp độ'),
           ),
@@ -138,7 +156,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
         title: const Text('Chi tiết Khóa học'),
         elevation: 0,
@@ -147,7 +167,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              context.read<CoursesBloc>().add(FetchCourseDetail(widget.courseId));
+              context.read<CoursesBloc>().add(
+                FetchCourseDetail(widget.courseId),
+              );
             },
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Làm mới',
@@ -177,16 +199,55 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         },
         builder: (context, state) {
           if (state is CourseDetailLoading) {
-            return const LoadingWidget(message: 'Đang tải thông tin chi tiết khóa học...');
+            return const LoadingWidget(
+              message: 'Đang tải thông tin chi tiết khóa học...',
+            );
           } else if (state is CoursesError) {
+            if (MediaQuery.sizeOf(context).width < 1024) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: MobileSectionCard(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: AppColors.error,
+                          size: 36,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Không tải được khóa học: ${state.message}',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () => context.read<CoursesBloc>().add(
+                            FetchCourseDetail(widget.courseId),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
             return AppErrorWidget(
               message: state.message,
               onRetry: () {
-                context.read<CoursesBloc>().add(FetchCourseDetail(widget.courseId));
+                context.read<CoursesBloc>().add(
+                  FetchCourseDetail(widget.courseId),
+                );
               },
             );
           } else if (state is CourseDetailLoaded) {
             final course = state.course;
+            if (MediaQuery.sizeOf(context).width < 1024) {
+              return _buildMobileDetail(course);
+            }
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -209,8 +270,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ],
@@ -225,12 +291,160 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     icon: Icons.layers_clear_outlined,
                   )
                 else
-                  ...course.levels.map((level) => _buildLevelCard(context, level)),
+                  ...course.levels.map(
+                    (level) => _buildLevelCard(context, level),
+                  ),
               ],
             );
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildMobileDetail(CourseModel course) {
+    return SafeArea(
+      top: false,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        children: [
+          MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    MobileStatusPill(
+                      label: course.code,
+                      color: AppColors.primary,
+                    ),
+                    MobileStatusPill(
+                      label: course.isActive ? 'Đang đào tạo' : 'Tạm dừng',
+                      color: course.isActive
+                          ? AppColors.success
+                          : AppColors.error,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  course.title,
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                if (course.description?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Text(course.description!),
+                ],
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    Text('${course.levelsCount} cấp độ'),
+                    Text('${course.classesCount} lớp'),
+                    Text(course.language),
+                  ],
+                ),
+                if (course.targetAudience?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Text('Đối tượng: ${course.targetAudience}'),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          Text(
+            'Lộ trình học tập',
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _showAddLevelDialog,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Thêm cấp độ'),
+          ),
+          const SizedBox(height: 16),
+          if (course.levels.isEmpty)
+            const MobileSectionCard(child: Text('Chưa có cấp độ đào tạo nào'))
+          else
+            for (final level in course.levels) ...[
+              _mobileLevelCard(level),
+              const SizedBox(height: 12),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileLevelCard(CourseLevelModel level) {
+    return MobileSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MobileStatusPill(label: level.code, color: AppColors.primary),
+          const SizedBox(height: 8),
+          Text(
+            level.name,
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          if (level.description?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            Text(level.description!),
+          ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              Text('${level.estimatedSessions} buổi'),
+              Text(_currencyFormat.format(level.tuitionFee)),
+              Text('${level.modules.length} học phần'),
+            ],
+          ),
+          const Divider(height: 24),
+          if (level.modules.isEmpty)
+            const Text('Chưa có học phần hoặc bài học')
+          else
+            for (final module in level.modules)
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: Text(
+                  module.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text('${module.lessons.length} bài học'),
+                children: [
+                  if (module.lessons.isEmpty)
+                    const ListTile(title: Text('Chưa có bài học'))
+                  else
+                    for (final lesson in module.lessons)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(lesson.title),
+                        subtitle: Text(
+                          '${lesson.durationMinutes} phút · ${lesson.materials.length} tài liệu',
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => LessonDetailScreen(
+                              moduleTitle: module.title,
+                              lesson: lesson,
+                            ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+        ],
       ),
     );
   }
@@ -247,7 +461,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: primaryColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
@@ -264,9 +481,14 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ),
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -276,14 +498,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     const SizedBox(width: 6),
                     Text(
                       course.language,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: course.isActive
                       ? AppColors.success.withAlpha(25)
@@ -295,7 +523,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: course.isActive ? AppColors.success : AppColors.error,
+                    color: course.isActive
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 ),
               ),
@@ -306,17 +536,24 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             course.title,
             style: AppTextStyles.h4(context).copyWith(fontSize: 20),
           ),
-          if (course.targetAudience != null && course.targetAudience!.isNotEmpty) ...[
+          if (course.targetAudience != null &&
+              course.targetAudience!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.people_outline, size: 16, color: AppColors.secondary),
+                const Icon(
+                  Icons.people_outline,
+                  size: 16,
+                  color: AppColors.secondary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Đối tượng: ${course.targetAudience}',
                   style: AppTextStyles.caption(context).copyWith(
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? Colors.white70
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
               ],
@@ -350,11 +587,17 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             initiallyExpanded: true,
-            tilePadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
             title: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: primaryColor.withAlpha(20),
                     borderRadius: BorderRadius.circular(6),
@@ -381,14 +624,26 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               padding: const EdgeInsets.only(top: 6),
               child: Row(
                 children: [
-                  Icon(Icons.schedule, size: 14, color: isDark ? Colors.white60 : AppColors.textSecondaryLight),
+                  Icon(
+                    Icons.schedule,
+                    size: 14,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondaryLight,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${level.estimatedSessions} buổi',
                     style: AppTextStyles.caption(context),
                   ),
                   const SizedBox(width: 14),
-                  Icon(Icons.payments_outlined, size: 14, color: isDark ? Colors.white60 : AppColors.textSecondaryLight),
+                  Icon(
+                    Icons.payments_outlined,
+                    size: 14,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondaryLight,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     _currencyFormat.format(level.tuitionFee),
@@ -399,7 +654,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Icon(Icons.library_books_outlined, size: 14, color: isDark ? Colors.white60 : AppColors.textSecondaryLight),
+                  Icon(
+                    Icons.library_books_outlined,
+                    size: 14,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondaryLight,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${level.modules.length} modules',
@@ -414,7 +675,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 const Padding(
                   padding: EdgeInsets.all(20),
                   child: Center(
-                    child: Text('Chưa có chương trình/bài học chi tiết cho level này.'),
+                    child: Text(
+                      'Chưa có chương trình/bài học chi tiết cho level này.',
+                    ),
                   ),
                 )
               else
@@ -439,7 +702,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B).withAlpha(120) : const Color(0xFFF8FAFC),
+        color: isDark
+            ? const Color(0xFF1E293B).withAlpha(120)
+            : const Color(0xFFF8FAFC),
         border: Border(
           bottom: BorderSide(
             color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -454,12 +719,19 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.folder_open_rounded, size: 18, color: AppColors.secondary),
+                const Icon(
+                  Icons.folder_open_rounded,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     module.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 Text(
@@ -469,66 +741,84 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ],
             ),
           ),
-          ...module.lessons.map((lesson) => _buildLessonTile(context, module, lesson)),
+          ...module.lessons.map(
+            (lesson) => _buildLessonTile(context, module, lesson),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLessonTile(BuildContext context, ModuleModel module, LessonModel lesson) {
+  Widget _buildLessonTile(
+    BuildContext context,
+    ModuleModel module,
+    LessonModel lesson,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListTile(
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
-      leading: Container(
-        width: 28,
-        height: 28,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-          shape: BoxShape.circle,
-        ),
-        child: Text(
-          '${lesson.order}',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-        ),
-      ),
-      title: Text(
-        lesson.title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-      ),
-      subtitle: Row(
-        children: [
-          Icon(Icons.timer_outlined, size: 13, color: isDark ? Colors.white60 : AppColors.textSecondaryLight),
-          const SizedBox(width: 4),
-          Text('${lesson.durationMinutes} phút', style: const TextStyle(fontSize: 12)),
-          if (lesson.materials.isNotEmpty) ...[
-            const SizedBox(width: 12),
-            Icon(Icons.attach_file, size: 13, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 2),
-            Text(
-              '${lesson.materials.length} tài liệu',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ],
-      ),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => LessonDetailScreen(
-              moduleTitle: module.title,
-              lesson: lesson,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+        leading: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            shape: BoxShape.circle,
           ),
-        );
-      },
+          child: Text(
+            '${lesson.order}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(
+          lesson.title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        subtitle: Row(
+          children: [
+            Icon(
+              Icons.timer_outlined,
+              size: 13,
+              color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${lesson.durationMinutes} phút',
+              style: const TextStyle(fontSize: 12),
+            ),
+            if (lesson.materials.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Icon(
+                Icons.attach_file,
+                size: 13,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 2),
+              Text(
+                '${lesson.materials.length} tài liệu',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  LessonDetailScreen(moduleTitle: module.title, lesson: lesson),
+            ),
+          );
+        },
+      ),
     );
   }
 }
