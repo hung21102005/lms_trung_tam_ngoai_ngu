@@ -135,3 +135,9 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Khi tạo lớp, Backend từ chối phòng thuộc chi nhánh khác, giờ kết thúc không sau giờ bắt đầu, ngày học rỗng hoặc trùng. Form mở lớp Admin đã có chọn khoảng đăng ký, giữ trạng thái lớp `PLANNING`; chi tiết lớp hiển thị khoảng đã lưu cho quản trị/học vụ. Dữ liệu đi qua Bloc/Repository/API hiện có.
 - Backend build đạt, lint đạt (cảnh báo cũ), toàn bộ test **153/153 đạt**. Flutter analyzer phạm vi lớp **0 issues**; widget regression form/danh sách/chi tiết lớp **28/28 đạt** tại 320–1200 px và bàn phím mở. `flutter build web --no-wasm-dry-run` đạt. Thao tác tạo lớp thật qua HTTP chưa kiểm chứng.
 - **Còn thiếu:** giao diện sửa thông tin lớp và khoảng đăng ký; kiểm tra giáo viên hợp lệ/thuộc chi nhánh, xung đột trợ giảng, quy trình công bố lớp; public API danh sách lớp; đăng ký từ khách/học viên cũ; đồng bộ CRM. Không thể mở lớp từ 47 khóa seed cho đến khi được duyệt học thuật và công bố; không tự công bố seed.
+
+## Checkpoint ràng buộc phân công mở lớp (2026-10-28)
+
+- `POST /classes` chỉ nhận phòng đang hoạt động, cùng chi nhánh và có đủ sức chứa cho sĩ số lớp. Giáo viên chính/trợ giảng được chọn phải có vai trò `teacher`, đang hoạt động và thuộc chi nhánh lớp; hai vai trò không thể dùng cùng một tài khoản. Những điều kiện này được kiểm tra tại Backend dù client gửi ID trực tiếp.
+- Sinh ngày học và kiểm tra trùng lịch theo UTC để tránh lệch ngày khi máy chủ chạy ở múi giờ khác. Backend build đạt, lint đạt với 8 cảnh báo cũ ngoài phạm vi, test toàn bộ **157/157 đạt**. Chưa kiểm chứng tạo lớp qua HTTP với dữ liệu thật; không thay đổi lớp đã tồn tại.
+- **Tiếp tục:** UI sửa thông tin lớp/cửa sổ đăng ký và an toàn khi đổi lịch; kiểm tra trùng lịch với trợ giảng và các vai trò phân công; thiết kế trạng thái/công bố lớp, public API lớp sắp khai giảng. Catalog seed vẫn chưa được duyệt học thuật nên không được tự mở lớp từ dữ liệu đó.

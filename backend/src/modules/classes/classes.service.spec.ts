@@ -2,13 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClassesService } from './classes.service.js';
 import { PrismaService } from '../../database/index.js';
 import {
-  NotFoundException,
   ConflictException,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ClassStatus, EnrollmentStatus, SessionStatus } from '@prisma/client';
+import { ClassStatus, EnrollmentStatus, UserStatus } from '@prisma/client';
 
 describe('ClassesService', () => {
   let service: ClassesService;
@@ -29,6 +28,8 @@ describe('ClassesService', () => {
     branchId: 'branch-1',
     code: 'P101',
     name: 'Phòng 101',
+    capacity: 25,
+    isActive: true,
   };
   const mockTeacher = {
     id: 'teacher-1',
@@ -101,6 +102,7 @@ describe('ClassesService', () => {
     service = module.get<ClassesService>(ClassesService);
     vi.clearAllMocks();
     mockPrismaService.room.findUnique.mockResolvedValue(mockRoom);
+    mockPrismaService.user.findFirst.mockResolvedValue(mockTeacher);
   });
 
   it('should be defined', () => {
@@ -156,6 +158,51 @@ describe('ClassesService', () => {
         service.create({ ...baseCreate, roomId: 'room-1' }, adminActor),
       ).rejects.toThrow('Phòng học không thuộc chi nhánh');
       expect(mockPrismaService.class.create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [{ ...mockRoom, isActive: false }, 'ngừng hoạt động'],
+      [{ ...mockRoom, capacity: 10 }, 'vượt quá sức chứa'],
+    ])('rejects an unavailable room', async (room, message) => {
+      await prepareCatalog();
+      mockPrismaService.room.findUnique.mockResolvedValueOnce(room);
+      await expect(
+        service.create({ ...baseCreate, roomId: 'room-1' }, adminActor),
+      ).rejects.toThrow(message);
+    });
+
+    it('rejects a teacher that does not belong to the active branch teacher lookup', async () => {
+      await prepareCatalog();
+      mockPrismaService.user.findFirst.mockResolvedValueOnce(null);
+      await expect(
+        service.create(
+          { ...baseCreate, mainTeacherId: 'teacher-2' },
+          adminActor,
+        ),
+      ).rejects.toThrow('Giáo viên được chọn không hoạt động');
+      expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'teacher-2',
+          branchId: 'branch-1',
+          status: UserStatus.ACTIVE,
+          userRoles: { some: { role: { code: 'teacher' } } },
+        },
+        select: { id: true },
+      });
+    });
+
+    it('rejects the same account as teacher and assistant', async () => {
+      await prepareCatalog();
+      await expect(
+        service.create(
+          {
+            ...baseCreate,
+            mainTeacherId: 'teacher-1',
+            assistantTeacherId: 'teacher-1',
+          },
+          adminActor,
+        ),
+      ).rejects.toThrow('phải khác nhau');
     });
 
     it.each([
@@ -392,6 +439,13 @@ describe('ClassesService', () => {
 
       expect(result).toBeDefined();
       expect(mockPrismaService.classSession.create).toHaveBeenCalledTimes(4);
+      expect(mockPrismaService.classSession.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            date: new Date('2026-11-02T00:00:00.000Z'),
+          }),
+        }),
+      );
       expect(mockPrismaService.class.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({

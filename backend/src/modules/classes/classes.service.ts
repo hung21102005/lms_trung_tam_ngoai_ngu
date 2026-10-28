@@ -395,6 +395,34 @@ export class ClassesService {
       if (room.branchId !== dto.branchId) {
         throw new BadRequestException('Phòng học không thuộc chi nhánh mở lớp');
       }
+      if (!room.isActive) {
+        throw new BadRequestException('Phòng học đã ngừng hoạt động');
+      }
+      if ((dto.maxCapacity ?? 20) > room.capacity) {
+        throw new BadRequestException('Sĩ số lớp vượt quá sức chứa phòng học');
+      }
+    }
+    if (dto.mainTeacherId && dto.mainTeacherId === dto.assistantTeacherId) {
+      throw new BadRequestException(
+        'Giáo viên chính và trợ giảng phải khác nhau',
+      );
+    }
+    for (const teacherId of [dto.mainTeacherId, dto.assistantTeacherId]) {
+      if (!teacherId) continue;
+      const teacher = await this.prisma.user.findFirst({
+        where: {
+          id: teacherId,
+          branchId: dto.branchId,
+          status: UserStatus.ACTIVE,
+          userRoles: { some: { role: { code: 'teacher' } } },
+        },
+        select: { id: true },
+      });
+      if (!teacher) {
+        throw new BadRequestException(
+          'Giáo viên được chọn không hoạt động, không thuộc chi nhánh hoặc không có quyền giảng dạy',
+        );
+      }
     }
     if (dto.startTime >= dto.endTime) {
       throw new BadRequestException('Giờ kết thúc phải sau giờ bắt đầu');
@@ -439,10 +467,10 @@ export class ClassesService {
     const curDate = new Date(dto.startDate);
 
     while (sessionDates.length < totalSessions) {
-      if (targetDays.includes(curDate.getDay())) {
+      if (targetDays.includes(curDate.getUTCDay())) {
         sessionDates.push(new Date(curDate));
       }
-      curDate.setDate(curDate.getDate() + 1);
+      curDate.setUTCDate(curDate.getUTCDate() + 1);
     }
 
     const calculatedEndDate = sessionDates[sessionDates.length - 1];
@@ -450,7 +478,7 @@ export class ClassesService {
     // 4. KIỂM TRA TRÙNG LỊCH (PHÒNG HỌC & GIÁO VIÊN)
     for (const sDate of sessionDates) {
       const dateStart = new Date(sDate);
-      dateStart.setHours(0, 0, 0, 0);
+      dateStart.setUTCHours(0, 0, 0, 0);
 
       // 4.1 Kiểm tra trùng phòng học
       if (dto.roomId) {
