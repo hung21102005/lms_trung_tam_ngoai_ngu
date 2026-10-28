@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'mobile/mobile_ui.dart';
+
 class EntityOption {
   const EntityOption({required this.id, required this.label});
 
@@ -85,6 +87,33 @@ class _SearchableEntityFieldState extends State<SearchableEntityField> {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < 600) {
+      final selectedLabel = widget.options
+          .where((option) => option.id == _selectedId)
+          .map((option) => option.label)
+          .firstOrNull;
+      return InkWell(
+        onTap: widget.enabled ? _showMobilePicker : null,
+        borderRadius: BorderRadius.circular(12),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: widget.label,
+            border: const OutlineInputBorder(),
+            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+            enabled: widget.enabled,
+          ),
+          isEmpty: selectedLabel == null,
+          child: Text(
+            selectedLabel ?? widget.hintText ?? 'Bấm để chọn hoặc gõ để tìm',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: selectedLabel == null
+                ? TextStyle(color: Theme.of(context).hintColor)
+                : null,
+          ),
+        ),
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) => DropdownMenu<String>(
         width: constraints.maxWidth,
@@ -110,5 +139,89 @@ class _SearchableEntityFieldState extends State<SearchableEntityField> {
         },
       ),
     );
+  }
+
+  Future<void> _showMobilePicker() async {
+    String query = '';
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          final visible = widget.options
+              .where(
+                (option) =>
+                    option.label.toLowerCase().contains(query.toLowerCase()),
+              )
+              .toList();
+          return Padding(
+            padding: EdgeInsets.only(
+              left: MobileTokens.gutter,
+              right: MobileTokens.gutter,
+              bottom:
+                  MediaQuery.viewInsetsOf(sheetContext).bottom +
+                  MobileTokens.gutter,
+            ),
+            child: SizedBox(
+              height:
+                  (MediaQuery.sizeOf(sheetContext).height -
+                      MediaQuery.viewInsetsOf(sheetContext).bottom) *
+                  0.65,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    widget.label,
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    onChanged: (value) => setSheetState(() => query = value),
+                    decoration: const InputDecoration(
+                      hintText: 'Tìm theo tên hoặc mã',
+                      prefixIcon: Icon(Icons.search_rounded),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: visible.isEmpty
+                        ? const Center(child: Text('Không có mục phù hợp'))
+                        : ListView.builder(
+                            itemCount: visible.length,
+                            itemBuilder: (_, index) {
+                              final option = visible[index];
+                              return ListTile(
+                                title: Text(option.label),
+                                trailing: option.id == _selectedId
+                                    ? const Icon(Icons.check_rounded)
+                                    : null,
+                                onTap: () =>
+                                    Navigator.pop(sheetContext, option.id),
+                              );
+                            },
+                          ),
+                  ),
+                  if (_selectedId != null)
+                    TextButton(
+                      onPressed: () => Navigator.pop(sheetContext, ''),
+                      child: const Text('Bỏ chọn'),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted || selected == null) return;
+    final id = selected.isEmpty ? null : selected;
+    setState(() {
+      _selectedId = id;
+      _syncText();
+    });
+    widget.onSelected(id);
   }
 }

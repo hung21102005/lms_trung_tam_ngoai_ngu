@@ -142,6 +142,96 @@ void main() {
     );
   }
 
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('biểu mẫu tạo lớp ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Tạo Lớp & Tự Động Sinh Buổi Học'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('Mobile form cuộn được khi bàn phím mở', (tester) async {
+    tester.view.physicalSize = const Size(320, 600);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'IELTS-F-01');
+    await tester.scrollUntilVisible(
+      find.text('Tạo Lớp & Tự Động Sinh Buổi Học'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Mobile chọn khóa học và cấp độ từ danh mục', (tester) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Future<dynamic> fetch(
+      String path, {
+      Map<String, dynamic>? queryParameters,
+    }) async {
+      if (path == '/courses') {
+        return {
+          'items': [
+            {'id': 'course-1', 'title': 'IELTS', 'code': 'IELTS'},
+          ],
+          'totalPages': 1,
+        };
+      }
+      if (path == '/branches') return <dynamic>[];
+      if (path == '/courses/course-1/levels') {
+        return [
+          {'id': 'level-1', 'name': 'Foundation', 'code': 'F'},
+        ];
+      }
+      throw StateError('Unexpected path $path');
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<ClassesBloc>.value(
+          value: classesBloc,
+          child: ClassCreateScreen(catalogFetch: fetch),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Future<void> choose(String label, String option) async {
+      final field = find.text(label);
+      await tester.scrollUntilVisible(
+        field,
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tapAt(tester.getCenter(field));
+      await tester.pumpAndSettle();
+      expect(find.text(option), findsWidgets);
+      await tester.tap(find.text(option).last);
+      await tester.pumpAndSettle();
+    }
+
+    await choose('Khóa học *', 'IELTS (IELTS)');
+    await choose('Cấp độ *', 'Foundation (F)');
+    expect(find.text('Foundation (F)'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'ClassCreateScreen renders form fields and validates empty submission',
     (tester) async {

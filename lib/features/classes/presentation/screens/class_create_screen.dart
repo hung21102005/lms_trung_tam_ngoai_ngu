@@ -10,6 +10,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/searchable_entity_field.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../bloc/classes_bloc.dart';
 import '../bloc/classes_event.dart';
 import '../bloc/classes_state.dart';
@@ -142,11 +143,12 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         _loadingLookups = false;
       });
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _lookupError = error.toString();
           _loadingLookups = false;
         });
+      }
     }
   }
 
@@ -163,10 +165,11 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         setState(() => _levels = _options(_items(response), 'name', 'code'));
       }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Không tải được cấp độ: $error')),
         );
+      }
     }
   }
 
@@ -194,12 +197,13 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         });
       }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Không tải được phòng học hoặc giáo viên: $error'),
           ),
         );
+      }
     }
   }
 
@@ -318,10 +322,64 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
     );
   }
 
+  Widget _fieldPair({
+    required bool isMobile,
+    required Widget first,
+    required Widget second,
+  }) => isMobile
+      ? Column(children: [first, const SizedBox(height: 12), second])
+      : Row(
+          children: [
+            Expanded(child: first),
+            const SizedBox(width: 12),
+            Expanded(child: second),
+          ],
+        );
+
+  Widget _timeField(
+    String label,
+    TimeOfDay value,
+    VoidCallback onTap,
+    bool isDark,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: AppTextStyles.caption(context)
+            .copyWith(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 6),
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatTimeOfDay(value),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const Icon(Icons.access_time, size: 18),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
 
     return Scaffold(
       backgroundColor: isDark
@@ -333,6 +391,12 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         foregroundColor: isDark ? Colors.white : AppColors.textPrimaryLight,
       ),
+      bottomNavigationBar: isMobile
+          ? SafeArea(
+              minimum: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: SizedBox(width: double.infinity, child: _submitButton()),
+            )
+          : null,
       body: BlocListener<ClassesBloc, ClassesState>(
         listener: (context, state) {
           if (state is ClassOperationSuccess) {
@@ -359,6 +423,26 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (isMobile) ...[
+                const MobileSectionCard(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Chọn chương trình, xếp lịch và quy mô lớp. Hệ thống sẽ tạo các buổi học sau khi lưu.',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               AppCard(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -387,64 +471,50 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                           : null,
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SearchableEntityField(
-                            label: 'Khóa học *',
-                            options: _courses,
-                            selectedId: _courseIdController.text.isEmpty
-                                ? null
-                                : _courseIdController.text,
-                            onSelected: _selectCourse,
-                            enabled: !_loadingLookups,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SearchableEntityField(
-                            label: 'Cấp độ *',
-                            options: _levels,
-                            selectedId: _levelIdController.text.isEmpty
-                                ? null
-                                : _levelIdController.text,
-                            onSelected: (id) => setState(
-                              () => _levelIdController.text = id ?? '',
-                            ),
-                            enabled: _courseIdController.text.isNotEmpty,
-                          ),
-                        ),
-                      ],
+                    _fieldPair(
+                      isMobile: isMobile,
+                      first: SearchableEntityField(
+                        label: 'Khóa học *',
+                        options: _courses,
+                        selectedId: _courseIdController.text.isEmpty
+                            ? null
+                            : _courseIdController.text,
+                        onSelected: _selectCourse,
+                        enabled: !_loadingLookups,
+                      ),
+                      second: SearchableEntityField(
+                        label: 'Cấp độ *',
+                        options: _levels,
+                        selectedId: _levelIdController.text.isEmpty
+                            ? null
+                            : _levelIdController.text,
+                        onSelected: (id) =>
+                            setState(() => _levelIdController.text = id ?? ''),
+                        enabled: _courseIdController.text.isNotEmpty,
+                      ),
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SearchableEntityField(
-                            label: 'Chi nhánh *',
-                            options: _branches,
-                            selectedId: _branchIdController.text.isEmpty
-                                ? null
-                                : _branchIdController.text,
-                            onSelected: _selectBranch,
-                            enabled: !_loadingLookups,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SearchableEntityField(
-                            label: 'Phòng học',
-                            options: _rooms,
-                            selectedId: _roomIdController.text.isEmpty
-                                ? null
-                                : _roomIdController.text,
-                            onSelected: (id) => setState(
-                              () => _roomIdController.text = id ?? '',
-                            ),
-                            enabled: _branchIdController.text.isNotEmpty,
-                          ),
-                        ),
-                      ],
+                    _fieldPair(
+                      isMobile: isMobile,
+                      first: SearchableEntityField(
+                        label: 'Chi nhánh *',
+                        options: _branches,
+                        selectedId: _branchIdController.text.isEmpty
+                            ? null
+                            : _branchIdController.text,
+                        onSelected: _selectBranch,
+                        enabled: !_loadingLookups,
+                      ),
+                      second: SearchableEntityField(
+                        label: 'Phòng học',
+                        options: _rooms,
+                        selectedId: _roomIdController.text.isEmpty
+                            ? null
+                            : _roomIdController.text,
+                        onSelected: (id) =>
+                            setState(() => _roomIdController.text = id ?? ''),
+                        enabled: _branchIdController.text.isNotEmpty,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     SearchableEntityField(
@@ -577,101 +647,20 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Start & End Time row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Giờ bắt đầu',
-                                style: AppTextStyles.caption(context)
-                                    .copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 6),
-                              InkWell(
-                                onTap: _pickStartTime,
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF1E293B)
-                                        : const Color(0xFFF8FAFC),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFFCBD5E1),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _formatTimeOfDay(_startTime),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const Icon(Icons.access_time, size: 18),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Giờ kết thúc',
-                                style: AppTextStyles.caption(context)
-                                    .copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 6),
-                              InkWell(
-                                onTap: _pickEndTime,
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF1E293B)
-                                        : const Color(0xFFF8FAFC),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFFCBD5E1),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _formatTimeOfDay(_endTime),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const Icon(Icons.access_time, size: 18),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    _fieldPair(
+                      isMobile: isMobile,
+                      first: _timeField(
+                        'Giờ bắt đầu',
+                        _startTime,
+                        _pickStartTime,
+                        isDark,
+                      ),
+                      second: _timeField(
+                        'Giờ kết thúc',
+                        _endTime,
+                        _pickEndTime,
+                        isDark,
+                      ),
                     ),
                   ],
                 ),
@@ -686,26 +675,20 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                   children: [
                     Text('Quy mô & Học phí', style: AppTextStyles.h4(context)),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            label: 'Tổng số buổi học',
-                            hintText: '24',
-                            keyboardType: TextInputType.number,
-                            controller: _totalSessionsController,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppTextField(
-                            label: 'Sĩ số tối đa',
-                            hintText: '20',
-                            keyboardType: TextInputType.number,
-                            controller: _capacityController,
-                          ),
-                        ),
-                      ],
+                    _fieldPair(
+                      isMobile: isMobile,
+                      first: AppTextField(
+                        label: 'Tổng số buổi học',
+                        hintText: '24',
+                        keyboardType: TextInputType.number,
+                        controller: _totalSessionsController,
+                      ),
+                      second: AppTextField(
+                        label: 'Sĩ số tối đa',
+                        hintText: '20',
+                        keyboardType: TextInputType.number,
+                        controller: _capacityController,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     AppTextField(
@@ -726,15 +709,7 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
               ),
               const SizedBox(height: 24),
 
-              BlocBuilder<ClassesBloc, ClassesState>(
-                builder: (context, state) {
-                  return AppButton(
-                    text: 'Tạo Lớp & Tự Động Sinh Buổi Học',
-                    isLoading: state is ClassesLoading,
-                    onPressed: _submitForm,
-                  );
-                },
-              ),
+              if (!isMobile) _submitButton(),
               const SizedBox(height: 32),
             ],
           ),
@@ -742,4 +717,12 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
       ),
     );
   }
+
+  Widget _submitButton() => BlocBuilder<ClassesBloc, ClassesState>(
+    builder: (context, state) => AppButton(
+      text: 'Tạo Lớp & Tự Động Sinh Buổi Học',
+      isLoading: state is ClassesLoading,
+      onPressed: _submitForm,
+    ),
+  );
 }
