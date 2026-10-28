@@ -880,23 +880,14 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                 color: const Color(0xFFE8F5E9),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 3.5,
-                                    backgroundColor: Color(0xFF2E7D32),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Hệ thống bảo mật trực tuyến',
-                                    style: TextStyle(
-                                      color: Color(0xFF2E7D32),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
+                              child: const Text(
+                                '● Hệ thống bảo mật trực tuyến',
+                                softWrap: true,
+                                style: TextStyle(
+                                  color: Color(0xFF2E7D32),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
                           ],
@@ -1226,6 +1217,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            isExpanded: true,
                             value: _selectedBranch,
                             items: [
                               const DropdownMenuItem(
@@ -1256,6 +1248,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            isExpanded: true,
                             value: _selectedStatus,
                             items: const [
                               DropdownMenuItem(
@@ -1627,7 +1620,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                 ),
               ),
               SizedBox(
-                width: 120,
+                width: 144,
                 child: Text(
                   'THAO TÁC',
                   textAlign: TextAlign.right,
@@ -1809,37 +1802,32 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               : const Color(0xFFFECACA),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                            radius: 3,
-                            backgroundColor: isActive
-                                ? const Color(0xFF059669)
-                                : const Color(0xFFDC2626),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            isActive ? 'Hoạt động' : 'Tạm khóa',
-                            style: TextStyle(
-                              color: isActive
-                                  ? const Color(0xFF047857)
-                                  : const Color(0xFFB91C1C),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        isActive ? '● Hoạt động' : '● Tạm khóa',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isActive
+                              ? const Color(0xFF047857)
+                              : const Color(0xFFB91C1C),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                   // Thao tác
                   SizedBox(
-                    width: 120,
+                    width: 144,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          padding: EdgeInsets.zero,
                           icon: const Icon(
                             Icons.edit_outlined,
                             size: 18,
@@ -1849,6 +1837,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                           onPressed: () => _showUserAction(u, 'Chỉnh sửa'),
                         ),
                         IconButton(
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          padding: EdgeInsets.zero,
                           icon: const Icon(
                             Icons.key_rounded,
                             size: 18,
@@ -1859,6 +1852,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               _showUserAction(u, 'Cấp lại mật khẩu'),
                         ),
                         IconButton(
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          padding: EdgeInsets.zero,
                           icon: Icon(
                             isActive
                                 ? Icons.lock_outline_rounded

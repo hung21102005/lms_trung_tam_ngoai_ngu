@@ -33,7 +33,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Assignment workflow list and submission review Mobile implemented; create/edit/gradebook pending |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
-| Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Mobile dashboard and shell breakpoint implemented; management views pending audit |
+| Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Mobile dashboard/shell implemented; existing user cards verified and overflow fixed; other management views pending |
 | Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Audit only |
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
 
@@ -59,7 +59,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
 | Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Admin dashboard Mobile implemented; other reports pending |
-| Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | C | Pending |
+| Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | B/C | User list Mobile cards verified; other management views pending |
 
 Also inspect private builders, dialogs, bottom sheets, and tab content in each listed file during that feature's phase; they are not separate Dart screen files. There is no separate reset-password route or standalone parent child screen in the current route table, so no new business module is assumed.
 
@@ -184,3 +184,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Admin shell now uses the Desktop sidebar from 1024 logical pixels; smaller widths use its existing drawer/bottom navigation. Corrected the bottom navigation's selected item mapping for Classes, Courses and Reports. The Mobile dashboard has its own hierarchy for active students, operating classes, revenue/debt, upcoming classes and debtors, using the existing `ReportsBloc` data. Desktop charts and tables remain on the old branch.
 - Dashboard widget tests: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px, including the existing Desktop KPI/chart/table regression. Scoped analyzer: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass** (40.5 seconds).
 - Shell navigation taps and live Backend values remain **unverified**. Source audit shows `UsersManagementView` already switches to Mobile cards below its threshold, so preserve and verify it instead of duplicating that UI. Admin management views/reports/forms, physical device visuals and Desktop screenshots remain pending.
+
+### Checkpoint 2026-10-28 — Admin user list responsive repair
+
+- Kept the existing API-backed user list and Mobile cards. Six-width widget audit uncovered actual RenderFlex overflows in the Mobile security badge and branch/status dropdowns, plus the Desktop status/action cells. Replaced the cramped badge content, constrained dropdown selection text, and gave Desktop actions adequate width. The existing search, filters and API call path remain in place.
+- Widget tests: **6/6 pass** at 320, 375, 393, 430, 800 and 1200 px, including Mobile search filtering. New test analyzer: **0 issues**; the large existing `users_management_view.dart` still has **18 info-level lint notices** unrelated to this layout repair, with no analyzer errors. `git diff --check`: **pass**. `flutter build web --no-wasm-dry-run`: **pass** (49.6 seconds).
+- Add/edit user dialogs, role/branch filters with real data, import/export, permission enforcement and device visuals remain **unverified**. The rest of Admin management views are pending.
