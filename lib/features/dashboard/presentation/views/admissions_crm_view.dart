@@ -27,6 +27,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
   bool _isKanbanView = true;
   String _selectedBranch = 'ALL';
   String _selectedSource = 'ALL';
+  String _mobileStage = 'ALL';
 
   @override
   void initState() {
@@ -39,13 +40,14 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     try {
       final response = await _apiClient.get('/branches');
       final data = response is Map ? response['data'] ?? response : response;
-      if (data is List && mounted)
+      if (data is List && mounted) {
         setState(
           () => _branches = data
               .whereType<Map>()
               .map((item) => Map<String, dynamic>.from(item))
               .toList(),
         );
+      }
     } catch (_) {
       // Danh mục chi nhánh có thể tải lại khi mở lại trang.
     }
@@ -67,15 +69,17 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         mimeType:
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
-      if (saved != null && mounted)
+      if (saved != null && mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Đã xuất dữ liệu Leads.')));
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Xuất dữ liệu Leads thất bại: $error')),
         );
+      }
     }
   }
 
@@ -180,7 +184,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                value: source,
+                initialValue: source,
                 decoration: const InputDecoration(
                   labelText: 'Nguồn tiếp nhận',
                   border: OutlineInputBorder(),
@@ -269,7 +273,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     'branchId': branchId,
                   },
                 );
-                if (!context.mounted) return;
+                if (!ctx.mounted || !mounted) return;
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -278,7 +282,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                 );
                 _fetchLeads();
               } catch (error) {
-                if (!context.mounted) return;
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Không thể lưu lead: $error')),
                 );
@@ -407,10 +411,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         ),
       );
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Không tải được chi tiết lead: $error')),
         );
+      }
     }
   }
 
@@ -801,32 +806,33 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   // View Toggle Switch
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                  if (isDesktop)
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildViewToggleButton(
+                            title: 'Kanban Pipeline',
+                            icon: Icons.view_kanban_rounded,
+                            isActive: _isKanbanView,
+                            onTap: () => setState(() => _isKanbanView = true),
+                          ),
+                          const SizedBox(width: 4),
+                          _buildViewToggleButton(
+                            title: 'Danh sách chi tiết (Table)',
+                            icon: Icons.table_chart_rounded,
+                            isActive: !_isKanbanView,
+                            onTap: () => setState(() => _isKanbanView = false),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildViewToggleButton(
-                          title: 'Kanban Pipeline',
-                          icon: Icons.view_kanban_rounded,
-                          isActive: _isKanbanView,
-                          onTap: () => setState(() => _isKanbanView = true),
-                        ),
-                        const SizedBox(width: 4),
-                        _buildViewToggleButton(
-                          title: 'Danh sách chi tiết (Table)',
-                          icon: Icons.table_chart_rounded,
-                          isActive: !_isKanbanView,
-                          onTap: () => setState(() => _isKanbanView = false),
-                        ),
-                      ],
-                    ),
-                  ),
 
                   // Search Box
                   SizedBox(
@@ -872,6 +878,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     spacing: 10,
                     children: [
                       Container(
+                        width: isDesktop ? null : width - 64,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF8FAFC),
@@ -880,6 +887,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            isExpanded: !isDesktop,
                             value: _selectedBranch,
                             items: [
                               const DropdownMenuItem(
@@ -894,13 +902,15 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               ),
                             ],
                             onChanged: (v) {
-                              if (v != null)
+                              if (v != null) {
                                 setState(() => _selectedBranch = v);
+                              }
                             },
                           ),
                         ),
                       ),
                       Container(
+                        width: isDesktop ? null : width - 64,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF8FAFC),
@@ -909,6 +919,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            isExpanded: !isDesktop,
                             value: _selectedSource,
                             items: const [
                               DropdownMenuItem(
@@ -929,8 +940,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               ),
                             ],
                             onChanged: (v) {
-                              if (v != null)
+                              if (v != null) {
                                 setState(() => _selectedSource = v);
+                              }
                             },
                           ),
                         ),
@@ -958,6 +970,8 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   onRetry: () => _fetchLeads(),
                 ),
               )
+            else if (!isDesktop)
+              _buildMobileLeads(filteredLeads)
             else if (_isKanbanView)
               _buildKanbanBoard(filteredLeads)
             else
@@ -966,6 +980,147 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMobileLeads(List<dynamic> leads) {
+    const stages = <String, String>{
+      'ALL': 'Tất cả',
+      'NEW': 'Mới',
+      'CONTACTED': 'Đang tư vấn',
+      'TEST': 'Đã hẹn test',
+      'ENROLLED': 'Đã ghi danh',
+    };
+    String stageFor(String status) {
+      if (status == 'NEW') return 'NEW';
+      if (status == 'CONTACTED') return 'CONTACTED';
+      if (['TEST_SCHEDULED', 'TESTING', 'TESTED'].contains(status)) {
+        return 'TEST';
+      }
+      if (['ENROLLED', 'CONVERTED', 'COMPLETED'].contains(status)) {
+        return 'ENROLLED';
+      }
+      return 'ALL';
+    }
+
+    final visible = leads.where((raw) {
+      final lead = Map<String, dynamic>.from(raw as Map);
+      return _mobileStage == 'ALL' ||
+          stageFor(lead['status']?.toString() ?? 'NEW') == _mobileStage;
+    }).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Hồ sơ tuyển sinh',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: stages.entries.map((stage) {
+              final count = stage.key == 'ALL'
+                  ? leads.length
+                  : leads.where((raw) {
+                      final lead = Map<String, dynamic>.from(raw as Map);
+                      return stageFor(lead['status']?.toString() ?? 'NEW') ==
+                          stage.key;
+                    }).length;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text('${stage.value} ($count)'),
+                  selected: _mobileStage == stage.key,
+                  onSelected: (_) => setState(() => _mobileStage = stage.key),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (visible.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 28),
+            child: Center(child: Text('Không có hồ sơ phù hợp')),
+          )
+        else
+          ...visible.map((raw) {
+            final lead = Map<String, dynamic>.from(raw as Map);
+            final name = lead['fullName']?.toString() ?? 'Chưa có tên';
+            final status = lead['status']?.toString() ?? 'NEW';
+            final next = switch (stageFor(status)) {
+              'NEW' => ('Tư vấn ngay', 'CONTACTED'),
+              'CONTACTED' => ('Nhận vào test', 'TEST_SCHEDULED'),
+              'TEST' => ('Chốt ghi danh', 'ENROLLED'),
+              _ => null,
+            };
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFFEEF2FF),
+                        child: Text(name.isEmpty ? '?' : name[0].toUpperCase()),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              lead['phone']?.toString() ??
+                                  'Chưa có số điện thoại',
+                              style: const TextStyle(color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Trạng thái: ${stages[stageFor(status)] ?? status}'),
+                  Text(
+                    'Khóa quan tâm: ${lead['targetCourse'] ?? 'Chưa ghi nhận'}',
+                  ),
+                  Text('Nguồn: ${lead['source'] ?? 'Chưa rõ'}'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => _showLeadDetail(lead),
+                        child: const Text('Xem chi tiết'),
+                      ),
+                      if (next != null)
+                        FilledButton(
+                          onPressed: () =>
+                              _advanceLeadStatus(lead, next.$2, next.$1),
+                          child: Text(next.$1),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
     );
   }
 
@@ -1201,19 +1356,23 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(radius: 4, backgroundColor: dotColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Color(0xFF0F172A),
+              Expanded(
+                child: Row(
+                  children: [
+                    CircleAvatar(radius: 4, backgroundColor: dotColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -1239,7 +1398,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
@@ -1287,52 +1446,58 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: const Color(0xFFEEF2FF),
-                            child: Text(
-                              initials.isNotEmpty ? initials : 'L',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                                color: Color(0xFF003FB1),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                fullName,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: const Color(0xFFEEF2FF),
+                              child: Text(
+                                initials.isNotEmpty ? initials : 'L',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: Color(0xFF0F172A),
+                                  fontSize: 10,
+                                  color: Color(0xFF003FB1),
                                 ),
                               ),
-                              Row(
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(
-                                    Icons.call_rounded,
-                                    size: 11,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                  const SizedBox(width: 3),
                                   Text(
-                                    phone,
+                                    fullName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF64748B),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Color(0xFF0F172A),
                                     ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.call_rounded,
+                                        size: 11,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        phone,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -1377,33 +1542,41 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                 color: Color(0xFF64748B),
                               ),
                             ),
-                            Text(
-                              course,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF003FB1),
+                            Flexible(
+                              child: Text(
+                                course,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF003FB1),
+                                ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            const Text(
                               'Phụ trách:',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Color(0xFF64748B),
                               ),
                             ),
-                            Text(
-                              'Quỳnh Chi (TVV)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF0F172A),
+                            Flexible(
+                              child: Text(
+                                l['assignedStaff'] is Map
+                                    ? (l['assignedStaff']['fullName']
+                                              ?.toString() ??
+                                          'Chưa phân công')
+                                    : 'Chưa phân công',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF0F172A),
+                                ),
                               ),
                             ),
                           ],
@@ -1546,7 +1719,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: leads.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, index) =>
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     itemBuilder: (ctx, idx) {
                       final l = leads[idx] as Map<String, dynamic>;
