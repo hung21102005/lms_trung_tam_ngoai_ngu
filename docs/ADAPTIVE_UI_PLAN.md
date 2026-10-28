@@ -43,11 +43,11 @@ Route inventory source: `lib/core/router/route_names.dart`; screen inventory: `l
 
 | Role | Pending screens and flows | Priority |
 | --- | --- | --- |
-| Student | Finish real-device/API checks for assignment recording, playback, file picker/upload, draft/resubmit and published grades; review Auth/Profile, payment and exam flows on device; audit secondary dialogs and long data. | P0–P2 |
-| Teacher | Secondary assignment grading/gradebook views (one legacy view still has hardcoded data); question management beyond list/create; legacy dashboard, profile and notification verification. Standalone attendance, create exam and exam results Mobile screens are implemented, with device/API checks pending. | P1–P2 |
-| Parent | Child-specific grades and finance routes remain a functional gap; verify schedule/attendance with a real parent account and audit child switching, profile and notifications. | P2 |
+| Student | Finish real-device/API checks for assignment recording, playback, file picker/upload, draft/resubmit and published grades; review Auth/Profile, payment and exam flows on device; audit secondary dialogs and long data. Shared edit-profile/password Mobile forms are implemented, with device/API checks pending. | P0–P2 |
+| Teacher | Secondary assignment grading/gradebook views (legacy views still contain hardcoded data and are not referenced by current navigation); question management beyond list/create; legacy dashboard, profile and notification verification. Standalone attendance, create exam, exam results and shared profile forms have Mobile screens, with device/API checks pending. | P1–P2 |
+| Parent | Child-specific grades and finance routes remain a functional gap; verify schedule/attendance with a real parent account and audit child switching, profile and notifications. Shared edit-profile/password Mobile forms are implemented, with device/API checks pending. | P2 |
 | Admin | Settings tabs with local defaults, class edit/schedule workflows, attendance management, reports overview and finance forms, user add/edit/import/export dialogs, plus visual/device/API audit for branches, rooms, leads, debts and courses. Course Desktop export is still a notice. | P3 |
-| Shared | Auth/Profile review, consistent mobile navigation/components, 320–1200 px regression, device keyboard/safe-area and Desktop screenshot comparison. | P1–P3 |
+| Shared | Auth and profile overview review, consistent mobile navigation/components, 320–1200 px regression, device keyboard/safe-area and Desktop screenshot comparison. Shared edit-profile/password Mobile forms are implemented. | P1–P3 |
 
 ### Source screen checklist
 
@@ -275,3 +275,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Added a separate Mobile/Tablet result view with an exam summary, compact metrics, status filters and student attempt cards. Reused the existing `ExamsBloc`, repository and result models; Desktop keeps the previous layout. The 320 px API error state was redesigned after a widget test found overflow in the shared error widget.
 - Widget tests: **8/8 pass** at 320, 375, 393, 430, 800 and 1200 px with long text, status filter, empty and API error. Combined targeted exam regression: **19/19 pass**. Scoped `flutter analyze`: **0 issues**. Full `flutter analyze`: **121 pre-existing issues in untouched files** (no errors in edited files). `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
 - Real Backend results/permissions, physical device visual review and Desktop screenshot comparison remain **unverified**. Question management and secondary Teacher grading/gradebook screens remain pending.
+
+### Checkpoint 2026-10-28 — Shared profile forms Mobile
+
+- Added distinct Mobile/Tablet layouts to the edit-profile and change-password screens, using the EduLMS Mobile section cards and a persistent SafeArea save action. The forms reuse the existing controllers, validation, `ProfileBloc` and repository events. Desktop keeps its original form layout. The existing fake camera action is absent from the new Mobile edit form; real avatar upload remains a separate functional gap.
+- Widget tests with a repository fake: **16/16 pass** at 320, 375, 393, 430, 800 and 1200 px, including 320×600 keyboard inset/save reachability, password payload/validation and profile API error retention. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
+- Backend persistence and permission checks, physical device keyboard/touch behavior, Desktop screenshot comparison and profile overview visual signoff remain **unverified**. The legacy Teacher grading/gradebook views contain static data and are currently not referenced by navigation; they require a functional audit before any Mobile styling is claimed complete.
