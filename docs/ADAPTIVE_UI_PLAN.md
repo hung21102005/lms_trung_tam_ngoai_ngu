@@ -31,7 +31,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher classes/list/detail/schedule | B/C | P1 | My classes list, shared class detail and schedule Mobile implemented; other class screens pending |
 | Teacher attendance and class workflow | B/C | P1 | Embedded roster/logbook and standalone attendance marking Mobile implemented; API/device QA pending |
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Workflow, create/edit form and submission review Mobile implemented; secondary gradebook pending |
-| Teacher exams/question bank, notifications, profile | B/C | P2 | Question bank list/create and exam creation Mobile implemented; results, notifications/profile pending |
+| Teacher exams/question bank, notifications, profile | B/C | P2 | Question bank list/create, exam creation and results Mobile implemented; notifications/profile pending |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
 | Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Dashboard, users, branches/rooms and admissions Mobile checkpoints complete; settings pending |
 | Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Class list/create form, course list/detail/forms and debts report Mobile checkpoints complete; edit class, schedules and wider reports pending |
@@ -44,7 +44,7 @@ Route inventory source: `lib/core/router/route_names.dart`; screen inventory: `l
 | Role | Pending screens and flows | Priority |
 | --- | --- | --- |
 | Student | Finish real-device/API checks for assignment recording, playback, file picker/upload, draft/resubmit and published grades; review Auth/Profile, payment and exam flows on device; audit secondary dialogs and long data. | P0–P2 |
-| Teacher | Secondary assignment grading/gradebook views (one legacy view still has hardcoded data); exam results and question management beyond list/create; legacy dashboard, profile and notification verification. Standalone attendance and create exam Mobile screens are implemented, with device/API checks pending. | P1–P2 |
+| Teacher | Secondary assignment grading/gradebook views (one legacy view still has hardcoded data); question management beyond list/create; legacy dashboard, profile and notification verification. Standalone attendance, create exam and exam results Mobile screens are implemented, with device/API checks pending. | P1–P2 |
 | Parent | Child-specific grades and finance routes remain a functional gap; verify schedule/attendance with a real parent account and audit child switching, profile and notifications. | P2 |
 | Admin | Settings tabs with local defaults, class edit/schedule workflows, attendance management, reports overview and finance forms, user add/edit/import/export dialogs, plus visual/device/API audit for branches, rooms, leads, debts and courses. Course Desktop export is still a notice. | P3 |
 | Shared | Auth/Profile review, consistent mobile navigation/components, 320–1200 px regression, device keyboard/safe-area and Desktop screenshot comparison. | P1–P3 |
@@ -66,7 +66,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Embedded workflow and review Mobile implemented; remaining screens pending |
 | Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard, embedded attendance and teaching reports Mobile implemented; legacy dashboard pending |
 | Notifications | `notification_list_screen` | B/C | Shared Mobile list implemented; device QA pending |
-| Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results and Teacher question bank list/create and exam creation implemented; Teacher exam results pending |
+| Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results and Teacher question bank list/create, exam creation and result summary implemented; device/API QA pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
 | Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Admin dashboard Mobile implemented; other reports pending |
 | Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | B/C | Users, branches/rooms and admissions Mobile checkpoints complete; settings pending |
@@ -269,3 +269,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Added a dedicated Mobile/Tablet create-exam form with clear sections for details, duration and scoring, and publication controls. The save action stays in a SafeArea footer and reuses the existing form controllers, `ExamsBloc` and repository. Validated positive duration, score and attempt count plus passing score in the 0–100 range. Desktop retains its existing form layout.
 - Widget tests with a repository fake: **10/10 pass** at 320, 375, 393, 430, 800 and 1200 px, including a 320×600 keyboard inset, create payload, draft status, validation and loading/error states. Combined targeted exam regression: **20/20 pass**. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
 - Real Backend persistence, publication rules for exams without questions, physical device keyboard/touch behavior and Desktop screenshot comparison remain **unverified**. Teacher exam results and question management beyond list/create remain pending.
+
+### Checkpoint 2026-10-28 — Teacher exam results Mobile
+
+- Added a separate Mobile/Tablet result view with an exam summary, compact metrics, status filters and student attempt cards. Reused the existing `ExamsBloc`, repository and result models; Desktop keeps the previous layout. The 320 px API error state was redesigned after a widget test found overflow in the shared error widget.
+- Widget tests: **8/8 pass** at 320, 375, 393, 430, 800 and 1200 px with long text, status filter, empty and API error. Combined targeted exam regression: **19/19 pass**. Scoped `flutter analyze`: **0 issues**. Full `flutter analyze`: **121 pre-existing issues in untouched files** (no errors in edited files). `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
+- Real Backend results/permissions, physical device visual review and Desktop screenshot comparison remain **unverified**. Question management and secondary Teacher grading/gradebook screens remain pending.
