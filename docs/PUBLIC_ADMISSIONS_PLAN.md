@@ -59,7 +59,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
 | 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình/khóa: tạo, gắn khóa có sẵn, sửa trường công khai, duyệt/công bố; màn hình sửa cấp độ qua API hiện có. Còn thiếu UI sửa học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
 | 3 Class offering | Đang thực hiện | Đã bổ sung cửa sổ đăng ký và ràng buộc cơ bản khi tạo lớp; còn cần UI sửa lớp, kiểm tra phân công GV, công bố lớp và HTTP workflow. Catalog seed vẫn chờ duyệt. |
-| 4 Public website | Pending | Chờ publication API |
+| 4 Public website | Đang thực hiện | API công khai danh sách/chi tiết lớp đang nhận đăng ký đã có; Flutter website công khai chưa triển khai. |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
 | 6 Đồng bộ/kiểm thử | Pending | Chờ luồng đăng ký |
 
@@ -149,3 +149,9 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Backend build/lint đạt (8 cảnh báo cũ), **162/162 tests đạt**. Flutter scoped analyzer **0 issues**, widget regression tạo/danh sách/chi tiết/sửa lớp **31/31 đạt** tại 320–1200 px, gồm trường hợp bàn phím và API lỗi; Web build đạt.
 - `flutter test` toàn dự án **chưa đạt**: trước khi dừng tại ~70 giây, ghi nhận 45 lỗi ở các stress/route tests và kẹt tại test báo cáo giảng viên. Kiểm tra riêng `challenger_m1_stress_test.dart` thấy test thiếu đăng ký `ApiClient` trong GetIt, giả định route cũ và `pumpAndSettle` timeout; chưa quy kết các lỗi này cho module lớp. Không ghi là full Flutter suite pass.
 - **Còn thiếu:** HTTP end-to-end tạo/sửa/mở lớp trên dữ liệu thật, dời lịch hàng loạt an toàn, kiểm tra xung đột trợ giảng, public API lớp sắp khai giảng và đăng ký/CRM. Chưa kiểm thử thiết bị thật; 47 khóa seed chưa được duyệt nên không mở tuyển sinh từ chúng.
+
+## Checkpoint API lớp công khai (2026-10-28)
+
+- `GET /public/classes` và `GET /public/classes/:id` không yêu cầu JWT, chỉ trả lớp `OPEN_FOR_ENROLLMENT` có ngày nhận đăng ký hiện hành, ngày khai giảng chưa qua, học phí dương, phòng/chi nhánh/giáo viên đang hoạt động và khóa thuộc chương trình đã công bố công khai. Danh sách có phân trang, lọc theo chi nhánh/khóa và số chỗ còn lại; projection không chọn học viên hay dữ liệu buổi học nội bộ.
+- Backend build/lint đạt (8 cảnh báo cũ), toàn bộ unit test **164/164 đạt**; E2E HTTP không JWT **4/4 đạt** trên app/DB cục bộ. Chưa có lớp mới đủ điều kiện trong catalog seed, nên E2E hiện chỉ xác nhận hợp đồng API và danh sách rỗng; chưa kiểm chứng lớp xuất hiện sau quy trình công bố thật.
+- **Tiếp theo:** xây trang chủ/khóa học/lớp sắp khai giảng Flutter công khai dùng các API `/public/*`, rồi form tư vấn và đăng ký mới/cũ đồng bộ CRM. Không giả lập kết quả thành công và không công bố seed chưa duyệt.

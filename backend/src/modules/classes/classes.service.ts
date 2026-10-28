@@ -19,7 +19,33 @@ import {
   InvoiceStatus,
   SessionStatus,
   UserStatus,
+  PublicationStatus,
+  Prisma,
 } from '@prisma/client';
+import { QueryPublicClassesDto } from './dto/query-public-classes.dto.js';
+
+const publicOfferingSelect = {
+  id: true,
+  code: true,
+  name: true,
+  startDate: true,
+  endDate: true,
+  scheduleDays: true,
+  startTime: true,
+  endTime: true,
+  totalSessions: true,
+  maxCapacity: true,
+  tuitionFee: true,
+  registrationOpenAt: true,
+  registrationCloseAt: true,
+  course: { select: { id: true, slug: true, title: true, thumbnailUrl: true } },
+  level: { select: { id: true, code: true, name: true } },
+  branch: { select: { id: true, name: true, address: true } },
+  mainTeacher: { select: { fullName: true } },
+  _count: {
+    select: { students: { where: { status: EnrollmentStatus.ENROLLED } } },
+  },
+} satisfies Prisma.ClassSelect;
 
 export interface ClassActor {
   id: string;
@@ -30,6 +56,73 @@ export interface ClassActor {
 @Injectable()
 export class ClassesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private publicOfferingWhere(today: Date): Prisma.ClassWhereInput {
+    return {
+      status: ClassStatus.OPEN_FOR_ENROLLMENT,
+      registrationOpenAt: { lte: today },
+      registrationCloseAt: { gte: today },
+      startDate: { gte: today },
+      tuitionFee: { gt: 0 },
+      room: { isActive: true },
+      mainTeacher: { status: UserStatus.ACTIVE },
+      branch: { isActive: true },
+      course: {
+        isActive: true,
+        slug: { not: null },
+        publicationStatus: PublicationStatus.PUBLISHED,
+        program: { status: PublicationStatus.PUBLISHED, isPublic: true },
+      },
+    };
+  }
+
+  async findPublicOfferings(query: QueryPublicClassesDto) {
+    const { page = 1, limit = 12, branchId, courseId } = query;
+    const today = new Date(new Date().toISOString().slice(0, 10));
+    const where: Prisma.ClassWhereInput = {
+      ...this.publicOfferingWhere(today),
+      ...(branchId ? { branchId } : {}),
+      ...(courseId ? { courseId } : {}),
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.class.findMany({
+        where,
+        select: publicOfferingSelect,
+        orderBy: [{ startDate: 'asc' }, { name: 'asc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.class.count({ where }),
+    ]);
+    return {
+      items: items.map((item) => ({
+        ...item,
+        enrolledCount: item._count.students,
+        remainingSeats: Math.max(0, item.maxCapacity - item._count.students),
+        _count: undefined,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async findPublicOffering(id: string) {
+    const today = new Date(new Date().toISOString().slice(0, 10));
+    const item = await this.prisma.class.findFirst({
+      where: { ...this.publicOfferingWhere(today), id },
+      select: publicOfferingSelect,
+    });
+    if (!item)
+      throw new NotFoundException('Không tìm thấy lớp đang mở đăng ký');
+    return {
+      ...item,
+      enrolledCount: item._count.students,
+      remainingSeats: Math.max(0, item.maxCapacity - item._count.students),
+      _count: undefined,
+    };
+  }
 
   // --------------------------------------------------------------------------
   // CLASSES CRUD & LIST

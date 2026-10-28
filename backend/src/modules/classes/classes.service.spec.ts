@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClassesService } from './classes.service.js';
 import { PrismaService } from '../../database/index.js';
 import {
+  NotFoundException,
   ConflictException,
   BadRequestException,
   ForbiddenException,
@@ -60,6 +61,7 @@ describe('ClassesService', () => {
   const mockPrismaService = {
     class: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       count: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -107,6 +109,54 @@ describe('ClassesService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('public class offerings', () => {
+    it('filters by publication and enrollment window without exposing students', async () => {
+      mockPrismaService.class.findMany.mockResolvedValueOnce([
+        {
+          id: 'class-1',
+          code: 'IELTS-01',
+          name: 'IELTS Foundation',
+          maxCapacity: 20,
+          _count: { students: 7 },
+        },
+      ]);
+      mockPrismaService.class.count.mockResolvedValueOnce(1);
+      const result = await service.findPublicOfferings({
+        page: 1,
+        limit: 12,
+        branchId: 'branch-1',
+      });
+      expect(result.items[0]).toMatchObject({
+        id: 'class-1',
+        enrolledCount: 7,
+        remainingSeats: 13,
+      });
+      expect(result.items[0]).not.toHaveProperty('students');
+      expect(mockPrismaService.class.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: ClassStatus.OPEN_FOR_ENROLLMENT,
+            branchId: 'branch-1',
+            registrationOpenAt: { lte: expect.any(Date) },
+            registrationCloseAt: { gte: expect.any(Date) },
+            course: expect.objectContaining({
+              publicationStatus: 'PUBLISHED',
+              program: { status: 'PUBLISHED', isPublic: true },
+            }),
+          }),
+          select: expect.not.objectContaining({ students: true }),
+        }),
+      );
+    });
+
+    it('hides unavailable class details', async () => {
+      mockPrismaService.class.findFirst.mockResolvedValueOnce(null);
+      await expect(service.findPublicOffering('class-hidden')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   it('prevents an assigned teacher from changing the official timetable', async () => {

@@ -49,6 +49,13 @@ describe('Academic Core Flow (e2e)', () => {
     expect(internal.status).toBe(401);
   });
 
+  it('should expose public class offerings without authentication', async () => {
+    const res = await request(app.getHttpServer()).get('/public/classes');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body).toHaveProperty('total');
+  });
+
   it('should fetch classes list with auth (GET /classes)', async () => {
     if (!adminToken) return;
 
