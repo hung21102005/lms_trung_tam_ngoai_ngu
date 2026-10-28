@@ -100,3 +100,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Chi tiết khóa học có form sửa cấp độ trên Mobile (bottom sheet cuộn theo bàn phím) và Desktop (dialog), gồm chuẩn CEFR/IELTS/TOEIC/Cambridge, điều kiện đầu vào, tiêu chí hoàn thành và thời lượng. Form dùng `CoursesBloc` và `PATCH /levels/:id`; vai trò không đủ quyền không thấy nút sửa.
 - Widget tests chương trình và khóa học: **33/33 đạt**; scoped analyzer: **0 issues**; `flutter build web --no-wasm-dry-run`: **đạt**. Kiểm chứng API/DB qua HTTP và thiết bị thật vẫn **chưa kiểm chứng**.
 - **Tiếp theo:** hoàn thiện UI biên tập học phần/bài học bằng API hiện có hoặc bổ sung API phù hợp nếu thiếu; biên tập nội dung học thuật seed trước khi công bố. Sau đó kiểm thử HTTP end-to-end cho publication và catalog. Giai đoạn 01 vẫn **chưa hoàn thành**.
+
+## Checkpoint biên tập học phần và bài học (2026-10-28)
+
+- Bổ sung `PATCH /modules/:id` và `PATCH /lessons/:id` cho Super Admin/học vụ. Hai API dùng DTO partial theo create DTO hiện có, xác nhận đối tượng tồn tại và chặn sửa khi khóa đã lưu trữ. Không thêm migration hoặc seed.
+- Chi tiết khóa học cho phép mở form sửa học phần/bài học. Mobile dùng sheet có SafeArea, cuộn theo bàn phím; Desktop dùng dialog. Dữ liệu đi qua `CoursesBloc`/repository rồi tải lại chi tiết khóa sau khi lưu. Form giữ nội dung nhập khi API lỗi để có thể thử lại.
+- Backend `npm run build`: **đạt**; `npm run lint`: **đạt** với 12 cảnh báo đã có ngoài phần vừa sửa; `npm run test`: **142/142 đạt**. Scoped Flutter analyzer: **0 issues**; widget regression chương trình/khóa học: **34/34 đạt**; `flutter build web --no-wasm-dry-run`: **đạt**.
+- Còn thiếu giao diện **tạo** học phần/bài học, quản lý tài liệu học thuật và rà soát nội dung seed. Chưa kiểm chứng HTTP/DB qua ứng dụng đang chạy hoặc thiết bị thật. Tiếp tục các mục đó trước khi công bố catalog.

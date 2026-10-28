@@ -12,7 +12,9 @@ import {
   CreateCourseLevelDto,
   UpdateCourseLevelDto,
   CreateModuleDto,
+  UpdateModuleDto,
   CreateLessonDto,
+  UpdateLessonDto,
   CreateLessonMaterialDto,
   QueryCoursesDto,
   CreateProgramDto,
@@ -563,6 +565,24 @@ export class CoursesService {
     });
   }
 
+  async updateModule(id: string, dto: UpdateModuleDto) {
+    const module = await this.prisma.module.findUnique({
+      where: { id },
+      include: {
+        level: { select: { course: { select: { publicationStatus: true } } } },
+      },
+    });
+    if (!module) {
+      throw new NotFoundException(`Không tìm thấy học phần với ID: ${id}`);
+    }
+    if (module.level.course.publicationStatus === PublicationStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'Không thể sửa học phần của khóa đã lưu trữ',
+      );
+    }
+    return this.prisma.module.update({ where: { id }, data: dto });
+  }
+
   // --------------------------------------------------------------------------
   // LESSONS
   // --------------------------------------------------------------------------
@@ -602,6 +622,35 @@ export class CoursesService {
         moduleId,
       },
     });
+  }
+
+  async updateLesson(id: string, dto: UpdateLessonDto) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id },
+      include: {
+        module: {
+          include: {
+            level: {
+              include: {
+                course: { select: { publicationStatus: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!lesson) {
+      throw new NotFoundException(`Không tìm thấy bài học với ID: ${id}`);
+    }
+    if (
+      lesson.module.level.course.publicationStatus ===
+      PublicationStatus.ARCHIVED
+    ) {
+      throw new BadRequestException(
+        'Không thể sửa bài học của khóa đã lưu trữ',
+      );
+    }
+    return this.prisma.lesson.update({ where: { id }, data: dto });
   }
 
   // --------------------------------------------------------------------------

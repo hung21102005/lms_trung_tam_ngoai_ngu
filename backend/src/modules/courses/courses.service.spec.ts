@@ -47,11 +47,13 @@ describe('CoursesService', () => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     lesson: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     lessonMaterial: {
       create: vi.fn(),
@@ -72,6 +74,51 @@ describe('CoursesService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('curriculum editing', () => {
+    it('updates a module while its course is editable', async () => {
+      mockPrismaService.module.findUnique.mockResolvedValueOnce({
+        level: { course: { publicationStatus: PublicationStatus.DRAFT } },
+      });
+      mockPrismaService.module.update.mockResolvedValueOnce({
+        id: 'module-1',
+        title: 'Ngữ âm',
+      });
+      await service.updateModule('module-1', { title: 'Ngữ âm' });
+      expect(mockPrismaService.module.update).toHaveBeenCalledWith({
+        where: { id: 'module-1' },
+        data: { title: 'Ngữ âm' },
+      });
+    });
+
+    it('rejects editing a lesson in an archived course', async () => {
+      mockPrismaService.lesson.findUnique.mockResolvedValueOnce({
+        module: {
+          level: { course: { publicationStatus: PublicationStatus.ARCHIVED } },
+        },
+      });
+      await expect(
+        service.updateLesson('lesson-1', { title: 'Bài mới' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.lesson.update).not.toHaveBeenCalled();
+    });
+
+    it('updates lesson content without changing its parent', async () => {
+      mockPrismaService.lesson.findUnique.mockResolvedValueOnce({
+        module: {
+          level: { course: { publicationStatus: PublicationStatus.IN_REVIEW } },
+        },
+      });
+      mockPrismaService.lesson.update.mockResolvedValueOnce({ id: 'lesson-1' });
+      await service.updateLesson('lesson-1', {
+        content: 'Mục tiêu và bài tập',
+      });
+      expect(mockPrismaService.lesson.update).toHaveBeenCalledWith({
+        where: { id: 'lesson-1' },
+        data: { content: 'Mục tiêu và bài tập' },
+      });
+    });
   });
 
   describe('create', () => {

@@ -23,7 +23,9 @@ import {
   CreateCourseLevelDto,
   UpdateCourseLevelDto,
   CreateModuleDto,
+  UpdateModuleDto,
   CreateLessonDto,
+  UpdateLessonDto,
   CreateLessonMaterialDto,
   QueryCoursesDto,
   CreateProgramDto,
@@ -246,6 +248,15 @@ export class CoursesController {
     return this.coursesService.createModule(levelId, dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('modules/:id')
+  @ApiOperation({ summary: 'Chỉnh sửa học phần' })
+  updateModule(@Param('id') id: string, @Body() dto: UpdateModuleDto) {
+    return this.coursesService.updateModule(id, dto);
+  }
+
   // --------------------------------------------------------------------------
   // LESSONS
   // --------------------------------------------------------------------------
@@ -268,6 +279,15 @@ export class CoursesController {
   @ApiResponse({ status: 201, description: 'Tạo bài học thành công' })
   createLesson(@Param('id') moduleId: string, @Body() dto: CreateLessonDto) {
     return this.coursesService.createLesson(moduleId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('lessons/:id')
+  @ApiOperation({ summary: 'Chỉnh sửa bài học' })
+  updateLesson(@Param('id') id: string, @Body() dto: UpdateLessonDto) {
+    return this.coursesService.updateLesson(id, dto);
   }
 
   // --------------------------------------------------------------------------

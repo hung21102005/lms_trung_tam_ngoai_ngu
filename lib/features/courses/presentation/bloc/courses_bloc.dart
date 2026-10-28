@@ -13,6 +13,8 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<CreateCourseEvent>(_onCreateCourse);
     on<CreateCourseLevelEvent>(_onCreateCourseLevel);
     on<UpdateCourseLevelEvent>(_onUpdateCourseLevel);
+    on<UpdateModuleEvent>(_onUpdateModule);
+    on<UpdateLessonEvent>(_onUpdateLesson);
   }
 
   Future<void> _onFetchCourses(
@@ -103,6 +105,32 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       await repository.updateLevel(event.levelId, event.changes);
       emit(const CourseOperationSuccess('Đã cập nhật cấp độ đào tạo'));
+      add(FetchCourseDetail(event.courseId));
+    } catch (error) {
+      emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onUpdateModule(
+    UpdateModuleEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.updateModule(event.moduleId, event.changes);
+      emit(const CourseOperationSuccess('Đã cập nhật học phần'));
+      add(FetchCourseDetail(event.courseId));
+    } catch (error) {
+      emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onUpdateLesson(
+    UpdateLessonEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.updateLesson(event.lessonId, event.changes);
+      emit(const CourseOperationSuccess('Đã cập nhật bài học'));
       add(FetchCourseDetail(event.courseId));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));

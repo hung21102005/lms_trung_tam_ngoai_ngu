@@ -55,6 +55,8 @@ abstract class CoursesRemoteDataSource {
     String? description,
   });
 
+  Future<ModuleModel> updateModule(String id, Map<String, dynamic> changes);
+
   Future<LessonModel> createLesson(
     String moduleId, {
     required String title,
@@ -62,6 +64,8 @@ abstract class CoursesRemoteDataSource {
     String? content,
     int durationMinutes = 90,
   });
+
+  Future<LessonModel> updateLesson(String id, Map<String, dynamic> changes);
 
   Future<LessonMaterialModel> createMaterial(
     String lessonId, {
@@ -261,6 +265,20 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
   }
 
   @override
+  @override
+  Future<ModuleModel> updateModule(
+    String id,
+    Map<String, dynamic> changes,
+  ) async {
+    final response = await apiClient.patch('/modules/$id', data: changes);
+    final data = response is Map<String, dynamic>
+        ? response['data'] ?? response
+        : response;
+    if (data is Map<String, dynamic>) return ModuleModel.fromJson(data);
+    throw const FormatException('Dữ liệu học phần sau khi lưu không hợp lệ');
+  }
+
+  @override
   Future<LessonModel> createLesson(
     String moduleId, {
     required String title,
@@ -287,6 +305,20 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       return LessonModel.fromJson(data);
     }
     throw Exception('Không thể tạo bài học');
+  }
+
+  @override
+  @override
+  Future<LessonModel> updateLesson(
+    String id,
+    Map<String, dynamic> changes,
+  ) async {
+    final response = await apiClient.patch('/lessons/$id', data: changes);
+    final data = response is Map<String, dynamic>
+        ? response['data'] ?? response
+        : response;
+    if (data is Map<String, dynamic>) return LessonModel.fromJson(data);
+    throw const FormatException('Dữ liệu bài học sau khi lưu không hợp lệ');
   }
 
   @override

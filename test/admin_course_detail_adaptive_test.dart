@@ -13,6 +13,28 @@ class _Repository extends Fake implements CoursesRepository {
   final bool fail;
   String? createdLevelCode;
   Map<String, dynamic>? updatedLevelChanges;
+  Map<String, dynamic>? updatedModuleChanges;
+  Map<String, dynamic>? updatedLessonChanges;
+
+  @override
+  Future<ModuleModel> updateModule(String id, Map<String, dynamic> changes) async {
+    updatedModuleChanges = changes;
+    return ModuleModel(
+      id: id,
+      levelId: 'level-1',
+      title: changes['title'] as String,
+    );
+  }
+
+  @override
+  Future<LessonModel> updateLesson(String id, Map<String, dynamic> changes) async {
+    updatedLessonChanges = changes;
+    return LessonModel(
+      id: id,
+      moduleId: 'module-1',
+      title: changes['title'] as String,
+    );
+  }
 
   @override
   Future<CourseLevelModel> updateLevel(
@@ -203,6 +225,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository.updatedLevelChanges?['cefrLevel'], 'B1');
     expect(repository.updatedLevelChanges?['code'], 'FOUNDATION-01');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Mobile sửa học phần và bài học qua Bloc', (tester) async {
+    tester.view.physicalSize = const Size(375, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _Repository();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -420));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Học phần phát triển'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sửa học phần'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Mô tả học phần'), 'Mục tiêu nghe nói');
+    await tester.tap(find.text('Lưu thay đổi'));
+    await tester.pumpAndSettle();
+    expect(repository.updatedModuleChanges?['description'], 'Mục tiêu nghe nói');
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -320));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Sửa bài học').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nội dung bài học'), 'Bài tập tự luyện');
+    await tester.tap(find.text('Lưu thay đổi'));
+    await tester.pumpAndSettle();
+    expect(repository.updatedLessonChanges?['content'], 'Bài tập tự luyện');
     expect(tester.takeException(), isNull);
   });
 }

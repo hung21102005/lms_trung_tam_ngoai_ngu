@@ -114,6 +114,10 @@ class CoursesRepositoryImpl implements CoursesRepository {
   }
 
   @override
+  Future<ModuleModel> updateModule(String id, Map<String, dynamic> changes) =>
+      remoteDataSource.updateModule(id, changes);
+
+  @override
   Future<LessonModel> createLesson(
     String moduleId, {
     required String title,
@@ -129,6 +133,10 @@ class CoursesRepositoryImpl implements CoursesRepository {
       durationMinutes: durationMinutes,
     );
   }
+
+  @override
+  Future<LessonModel> updateLesson(String id, Map<String, dynamic> changes) =>
+      remoteDataSource.updateLesson(id, changes);
 
   @override
   Future<LessonMaterialModel> createMaterial(

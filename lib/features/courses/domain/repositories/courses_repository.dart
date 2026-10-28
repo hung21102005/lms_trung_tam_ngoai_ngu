@@ -53,6 +53,8 @@ abstract class CoursesRepository {
     String? description,
   });
 
+  Future<ModuleModel> updateModule(String id, Map<String, dynamic> changes);
+
   Future<LessonModel> createLesson(
     String moduleId, {
     required String title,
@@ -60,6 +62,8 @@ abstract class CoursesRepository {
     String? content,
     int durationMinutes = 90,
   });
+
+  Future<LessonModel> updateLesson(String id, Map<String, dynamic> changes);
 
   Future<LessonMaterialModel> createMaterial(
     String lessonId, {

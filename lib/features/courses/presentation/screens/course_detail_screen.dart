@@ -225,6 +225,58 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     );
   }
 
+  Future<void> _showCurriculumEditor({
+    ModuleModel? module,
+    LessonModel? lesson,
+  }) async {
+    final bloc = context.read<CoursesBloc>();
+    final editor = BlocProvider.value(
+      value: bloc,
+      child: _CurriculumItemEditor(
+        module: module,
+        lesson: lesson,
+        onSubmit: (changes) {
+          if (lesson != null) {
+            bloc.add(
+              UpdateLessonEvent(
+                courseId: widget.courseId,
+                lessonId: lesson.id,
+                changes: changes,
+              ),
+            );
+          } else if (module != null) {
+            bloc.add(
+              UpdateModuleEvent(
+                courseId: widget.courseId,
+                moduleId: module.id,
+                changes: changes,
+              ),
+            );
+          }
+        },
+      ),
+    );
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => editor,
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620, maxHeight: 740),
+            child: editor,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -503,6 +555,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 ),
                 subtitle: Text('${module.lessons.length} bài học'),
                 children: [
+                  if (widget.canEditAcademicLevel)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => _showCurriculumEditor(module: module),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Sửa học phần'),
+                      ),
+                    ),
                   if (module.lessons.isEmpty)
                     const ListTile(title: Text('Chưa có bài học'))
                   else
@@ -513,7 +574,14 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         subtitle: Text(
                           '${lesson.durationMinutes} phút · ${lesson.materials.length} tài liệu',
                         ),
-                        trailing: const Icon(Icons.chevron_right_rounded),
+                        trailing: widget.canEditAcademicLevel
+                            ? IconButton(
+                                tooltip: 'Sửa bài học',
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () =>
+                                    _showCurriculumEditor(lesson: lesson),
+                              )
+                            : const Icon(Icons.chevron_right_rounded),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => LessonDetailScreen(
@@ -828,6 +896,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   '${module.lessons.length} bài học',
                   style: AppTextStyles.caption(context),
                 ),
+                if (widget.canEditAcademicLevel)
+                  IconButton(
+                    tooltip: 'Sửa học phần',
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _showCurriculumEditor(module: module),
+                  ),
               ],
             ),
           ),
@@ -899,7 +973,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             ],
           ],
         ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+        trailing: widget.canEditAcademicLevel
+            ? IconButton(
+                tooltip: 'Sửa bài học',
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: () => _showCurriculumEditor(lesson: lesson),
+              )
+            : const Icon(Icons.arrow_forward_ios_rounded, size: 14),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -1263,6 +1343,167 @@ class _EditLevelFormState extends State<_EditLevelForm> {
         }
         return null;
       },
+    ),
+  );
+}
+
+class _CurriculumItemEditor extends StatefulWidget {
+  final ModuleModel? module;
+  final LessonModel? lesson;
+  final ValueChanged<Map<String, dynamic>> onSubmit;
+
+  const _CurriculumItemEditor({
+    this.module,
+    this.lesson,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_CurriculumItemEditor> createState() => _CurriculumItemEditorState();
+}
+
+class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _title;
+  late final TextEditingController _body;
+  late final TextEditingController _order;
+  late final TextEditingController _duration;
+  bool _saving = false;
+
+  bool get _isLesson => widget.lesson != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = TextEditingController(
+      text: widget.lesson?.title ?? widget.module?.title ?? '',
+    );
+    _body = TextEditingController(
+      text: widget.lesson?.content ?? widget.module?.description ?? '',
+    );
+    _order = TextEditingController(
+      text: (widget.lesson?.order ?? widget.module?.order ?? 1).toString(),
+    );
+    _duration = TextEditingController(
+      text: widget.lesson?.durationMinutes.toString() ?? '90',
+    );
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _order.dispose();
+    _duration.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_saving || !_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    widget.onSubmit({
+      'title': _title.text.trim(),
+      'order': int.parse(_order.text.trim()),
+      if (_isLesson) ...{
+        'content': _body.text.trim(),
+        'durationMinutes': int.parse(_duration.text.trim()),
+      } else
+        'description': _body.text.trim(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<CoursesBloc, CoursesState>(
+    listener: (context, state) {
+      if (!_saving) return;
+      if (state is CourseOperationSuccess) {
+        Navigator.pop(context);
+      } else if (state is CoursesError) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(state.message)));
+      }
+    },
+    child: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _isLesson ? 'Sửa bài học' : 'Sửa học phần',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _title,
+                  decoration: const InputDecoration(
+                    labelText: 'Tiêu đề *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tiêu đề'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _body,
+                  maxLines: _isLesson ? 6 : 3,
+                  decoration: InputDecoration(
+                    labelText: _isLesson
+                        ? 'Nội dung bài học'
+                        : 'Mô tả học phần',
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _order,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Thứ tự *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    final number = int.tryParse(value?.trim() ?? '');
+                    return number == null || number < 1
+                        ? 'Thứ tự phải từ 1'
+                        : null;
+                  },
+                ),
+                if (_isLesson) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _duration,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Thời lượng (phút) *',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      final number = int.tryParse(value?.trim() ?? '');
+                      return number == null || number < 15
+                          ? 'Thời lượng tối thiểu 15 phút'
+                          : null;
+                    },
+                  ),
+                ],
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _saving ? null : _submit,
+                  child: Text(_saving ? 'Đang lưu...' : 'Lưu thay đổi'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }

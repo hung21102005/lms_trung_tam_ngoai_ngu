@@ -97,3 +97,33 @@ class UpdateCourseLevelEvent extends CoursesEvent {
   @override
   List<Object?> get props => [courseId, levelId, changes];
 }
+
+class UpdateModuleEvent extends CoursesEvent {
+  final String courseId;
+  final String moduleId;
+  final Map<String, dynamic> changes;
+
+  const UpdateModuleEvent({
+    required this.courseId,
+    required this.moduleId,
+    required this.changes,
+  });
+
+  @override
+  List<Object?> get props => [courseId, moduleId, changes];
+}
+
+class UpdateLessonEvent extends CoursesEvent {
+  final String courseId;
+  final String lessonId;
+  final Map<String, dynamic> changes;
+
+  const UpdateLessonEvent({
+    required this.courseId,
+    required this.lessonId,
+    required this.changes,
+  });
+
+  @override
+  List<Object?> get props => [courseId, lessonId, changes];
+}
