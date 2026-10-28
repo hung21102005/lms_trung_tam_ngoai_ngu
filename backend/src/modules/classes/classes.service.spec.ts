@@ -100,6 +100,7 @@ describe('ClassesService', () => {
 
     service = module.get<ClassesService>(ClassesService);
     vi.clearAllMocks();
+    mockPrismaService.room.findUnique.mockResolvedValue(mockRoom);
   });
 
   it('should be defined', () => {
@@ -108,36 +109,111 @@ describe('ClassesService', () => {
 
   it('prevents an assigned teacher from changing the official timetable', async () => {
     mockPrismaService.classSession.findUnique.mockResolvedValue({
-      id: 'session-1', teacherId: 'teacher-1', class: mockClass,
-      date: new Date('2026-11-02'), startTime: '18:00', endTime: '19:30',
+      id: 'session-1',
+      teacherId: 'teacher-1',
+      class: mockClass,
+      date: new Date('2026-11-02'),
+      startTime: '18:00',
+      endTime: '19:30',
     });
-    await expect(service.updateSession('session-1', { startTime: '19:00' },
-      { id: 'teacher-1', roles: ['teacher'] })).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      service.updateSession(
+        'session-1',
+        { startTime: '19:00' },
+        { id: 'teacher-1', roles: ['teacher'] },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
     expect(mockPrismaService.classSession.update).not.toHaveBeenCalled();
   });
 
   describe('create class & auto-generate sessions', () => {
     const baseCreate = {
-      code: 'NEW-CLASS-01', name: 'Lớp mới', courseId: 'course-1',
-      levelId: 'level-1', branchId: 'branch-1', startDate: '2026-11-02',
-      scheduleDays: ['MONDAY'], startTime: '18:00', endTime: '19:30',
+      code: 'NEW-CLASS-01',
+      name: 'Lớp mới',
+      courseId: 'course-1',
+      levelId: 'level-1',
+      branchId: 'branch-1',
+      startDate: '2026-11-02',
+      scheduleDays: ['MONDAY'],
+      startTime: '18:00',
+      endTime: '19:30',
     };
+
+    async function prepareCatalog() {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.course.findUnique.mockResolvedValueOnce(mockCourse);
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce(mockLevel);
+      mockPrismaService.branch.findUnique.mockResolvedValueOnce(mockBranch);
+    }
+
+    it('rejects a room from another branch', async () => {
+      await prepareCatalog();
+      mockPrismaService.room.findUnique.mockResolvedValueOnce({
+        ...mockRoom,
+        branchId: 'branch-2',
+      });
+      await expect(
+        service.create({ ...baseCreate, roomId: 'room-1' }, adminActor),
+      ).rejects.toThrow('Phòng học không thuộc chi nhánh');
+      expect(mockPrismaService.class.create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [{ ...baseCreate, startTime: '19:30' }, 'Giờ kết thúc phải sau'],
+      [{ ...baseCreate, scheduleDays: [] }, 'ít nhất một ngày học'],
+      [
+        { ...baseCreate, scheduleDays: ['MONDAY', 'monday'] },
+        'không được trùng lặp',
+      ],
+      [{ ...baseCreate, registrationOpenAt: '2026-10-31' }, 'Cần nhập đủ ngày'],
+      [
+        {
+          ...baseCreate,
+          registrationOpenAt: '2026-11-01',
+          registrationCloseAt: '2026-10-31',
+        },
+        'Ngày mở đăng ký',
+      ],
+      [
+        {
+          ...baseCreate,
+          registrationOpenAt: '2026-10-31',
+          registrationCloseAt: '2026-11-03',
+        },
+        'không được sau ngày khai giảng',
+      ],
+    ])('rejects invalid class schedule', async (dto, message) => {
+      await prepareCatalog();
+      await expect(service.create(dto, adminActor)).rejects.toThrow(message);
+      expect(mockPrismaService.class.create).not.toHaveBeenCalled();
+    });
 
     it('rejects a level from a different course', async () => {
       mockPrismaService.class.findUnique.mockResolvedValueOnce(null);
       mockPrismaService.course.findUnique.mockResolvedValueOnce(mockCourse);
-      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({ ...mockLevel, courseId: 'other-course' });
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({
+        ...mockLevel,
+        courseId: 'other-course',
+      });
       mockPrismaService.branch.findUnique.mockResolvedValueOnce(mockBranch);
-      await expect(service.create(baseCreate, adminActor)).rejects.toThrow('Cấp độ không thuộc khóa học');
+      await expect(service.create(baseCreate, adminActor)).rejects.toThrow(
+        'Cấp độ không thuộc khóa học',
+      );
       expect(mockPrismaService.class.create).not.toHaveBeenCalled();
     });
 
     it('does not open a class from a draft catalog course', async () => {
       mockPrismaService.class.findUnique.mockResolvedValueOnce(null);
-      mockPrismaService.course.findUnique.mockResolvedValueOnce({ ...mockCourse, isActive: false, publicationStatus: 'DRAFT' });
+      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+        ...mockCourse,
+        isActive: false,
+        publicationStatus: 'DRAFT',
+      });
       mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce(mockLevel);
       mockPrismaService.branch.findUnique.mockResolvedValueOnce(mockBranch);
-      await expect(service.create(baseCreate, adminActor)).rejects.toThrow('Khóa học chưa được duyệt');
+      await expect(service.create(baseCreate, adminActor)).rejects.toThrow(
+        'Khóa học chưa được duyệt',
+      );
       expect(mockPrismaService.class.create).not.toHaveBeenCalled();
     });
 
@@ -308,12 +384,22 @@ describe('ClassesService', () => {
           startTime: '18:00',
           endTime: '19:30',
           totalSessions: 4,
+          registrationOpenAt: '2026-10-01',
+          registrationCloseAt: '2026-10-31',
         },
         adminActor,
       );
 
       expect(result).toBeDefined();
       expect(mockPrismaService.classSession.create).toHaveBeenCalledTimes(4);
+      expect(mockPrismaService.class.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            registrationOpenAt: new Date('2026-10-01'),
+            registrationCloseAt: new Date('2026-10-31'),
+          }),
+        }),
+      );
     });
   });
 
@@ -473,14 +559,28 @@ describe('ClassesService', () => {
     it('returns a teaching roster without tuition or contact details', async () => {
       mockPrismaService.class.findUnique.mockResolvedValue({
         ...mockClass,
-        students: [{
-          id: 'enrollment-1', classId: 'class-1', studentId: 'student-1',
-          status: EnrollmentStatus.ENROLLED, tuitionPaid: 5000000,
-          student: { id: 'student-1', userCode: 'HV-01', fullName: 'Minh Anh',
-            email: 'private@example.com', phone: '0900000000', status: 'ACTIVE' },
-        }],
+        students: [
+          {
+            id: 'enrollment-1',
+            classId: 'class-1',
+            studentId: 'student-1',
+            status: EnrollmentStatus.ENROLLED,
+            tuitionPaid: 5000000,
+            student: {
+              id: 'student-1',
+              userCode: 'HV-01',
+              fullName: 'Minh Anh',
+              email: 'private@example.com',
+              phone: '0900000000',
+              status: 'ACTIVE',
+            },
+          },
+        ],
       });
-      const result = await service.findOne('class-1', { id: 'teacher-1', roles: ['teacher'] });
+      const result = await service.findOne('class-1', {
+        id: 'teacher-1',
+        roles: ['teacher'],
+      });
       expect(result.students[0]).not.toHaveProperty('tuitionPaid');
       expect(result.students[0].student).not.toHaveProperty('email');
       expect(result.students[0].student).not.toHaveProperty('phone');

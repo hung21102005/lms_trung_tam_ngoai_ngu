@@ -32,6 +32,8 @@ abstract class ClassesRemoteDataSource {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   });
 
@@ -98,22 +100,27 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     int page = 1,
     int limit = 50,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'limit': limit,
-    };
+    final queryParams = <String, dynamic>{'page': page, 'limit': limit};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (status != null && status.isNotEmpty) queryParams['status'] = status;
-    if (branchId != null && branchId.isNotEmpty) queryParams['branchId'] = branchId;
-    if (courseId != null && courseId.isNotEmpty) queryParams['courseId'] = courseId;
-    if (teacherId != null && teacherId.isNotEmpty) queryParams['teacherId'] = teacherId;
+    if (branchId != null && branchId.isNotEmpty) {
+      queryParams['branchId'] = branchId;
+    }
+    if (courseId != null && courseId.isNotEmpty) {
+      queryParams['courseId'] = courseId;
+    }
+    if (teacherId != null && teacherId.isNotEmpty) {
+      queryParams['teacherId'] = teacherId;
+    }
 
     final response = await apiClient.get(
       ApiEndpoints.classes,
       queryParameters: queryParams,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic> && data['items'] is List) {
       return (data['items'] as List)
           .map((item) => ClassModel.fromJson(item as Map<String, dynamic>))
@@ -129,7 +136,9 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
   @override
   Future<ClassModel> getClassDetail(String id) async {
     final response = await apiClient.get(ApiEndpoints.classDetail(id));
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
 
     if (data is Map<String, dynamic>) {
       return ClassModel.fromJson(data);
@@ -155,6 +164,8 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async {
     final body = <String, dynamic>{
@@ -173,12 +184,22 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     };
     if (roomId != null) body['roomId'] = roomId;
     if (mainTeacherId != null) body['mainTeacherId'] = mainTeacherId;
-    if (assistantTeacherId != null) body['assistantTeacherId'] = assistantTeacherId;
+    if (assistantTeacherId != null) {
+      body['assistantTeacherId'] = assistantTeacherId;
+    }
     if (tuitionFee != null) body['tuitionFee'] = tuitionFee;
+    if (registrationOpenAt != null) {
+      body['registrationOpenAt'] = registrationOpenAt;
+    }
+    if (registrationCloseAt != null) {
+      body['registrationCloseAt'] = registrationCloseAt;
+    }
     if (notes != null) body['notes'] = notes;
 
     final response = await apiClient.post(ApiEndpoints.classes, data: body);
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return ClassModel.fromJson(data);
     }
@@ -207,7 +228,9 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     if (name != null) body['name'] = name;
     if (roomId != null) body['roomId'] = roomId;
     if (mainTeacherId != null) body['mainTeacherId'] = mainTeacherId;
-    if (assistantTeacherId != null) body['assistantTeacherId'] = assistantTeacherId;
+    if (assistantTeacherId != null) {
+      body['assistantTeacherId'] = assistantTeacherId;
+    }
     if (status != null) body['status'] = status;
     if (startDate != null) body['startDate'] = startDate;
     if (scheduleDays != null) body['scheduleDays'] = scheduleDays;
@@ -217,8 +240,13 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     if (tuitionFee != null) body['tuitionFee'] = tuitionFee;
     if (notes != null) body['notes'] = notes;
 
-    final response = await apiClient.patch(ApiEndpoints.classDetail(id), data: body);
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final response = await apiClient.patch(
+      ApiEndpoints.classDetail(id),
+      data: body,
+    );
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return ClassModel.fromJson(data);
     }
@@ -243,7 +271,9 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
       data: body,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return ClassStudentModel.fromJson(data);
     }
@@ -258,11 +288,15 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
   @override
   Future<List<ClassSessionModel>> getClassSessions(String classId) async {
     final response = await apiClient.get(ApiEndpoints.classSessions(classId));
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
 
     if (data is List) {
       return data
-          .map((item) => ClassSessionModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ClassSessionModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];
@@ -295,7 +329,9 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
       data: body,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return ClassSessionModel.fromJson(data);
     }
@@ -305,7 +341,9 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
   @override
   Future<List<ClassModel>> getMyClasses() async {
     final response = await apiClient.get(ApiEndpoints.myClasses);
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
 
     if (data is List) {
       return data
@@ -328,11 +366,15 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
       ApiEndpoints.mySchedule,
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
 
     if (data is List) {
       return data
-          .map((item) => ClassSessionModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ClassSessionModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];

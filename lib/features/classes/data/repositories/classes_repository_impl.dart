@@ -51,6 +51,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) {
     return remoteDataSource.createClass(
@@ -70,6 +72,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
       totalSessions: totalSessions,
       maxCapacity: maxCapacity,
       tuitionFee: tuitionFee,
+      registrationOpenAt: registrationOpenAt,
+      registrationCloseAt: registrationCloseAt,
       notes: notes,
     );
   }
@@ -169,9 +173,6 @@ class ClassesRepositoryImpl implements ClassesRepository {
     String? fromDate,
     String? toDate,
   }) {
-    return remoteDataSource.getMySchedule(
-      fromDate: fromDate,
-      toDate: toDate,
-    );
+    return remoteDataSource.getMySchedule(fromDate: fromDate, toDate: toDate);
   }
 }

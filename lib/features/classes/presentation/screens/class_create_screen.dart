@@ -61,6 +61,10 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
   final _notesController = TextEditingController();
 
   DateTime _startDate = DateTime.now().add(const Duration(days: 7));
+  DateTime _registrationOpenAt = DateUtils.dateOnly(DateTime.now());
+  DateTime _registrationCloseAt = DateUtils.dateOnly(
+    DateTime.now().add(const Duration(days: 6)),
+  );
   TimeOfDay _startTime = const TimeOfDay(hour: 18, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 19, minute: 30);
 
@@ -239,6 +243,30 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
     if (picked != null) {
       setState(() {
         _startDate = picked;
+        if (_registrationOpenAt.isAfter(picked)) {
+          _registrationOpenAt = picked;
+        }
+        if (_registrationCloseAt.isAfter(picked)) {
+          _registrationCloseAt = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _pickRegistrationDate({required bool opening}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: opening ? _registrationOpenAt : _registrationCloseAt,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: _startDate,
+    );
+    if (picked != null) {
+      setState(() {
+        if (opening) {
+          _registrationOpenAt = picked;
+        } else {
+          _registrationCloseAt = picked;
+        }
       });
     }
   }
@@ -289,6 +317,17 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
       );
       return;
     }
+    if (_registrationOpenAt.isAfter(_registrationCloseAt) ||
+        _registrationCloseAt.isAfter(_startDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Thời gian đăng ký phải kết thúc trước ngày khai giảng.',
+          ),
+        ),
+      );
+      return;
+    }
 
     final totalSessions =
         int.tryParse(_totalSessionsController.text.trim()) ?? 24;
@@ -315,6 +354,10 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         totalSessions: totalSessions,
         maxCapacity: capacity,
         tuitionFee: fee,
+        registrationOpenAt: DateFormat('yyyy-MM-dd')
+            .format(_registrationOpenAt),
+        registrationCloseAt: DateFormat('yyyy-MM-dd')
+            .format(_registrationCloseAt),
         notes: _notesController.text.trim().isNotEmpty
             ? _notesController.text.trim()
             : null,
@@ -371,6 +414,27 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
             ],
           ),
         ),
+      ),
+    ],
+  );
+
+  Widget _registrationDateField(
+    String label,
+    DateTime value,
+    VoidCallback onTap,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: AppTextStyles.caption(context)
+            .copyWith(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 6),
+      OutlinedButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.calendar_today_outlined, size: 18),
+        label: Text(DateFormat('dd/MM/yyyy').format(value)),
       ),
     ],
   );
@@ -660,6 +724,40 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                         _endTime,
                         _pickEndTime,
                         isDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Capacity & Tuition Fee Card
+              AppCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Thời gian nhận đăng ký',
+                      style: AppTextStyles.h4(context),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Lớp được tạo ở trạng thái lập kế hoạch. Thời gian này dùng khi mở tuyển sinh.',
+                      style: AppTextStyles.caption(context),
+                    ),
+                    const SizedBox(height: 16),
+                    _fieldPair(
+                      isMobile: isMobile,
+                      first: _registrationDateField(
+                        'Bắt đầu',
+                        _registrationOpenAt,
+                        () => _pickRegistrationDate(opening: true),
+                      ),
+                      second: _registrationDateField(
+                        'Kết thúc',
+                        _registrationCloseAt,
+                        () => _pickRegistrationDate(opening: false),
                       ),
                     ),
                   ],

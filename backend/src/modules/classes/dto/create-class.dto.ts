@@ -21,7 +21,9 @@ export class CreateClassDto {
   })
   @IsNotEmpty({ message: 'Mã lớp không được để trống' })
   @IsString()
-  @Matches(/^[A-Z0-9_-]+$/, { message: 'Mã lớp chỉ chứa chữ hoa, số, gạch dưới và gạch nối' })
+  @Matches(/^[A-Z0-9_-]+$/, {
+    message: 'Mã lớp chỉ chứa chữ hoa, số, gạch dưới và gạch nối',
+  })
   code!: string;
 
   @ApiProperty({
@@ -94,7 +96,10 @@ export class CreateClassDto {
     description: 'Ngày bắt đầu khóa học (YYYY-MM-DD)',
   })
   @IsNotEmpty({ message: 'Ngày bắt đầu không được để trống' })
-  @IsDateString({}, { message: 'Định dạng ngày bắt đầu không hợp lệ (YYYY-MM-DD)' })
+  @IsDateString(
+    {},
+    { message: 'Định dạng ngày bắt đầu không hợp lệ (YYYY-MM-DD)' },
+  )
   startDate!: string;
 
   @ApiProperty({
@@ -110,7 +115,9 @@ export class CreateClassDto {
     description: 'Giờ bắt đầu học (HH:mm)',
   })
   @IsNotEmpty({ message: 'Giờ bắt đầu không được để trống' })
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Định dạng giờ bắt đầu không hợp lệ (HH:mm)' })
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: 'Định dạng giờ bắt đầu không hợp lệ (HH:mm)',
+  })
   startTime!: string;
 
   @ApiProperty({
@@ -118,7 +125,9 @@ export class CreateClassDto {
     description: 'Giờ kết thúc học (HH:mm)',
   })
   @IsNotEmpty({ message: 'Giờ kết thúc không được để trống' })
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Định dạng giờ kết thúc không hợp lệ (HH:mm)' })
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: 'Định dạng giờ kết thúc không hợp lệ (HH:mm)',
+  })
   endTime!: string;
 
   @ApiPropertyOptional({
@@ -149,6 +158,22 @@ export class CreateClassDto {
   @IsNumber()
   @Min(0)
   tuitionFee?: number;
+
+  @ApiPropertyOptional({
+    example: '2026-10-01',
+    description: 'Ngày bắt đầu nhận đăng ký',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'Ngày bắt đầu đăng ký không hợp lệ' })
+  registrationOpenAt?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-10-31',
+    description: 'Ngày kết thúc nhận đăng ký',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'Ngày kết thúc đăng ký không hợp lệ' })
+  registrationCloseAt?: string;
 
   @ApiPropertyOptional({
     example: 'Lớp chuẩn bị thi IELTS đợt tháng 3/2027',

@@ -58,7 +58,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
 | 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình/khóa: tạo, gắn khóa có sẵn, sửa trường công khai, duyệt/công bố; màn hình sửa cấp độ qua API hiện có. Còn thiếu UI sửa học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
-| 3 Class offering | Pending | Chờ catalog ổn định |
+| 3 Class offering | Đang thực hiện | Đã bổ sung cửa sổ đăng ký và ràng buộc cơ bản khi tạo lớp; còn cần UI sửa lớp, kiểm tra phân công GV, công bố lớp và HTTP workflow. Catalog seed vẫn chờ duyệt. |
 | 4 Public website | Pending | Chờ publication API |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
 | 6 Đồng bộ/kiểm thử | Pending | Chờ luồng đăng ký |
@@ -128,3 +128,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Khởi động Backend tạm để kiểm tra HTTP rồi đã dừng: `GET /public/programs` và `/public/courses` trả **200** với danh sách rỗng vì seed chưa công bố; slug không tồn tại trả **404**; `/courses` và `/programs` không JWT trả **401**. E2E test học thuật cũ được cập nhật theo hợp đồng API hiện tại và **3/3 đạt**.
 - Backend build và kiểm thử seed/audit tập trung đạt. Chưa kiểm thử thao tác **ghi** qua HTTP (duyệt/công bố, tạo/sửa) để tránh thay đổi dữ liệu thật; chưa kiểm chứng thiết bị thật. Giai đoạn 01 vẫn chưa hoàn thành do 47 khóa seed cần duyệt nội dung trước khi công bố.
 - **Tiếp theo:** hoàn thiện mở lớp với ràng buộc khóa/level, phòng, giáo viên, lịch, học phí, cửa sổ đăng ký; tiếp tục giữ website công khai và registration ở trạng thái Pending cho đến khi lớp được công bố an toàn.
+
+## Checkpoint mở lớp: thời gian đăng ký và kiểm tra dữ liệu (2026-10-28)
+
+- Migration cộng dồn `20261028231500_class_registration_window` thêm `registrationOpenAt` và `registrationCloseAt` vào lớp, đã áp dụng thành công trên PostgreSQL local; không thay đổi dữ liệu lớp cũ. API `POST/PATCH /classes` nhận hai ngày này và kiểm tra nhập đủ cặp, thứ tự ngày, hạn đăng ký không sau ngày khai giảng.
+- Khi tạo lớp, Backend từ chối phòng thuộc chi nhánh khác, giờ kết thúc không sau giờ bắt đầu, ngày học rỗng hoặc trùng. Form mở lớp Admin đã có chọn khoảng đăng ký, giữ trạng thái lớp `PLANNING`; chi tiết lớp hiển thị khoảng đã lưu cho quản trị/học vụ. Dữ liệu đi qua Bloc/Repository/API hiện có.
+- Backend build đạt, lint đạt (cảnh báo cũ), toàn bộ test **153/153 đạt**. Flutter analyzer phạm vi lớp **0 issues**; widget regression form/danh sách/chi tiết lớp **28/28 đạt** tại 320–1200 px và bàn phím mở. `flutter build web --no-wasm-dry-run` đạt. Thao tác tạo lớp thật qua HTTP chưa kiểm chứng.
+- **Còn thiếu:** giao diện sửa thông tin lớp và khoảng đăng ký; kiểm tra giáo viên hợp lệ/thuộc chi nhánh, xung đột trợ giảng, quy trình công bố lớp; public API danh sách lớp; đăng ký từ khách/học viên cũ; đồng bộ CRM. Không thể mở lớp từ 47 khóa seed cho đến khi được duyệt học thuật và công bố; không tự công bố seed.

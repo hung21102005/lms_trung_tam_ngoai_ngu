@@ -1015,6 +1015,15 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
               ],
             ],
           ),
+          if (_canManageEnrollment &&
+              classObj.registrationOpenAt != null &&
+              classObj.registrationCloseAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Nhận đăng ký: ${DateFormat('dd/MM/yyyy').format(classObj.registrationOpenAt!)} – ${DateFormat('dd/MM/yyyy').format(classObj.registrationCloseAt!)}',
+              style: AppTextStyles.caption(context),
+            ),
+          ],
         ],
       ),
     );

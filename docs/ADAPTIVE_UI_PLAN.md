@@ -317,3 +317,8 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Admin/academic staff can pick a local file for a lesson in course detail. The Mobile sheet has SafeArea, keyboard-aware scrolling, name/file validation and a 50 MB limit. Shared repository first uploads through existing `/upload`, then creates the lesson material record through the existing API. Desktop uses a dialog; archived/read-only courses hide the action.
 - Focused analyzer: **0 issues**; curriculum/course/material widget suite: **38/38 pass**; `flutter build web --no-wasm-dry-run`: **pass**; backend suite: **145/145 pass**, build/lint pass with 12 existing warnings. Real file picker, Firebase Storage, live DB/API, physical device visuals and Desktop screenshots remain **unverified**.
 - Academic seed review and HTTP publication/catalog checks remain pending before class offering work.
+
+### Checkpoint 2026-10-28 — Admin class registration window
+
+- Existing class create form now exposes opening/closing dates for enrollment on Mobile and Desktop, using the same Bloc/Repository/API. Class detail shows the saved period to staff. The Mobile form keeps its one-column layout and scrollable action with keyboard inset.
+- Focused analyzer: **0 issues**; class create/list/detail widget regression: **28/28 pass** across 320–1200 px; `flutter build web --no-wasm-dry-run` passed. Backend tests: **153/153 pass**; local additive migration applied. Live class creation, physical device interaction and screenshot comparison remain **unverified**. Class edit UI and public offering flow remain pending.

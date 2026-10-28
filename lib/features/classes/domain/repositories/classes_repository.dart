@@ -30,6 +30,8 @@ abstract class ClassesRepository {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   });
 

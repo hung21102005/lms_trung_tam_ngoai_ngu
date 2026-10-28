@@ -581,6 +581,8 @@ model Class {
   totalSessions      Int         @default(24) // Tổng số buổi học
   maxCapacity        Int         @default(20) // Sĩ số tối đa
   tuitionFee         Decimal     @default(0) @db.Decimal(12, 2) // Học phí thực tế áp dụng cho lớp này
+  registrationOpenAt  DateTime?   @db.Date
+  registrationCloseAt DateTime?   @db.Date
   notes              String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt

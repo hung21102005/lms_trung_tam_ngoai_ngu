@@ -29,6 +29,8 @@ class ClassModel extends Equatable {
   final int totalSessions;
   final int maxCapacity;
   final double tuitionFee;
+  final DateTime? registrationOpenAt;
+  final DateTime? registrationCloseAt;
   final String? notes;
   final int studentsCount;
   final int sessionsCount;
@@ -64,6 +66,8 @@ class ClassModel extends Equatable {
     this.totalSessions = 24,
     this.maxCapacity = 20,
     this.tuitionFee = 0,
+    this.registrationOpenAt,
+    this.registrationCloseAt,
     this.notes,
     this.studentsCount = 0,
     this.sessionsCount = 0,
@@ -131,6 +135,10 @@ class ClassModel extends Equatable {
       totalSessions: json['totalSessions'] as int? ?? 24,
       maxCapacity: json['maxCapacity'] as int? ?? 20,
       tuitionFee: json['tuitionFee'] != null ? double.tryParse(json['tuitionFee'].toString()) ?? 0.0 : 0.0,
+      registrationOpenAt: json['registrationOpenAt'] != null
+          ? DateTime.tryParse(json['registrationOpenAt'].toString()) : null,
+      registrationCloseAt: json['registrationCloseAt'] != null
+          ? DateTime.tryParse(json['registrationCloseAt'].toString()) : null,
       notes: json['notes'] as String?,
       studentsCount: parsedStudents.isNotEmpty ? parsedStudents.length : sCount,
       sessionsCount: parsedSessions.isNotEmpty ? parsedSessions.length : sessCount,
@@ -158,6 +166,8 @@ class ClassModel extends Equatable {
         totalSessions,
         maxCapacity,
         tuitionFee,
+        registrationOpenAt,
+        registrationCloseAt,
         studentsCount,
         sessionsCount,
       ];

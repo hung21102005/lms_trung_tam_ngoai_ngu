@@ -66,6 +66,8 @@ class CreateClassEvent extends ClassesEvent {
   final int totalSessions;
   final int maxCapacity;
   final double? tuitionFee;
+  final String? registrationOpenAt;
+  final String? registrationCloseAt;
   final String? notes;
 
   const CreateClassEvent({
@@ -85,23 +87,33 @@ class CreateClassEvent extends ClassesEvent {
     this.totalSessions = 24,
     this.maxCapacity = 20,
     this.tuitionFee,
+    this.registrationOpenAt,
+    this.registrationCloseAt,
     this.notes,
   });
 
   @override
   List<Object?> get props => [
-        code,
-        name,
-        courseId,
-        levelId,
-        branchId,
-        roomId,
-        mainTeacherId,
-        startDate,
-        scheduleDays,
-        startTime,
-        endTime,
-      ];
+    code,
+    name,
+    courseId,
+    levelId,
+    branchId,
+    roomId,
+    mainTeacherId,
+    assistantTeacherId,
+    status,
+    startDate,
+    scheduleDays,
+    startTime,
+    endTime,
+    totalSessions,
+    maxCapacity,
+    tuitionFee,
+    registrationOpenAt,
+    registrationCloseAt,
+    notes,
+  ];
 }
 
 class EnrollStudentEvent extends ClassesEvent {
@@ -125,10 +137,7 @@ class RemoveStudentEvent extends ClassesEvent {
   final String classId;
   final String studentId;
 
-  const RemoveStudentEvent({
-    required this.classId,
-    required this.studentId,
-  });
+  const RemoveStudentEvent({required this.classId, required this.studentId});
 
   @override
   List<Object?> get props => [classId, studentId];
@@ -160,5 +169,16 @@ class UpdateSessionEvent extends ClassesEvent {
   });
 
   @override
-  List<Object?> get props => [sessionId, classId, title, date, startTime, endTime, roomId, teacherId, status, notes];
+  List<Object?> get props => [
+    sessionId,
+    classId,
+    title,
+    date,
+    startTime,
+    endTime,
+    roomId,
+    teacherId,
+    status,
+    notes,
+  ];
 }

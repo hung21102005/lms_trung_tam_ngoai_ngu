@@ -271,8 +271,14 @@ export class ClassesService {
       }
     }
 
-    if (actor?.roles.some((role) => ['teacher', 'teaching_assistant'].includes(role)) &&
-        !actor.roles.some((role) => ['super_admin', 'branch_admin', 'academic_staff'].includes(role))) {
+    if (
+      actor?.roles.some((role) =>
+        ['teacher', 'teaching_assistant'].includes(role),
+      ) &&
+      !actor.roles.some((role) =>
+        ['super_admin', 'branch_admin', 'academic_staff'].includes(role),
+      )
+    ) {
       return {
         ...classEntity,
         students: classEntity.students.map((item) => ({
@@ -298,6 +304,39 @@ export class ClassesService {
   // --------------------------------------------------------------------------
   // TẠO LỚP & AUTO-GENERATE SESSIONS CÓ CHECK TRÙNG LỊCH PHÒNG/GIÁO VIÊN
   // --------------------------------------------------------------------------
+
+  private validateRegistrationWindow(
+    openAt?: string | Date | null,
+    closeAt?: string | Date | null,
+    classStart?: string | Date | null,
+  ) {
+    if (!openAt && !closeAt) return;
+    if (!openAt || !closeAt) {
+      throw new BadRequestException('Cần nhập đủ ngày mở và đóng đăng ký');
+    }
+    const open = new Date(openAt);
+    const close = new Date(closeAt);
+    const start = classStart ? new Date(classStart) : null;
+    if (
+      Number.isNaN(open.getTime()) ||
+      Number.isNaN(close.getTime()) ||
+      (start && Number.isNaN(start.getTime()))
+    ) {
+      throw new BadRequestException(
+        'Ngày đăng ký hoặc ngày khai giảng không hợp lệ',
+      );
+    }
+    if (open > close) {
+      throw new BadRequestException(
+        'Ngày mở đăng ký phải trước hoặc bằng ngày đóng đăng ký',
+      );
+    }
+    if (start && close > start) {
+      throw new BadRequestException(
+        'Ngày đóng đăng ký không được sau ngày khai giảng',
+      );
+    }
+  }
 
   async create(dto: CreateClassDto, actor: ClassActor) {
     if (
@@ -338,10 +377,38 @@ export class ClassesService {
     if (level.courseId !== dto.courseId) {
       throw new BadRequestException('Cấp độ không thuộc khóa học đã chọn');
     }
-    if (course.isActive === false ||
-        (course.publicationStatus && course.publicationStatus !== 'PUBLISHED')) {
-      throw new BadRequestException('Khóa học chưa được duyệt và kích hoạt để mở lớp');
+    if (
+      course.isActive === false ||
+      (course.publicationStatus && course.publicationStatus !== 'PUBLISHED')
+    ) {
+      throw new BadRequestException(
+        'Khóa học chưa được duyệt và kích hoạt để mở lớp',
+      );
     }
+
+    if (dto.roomId) {
+      const room = await this.prisma.room.findUnique({
+        where: { id: dto.roomId },
+      });
+      if (!room)
+        throw new NotFoundException('Không tìm thấy phòng học đã chọn');
+      if (room.branchId !== dto.branchId) {
+        throw new BadRequestException('Phòng học không thuộc chi nhánh mở lớp');
+      }
+    }
+    if (dto.startTime >= dto.endTime) {
+      throw new BadRequestException('Giờ kết thúc phải sau giờ bắt đầu');
+    }
+    if (!dto.scheduleDays.length) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất một ngày học trong tuần',
+      );
+    }
+    this.validateRegistrationWindow(
+      dto.registrationOpenAt,
+      dto.registrationCloseAt,
+      dto.startDate,
+    );
 
     // 3. Phân tích các ngày trong tuần (scheduleDays)
     const dayMap: Record<string, number> = {
@@ -363,6 +430,9 @@ export class ClassesService {
       }
       return dayMap[upper];
     });
+    if (new Set(targetDays).size !== targetDays.length) {
+      throw new BadRequestException('Ngày học trong tuần không được trùng lặp');
+    }
 
     const totalSessions = dto.totalSessions || level.estimatedSessions || 24;
     const sessionDates: Date[] = [];
@@ -466,6 +536,12 @@ export class ClassesService {
           totalSessions,
           maxCapacity: dto.maxCapacity || 20,
           tuitionFee: dto.tuitionFee ?? level.tuitionFee ?? 0,
+          registrationOpenAt: dto.registrationOpenAt
+            ? new Date(dto.registrationOpenAt)
+            : null,
+          registrationCloseAt: dto.registrationCloseAt
+            ? new Date(dto.registrationCloseAt)
+            : null,
           notes: dto.notes,
         },
       });
@@ -512,7 +588,7 @@ export class ClassesService {
   }
 
   async update(id: string, dto: UpdateClassDto, actor: ClassActor) {
-    await this.findOne(id, actor);
+    const current = await this.findOne(id, actor);
     if (
       !actor.roles.includes('super_admin') &&
       dto.branchId &&
@@ -534,6 +610,21 @@ export class ClassesService {
 
     const updateData: any = { ...dto };
     if (dto.startDate) updateData.startDate = new Date(dto.startDate);
+    if (
+      dto.registrationOpenAt !== undefined ||
+      dto.registrationCloseAt !== undefined ||
+      dto.startDate
+    ) {
+      this.validateRegistrationWindow(
+        dto.registrationOpenAt ?? current.registrationOpenAt,
+        dto.registrationCloseAt ?? current.registrationCloseAt,
+        dto.startDate ?? current.startDate,
+      );
+    }
+    if (dto.registrationOpenAt)
+      updateData.registrationOpenAt = new Date(dto.registrationOpenAt);
+    if (dto.registrationCloseAt)
+      updateData.registrationCloseAt = new Date(dto.registrationCloseAt);
     if (dto.scheduleDays)
       updateData.scheduleDays = dto.scheduleDays.map((d) => d.toUpperCase());
 
@@ -776,13 +867,20 @@ export class ClassesService {
       if (!isBranchStaff && !isAssignedTeacher) {
         throw new ForbiddenException('Bạn không được điều chỉnh buổi học này');
       }
-      if (isAssignedTeacher && !isBranchStaff && (
-        dto.date !== undefined || dto.startTime !== undefined ||
-        dto.endTime !== undefined || dto.roomId !== undefined ||
-        dto.teacherId !== undefined || dto.lessonId !== undefined ||
-        (dto.status !== undefined && dto.status !== SessionStatus.COMPLETED)
-      )) {
-        throw new ForbiddenException('Giảng viên chỉ được cập nhật nội dung, ghi chú và hoàn thành buổi học; thay đổi lịch cần học vụ xử lý');
+      if (
+        isAssignedTeacher &&
+        !isBranchStaff &&
+        (dto.date !== undefined ||
+          dto.startTime !== undefined ||
+          dto.endTime !== undefined ||
+          dto.roomId !== undefined ||
+          dto.teacherId !== undefined ||
+          dto.lessonId !== undefined ||
+          (dto.status !== undefined && dto.status !== SessionStatus.COMPLETED))
+      ) {
+        throw new ForbiddenException(
+          'Giảng viên chỉ được cập nhật nội dung, ghi chú và hoàn thành buổi học; thay đổi lịch cần học vụ xử lý',
+        );
       }
     }
 

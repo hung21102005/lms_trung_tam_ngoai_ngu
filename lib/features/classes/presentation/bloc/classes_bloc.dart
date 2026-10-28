@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
 import '../../domain/repositories/classes_repository.dart';
 import 'classes_event.dart';
 import 'classes_state.dart';
@@ -27,19 +28,23 @@ class ClassesBloc extends Bloc<ClassesEvent, ClassesState> {
       emit(ClassesLoading());
     }
     try {
-      final status = event.status == 'ALL' || event.status == null ? null : event.status;
+      final status = event.status == 'ALL' || event.status == null
+          ? null
+          : event.status;
       final classes = await repository.getClasses(
         search: event.search,
         status: status,
         branchId: event.branchId,
         courseId: event.courseId,
       );
-      emit(ClassesLoaded(
-        classes: classes,
-        selectedStatus: event.status ?? 'ALL',
-        selectedBranchId: event.branchId,
-        searchQuery: event.search ?? '',
-      ));
+      emit(
+        ClassesLoaded(
+          classes: classes,
+          selectedStatus: event.status ?? 'ALL',
+          selectedBranchId: event.branchId,
+          searchQuery: event.search ?? '',
+        ),
+      );
     } catch (e) {
       emit(ClassesError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -90,10 +95,12 @@ class ClassesBloc extends Bloc<ClassesEvent, ClassesState> {
 
       if (requestId != _scheduleRequestId || emit.isDone) return;
 
-      emit(MyScheduleLoaded(
-        sessions: sessions,
-        selectedDay: event.fromDate ?? now,
-      ));
+      emit(
+        MyScheduleLoaded(
+          sessions: sessions,
+          selectedDay: event.fromDate ?? now,
+        ),
+      );
     } catch (e) {
       if (requestId != _scheduleRequestId || emit.isDone) return;
       emit(ClassesError(e.toString().replaceAll('Exception: ', '')));
@@ -123,9 +130,16 @@ class ClassesBloc extends Bloc<ClassesEvent, ClassesState> {
         totalSessions: event.totalSessions,
         maxCapacity: event.maxCapacity,
         tuitionFee: event.tuitionFee,
+        registrationOpenAt: event.registrationOpenAt,
+        registrationCloseAt: event.registrationCloseAt,
         notes: event.notes,
       );
-      emit(ClassOperationSuccess('Đã tạo lớp và sinh lịch học thành công', data: created));
+      emit(
+        ClassOperationSuccess(
+          'Đã tạo lớp và sinh lịch học thành công',
+          data: created,
+        ),
+      );
       add(const FetchClasses(refresh: true));
     } catch (e) {
       emit(ClassesError(e.toString().replaceAll('Exception: ', '')));
@@ -179,7 +193,9 @@ class ClassesBloc extends Bloc<ClassesEvent, ClassesState> {
         status: event.status,
         notes: event.notes,
       );
-      emit(const ClassOperationSuccess('Cập nhật thông tin buổi học thành công'));
+      emit(
+        const ClassOperationSuccess('Cập nhật thông tin buổi học thành công'),
+      );
       add(FetchClassDetail(event.classId));
     } catch (e) {
       emit(ClassesError(e.toString().replaceAll('Exception: ', '')));

@@ -43,6 +43,8 @@ class FakeClassesRepository implements ClassesRepository {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async {
     createdSelection = {
@@ -51,6 +53,8 @@ class FakeClassesRepository implements ClassesRepository {
       'branchId': branchId,
       'roomId': roomId,
       'mainTeacherId': mainTeacherId,
+      'registrationOpenAt': registrationOpenAt,
+      'registrationCloseAt': registrationCloseAt,
     };
     throw StateError('Captured create request');
   }
@@ -339,12 +343,17 @@ void main() {
     await tester.tap(find.text('Tạo Lớp & Tự Động Sinh Buổi Học'));
     await tester.pumpAndSettle();
 
-    expect(repository.createdSelection, {
+    final expectedSelection = {
       'courseId': 'course-1',
       'levelId': 'level-1',
       'branchId': 'branch-1',
       'roomId': 'room-1',
       'mainTeacherId': 'teacher-1',
-    });
+    };
+    for (final entry in expectedSelection.entries) {
+      expect(repository.createdSelection?[entry.key], entry.value);
+    }
+    expect(repository.createdSelection?['registrationOpenAt'], isNotNull);
+    expect(repository.createdSelection?['registrationCloseAt'], isNotNull);
   });
 }
