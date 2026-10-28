@@ -10,6 +10,7 @@ import {
   CreateCourseDto,
   UpdateCourseDto,
   CreateCourseLevelDto,
+  UpdateCourseLevelDto,
   CreateModuleDto,
   CreateLessonDto,
   CreateLessonMaterialDto,
@@ -495,6 +496,27 @@ export class CoursesService {
         courseId,
       },
     });
+  }
+
+  async updateLevel(id: string, dto: UpdateCourseLevelDto) {
+    const level = await this.prisma.courseLevel.findUnique({
+      where: { id },
+      include: { course: { select: { publicationStatus: true } } },
+    });
+    if (!level) throw new NotFoundException('Không tìm thấy cấp độ khóa học');
+    if (level.course.publicationStatus === PublicationStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'Khóa học đã lưu trữ, không thể chỉnh sửa cấp độ',
+      );
+    }
+    if (dto.code && dto.code !== level.code) {
+      const existing = await this.prisma.courseLevel.findUnique({
+        where: { courseId_code: { courseId: level.courseId, code: dto.code } },
+      });
+      if (existing)
+        throw new ConflictException('Mã cấp độ đã tồn tại trong khóa học');
+    }
+    return this.prisma.courseLevel.update({ where: { id }, data: dto });
   }
 
   // --------------------------------------------------------------------------

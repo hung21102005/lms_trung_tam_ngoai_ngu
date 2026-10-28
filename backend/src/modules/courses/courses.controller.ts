@@ -21,6 +21,7 @@ import {
   CreateCourseDto,
   UpdateCourseDto,
   CreateCourseLevelDto,
+  UpdateCourseLevelDto,
   CreateModuleDto,
   CreateLessonDto,
   CreateLessonMaterialDto,
@@ -210,6 +211,15 @@ export class CoursesController {
     @Body() dto: CreateCourseLevelDto,
   ) {
     return this.coursesService.createLevel(courseId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('levels/:id')
+  @ApiOperation({ summary: 'Chỉnh sửa thông tin học thuật của cấp độ' })
+  updateLevel(@Param('id') id: string, @Body() dto: UpdateCourseLevelDto) {
+    return this.coursesService.updateLevel(id, dto);
   }
 
   // --------------------------------------------------------------------------

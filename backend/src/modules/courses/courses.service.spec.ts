@@ -41,6 +41,7 @@ describe('CoursesService', () => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     module: {
       findMany: vi.fn(),
@@ -236,6 +237,40 @@ describe('CoursesService', () => {
         where: { id: 'course-1' },
         data: { publicationStatus: PublicationStatus.PUBLISHED },
       });
+    });
+  });
+
+  describe('academic level editing', () => {
+    it('updates a draft level without replacing the related course', async () => {
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({
+        id: 'level-1',
+        courseId: 'course-1',
+        code: 'CORE',
+        course: { publicationStatus: PublicationStatus.DRAFT },
+      });
+      mockPrismaService.courseLevel.update.mockResolvedValueOnce({
+        id: 'level-1',
+        cefrLevel: 'B1',
+      });
+      await service.updateLevel('level-1', {
+        cefrLevel: 'B1',
+        recommendedHours: 60,
+      });
+      expect(mockPrismaService.courseLevel.update).toHaveBeenCalledWith({
+        where: { id: 'level-1' },
+        data: { cefrLevel: 'B1', recommendedHours: 60 },
+      });
+    });
+
+    it('rejects editing a level in an archived course', async () => {
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({
+        id: 'level-1',
+        code: 'CORE',
+        course: { publicationStatus: PublicationStatus.ARCHIVED },
+      });
+      await expect(
+        service.updateLevel('level-1', { name: 'Đổi tên' }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

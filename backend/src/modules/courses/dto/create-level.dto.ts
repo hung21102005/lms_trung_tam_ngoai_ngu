@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsInt, Min, IsNumber } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsNumber,
+} from 'class-validator';
 
 export class CreateCourseLevelDto {
   @ApiProperty({
@@ -55,4 +63,44 @@ export class CreateCourseLevelDto {
   @IsNumber()
   @Min(0)
   tuitionFee?: number;
+
+  @ApiPropertyOptional({ description: 'Mức CEFR, ví dụ A2 hoặc B1' })
+  @IsOptional()
+  @IsString()
+  cefrLevel?: string;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 9 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(9)
+  ieltsTargetBand?: number;
+
+  @ApiPropertyOptional({ minimum: 10, maximum: 990 })
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(990)
+  toeicTargetScore?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  cambridgeQualification?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  entryRequirements?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  completionCriteria?: string;
+
+  @ApiPropertyOptional({ minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  recommendedHours?: number;
 }

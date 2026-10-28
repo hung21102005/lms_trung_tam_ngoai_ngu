@@ -57,7 +57,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | Checkpoint | Trạng thái | Kết quả / giới hạn |
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
-| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Đã kiểm tra quan hệ Course/Level khi mở lớp. Có API nội bộ quản trị chương trình và chuyển trạng thái duyệt, API catalog công khai chỉ đọc bản đã duyệt và bật hiển thị. Còn thiếu UI Admin quản trị/duyệt, cập nhật cấp độ/học phần/bài học, biên tập nội dung học thuật chi tiết và kiểm thử HTTP thực tế. |
+| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Đã kiểm tra quan hệ Course/Level khi mở lớp. Có API nội bộ quản trị chương trình, duyệt công bố và sửa cấp độ; API catalog công khai chỉ đọc bản đã duyệt và bật hiển thị. Còn thiếu UI Admin quản trị/duyệt, cập nhật học phần/bài học, biên tập nội dung học thuật chi tiết và kiểm thử HTTP thực tế. |
 | 3 Class offering | Pending | Chờ catalog ổn định |
 | 4 Public website | Pending | Chờ publication API |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
@@ -80,3 +80,9 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - `GET /public/programs`, `GET /public/courses`, `GET /public/courses/:slug` chỉ trả bản công bố, khóa đang hoạt động và chương trình bật hiển thị. API công khai không trả bài học đầy đủ, học phí, lớp hoặc dữ liệu vận hành nội bộ.
 - `npm run build`: đạt; `npm run lint`: đạt với 12 cảnh báo ngoài phạm vi. `npm run test`: 16 files, 137 tests đạt, gồm kiểm thử lọc catalog công khai và chuyển trạng thái chương trình/khóa. Vẫn cần kiểm thử Flutter UI khi triển khai.
 - Chưa kiểm thử HTTP với Backend chạy, chưa có UI Admin cho duyệt, và seed hiện vẫn là đề cương chờ biên tập. Không đánh dấu giai đoạn 01 hoàn thành.
+
+## Checkpoint chỉnh sửa cấp độ (2026-10-28)
+
+- `PATCH /levels/:id` cho Admin/học vụ sửa tên, mã, chuẩn CEFR/IELTS/TOEIC/Cambridge, điều kiện đầu vào, tiêu chí hoàn thành và thời lượng tham khảo. Backend chặn mã trùng trong cùng khóa và khóa đã lưu trữ.
+- Kiểm thử tập trung `CoursesService`: 14/14 đạt; toàn bộ backend: 16 files, 139 tests đạt; `npm run build` đạt.
+- Việc sửa cấp độ hiện chưa có giao diện Admin và chưa kiểm thử HTTP. Tiếp theo: nối Admin Course UI với danh mục chương trình, cấp độ và workflow duyệt bằng API hiện có, rồi biên tập sâu học phần/bài học.
