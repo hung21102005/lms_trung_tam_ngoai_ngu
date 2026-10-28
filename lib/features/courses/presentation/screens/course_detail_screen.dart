@@ -38,6 +38,29 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   void _showAddLevelDialog() {
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => _MobileCreateLevelSheet(
+          onSubmit: (code, name, description, sessions, fee) {
+            context.read<CoursesBloc>().add(
+              CreateCourseLevelEvent(
+                courseId: widget.courseId,
+                code: code,
+                name: name,
+                description: description,
+                estimatedSessions: sessions,
+                tuitionFee: fee,
+              ),
+            );
+          },
+        ),
+      );
+      return;
+    }
     final codeCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
     final sessionsCtrl = TextEditingController(text: '24');
@@ -818,6 +841,158 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _MobileCreateLevelSheet extends StatefulWidget {
+  const _MobileCreateLevelSheet({required this.onSubmit});
+
+  final void Function(
+    String code,
+    String name,
+    String? description,
+    int sessions,
+    double fee,
+  )
+  onSubmit;
+
+  @override
+  State<_MobileCreateLevelSheet> createState() =>
+      _MobileCreateLevelSheetState();
+}
+
+class _MobileCreateLevelSheetState extends State<_MobileCreateLevelSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _codeController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _sessionsController = TextEditingController(text: '24');
+  final _feeController = TextEditingController(text: '0');
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _sessionsController.dispose();
+    _feeController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    widget.onSubmit(
+      _codeController.text.trim().toUpperCase(),
+      _nameController.text.trim(),
+      _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      int.parse(_sessionsController.text.trim()),
+      double.parse(_feeController.text.trim()),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+        ),
+        child: SafeArea(
+          top: false,
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            children: [
+              Text(
+                'Thêm cấp độ',
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              const Text('Thiết lập một bước trong lộ trình học tập.'),
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _codeController,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Mã cấp độ *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => value?.trim().isEmpty == true
+                          ? 'Nhập mã cấp độ'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Tên cấp độ *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => value?.trim().isEmpty == true
+                          ? 'Nhập tên cấp độ'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _sessionsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Số buổi học *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final count = int.tryParse(value?.trim() ?? '');
+                        return count == null || count <= 0
+                            ? 'Số buổi phải lớn hơn 0'
+                            : null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _feeController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Học phí chuẩn (VNĐ)',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final fee = double.tryParse(value?.trim() ?? '');
+                        return fee == null || fee < 0
+                            ? 'Học phí không hợp lệ'
+                            : null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _descriptionController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Mục tiêu đầu ra',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton(onPressed: _submit, child: const Text('Lưu cấp độ')),
+            ],
+          ),
+        ),
       ),
     );
   }

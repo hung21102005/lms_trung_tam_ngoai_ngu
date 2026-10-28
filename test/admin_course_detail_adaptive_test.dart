@@ -11,6 +11,26 @@ class _Repository extends Fake implements CoursesRepository {
 
   final bool empty;
   final bool fail;
+  String? createdLevelCode;
+
+  @override
+  Future<CourseLevelModel> createLevel(
+    String courseId, {
+    required String code,
+    required String name,
+    String? description,
+    int order = 1,
+    int estimatedSessions = 24,
+    double tuitionFee = 0,
+  }) async {
+    createdLevelCode = code;
+    return CourseLevelModel(
+      id: 'new-level',
+      courseId: courseId,
+      code: code,
+      name: name,
+    );
+  }
 
   @override
   Future<CourseModel> getCourseDetail(String id) async {
@@ -101,6 +121,41 @@ void main() {
     await tester.pumpWidget(_app(_Repository(fail: true)));
     await tester.pumpAndSettle();
     expect(find.textContaining('Không tải được chi tiết'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Mobile thêm cấp độ qua bottom sheet và Bloc', (tester) async {
+    tester.view.physicalSize = const Size(320, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+    final repository = _Repository(empty: true);
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Thêm cấp độ'));
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lưu cấp độ'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nhập mã cấp độ'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Mã cấp độ *'),
+      'a1',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tên cấp độ *'),
+      'Nền tảng A1',
+    );
+    await tester.ensureVisible(find.text('Lưu cấp độ'));
+    await tester.tap(find.text('Lưu cấp độ'));
+    await tester.pumpAndSettle();
+    expect(repository.createdLevelCode, 'A1');
     expect(tester.takeException(), isNull);
   });
 }

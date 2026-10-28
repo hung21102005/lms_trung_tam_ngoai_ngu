@@ -15,6 +15,22 @@ class _CoursesRepository extends Fake implements CoursesRepository {
   final bool empty;
   final bool fail;
   final Completer<void>? waitFor;
+  String? createdCode;
+  String? createdTitle;
+
+  @override
+  Future<CourseModel> createCourse({
+    required String code,
+    required String title,
+    String? description,
+    String? targetAudience,
+    String language = 'English',
+    String? thumbnailUrl,
+  }) async {
+    createdCode = code;
+    createdTitle = title;
+    return CourseModel(id: 'new-course', code: code, title: title);
+  }
 
   @override
   Future<List<CourseModel>> getCourses({
@@ -144,5 +160,34 @@ void main() {
     await tester.tap(find.text('IELTS Foundation').first);
     await tester.pumpAndSettle();
     expect(find.text('Chi tiết course-1'), findsOneWidget);
+  });
+
+  testWidgets('Mobile tạo khóa học qua bottom sheet và Bloc', (tester) async {
+    tester.view.physicalSize = const Size(375, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _CoursesRepository();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tạo khóa học mới'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tạo khóa học'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nhập mã khóa học'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Mã khóa học *'),
+      'crs-a1',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tên khóa học *'),
+      'Giao tiếp A1',
+    );
+    await tester.ensureVisible(find.text('Tạo khóa học'));
+    await tester.tap(find.text('Tạo khóa học'));
+    await tester.pumpAndSettle();
+    expect(repository.createdCode, 'CRS-A1');
+    expect(repository.createdTitle, 'Giao tiếp A1');
+    expect(tester.takeException(), isNull);
   });
 }
