@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../bloc/classes_bloc.dart';
@@ -54,8 +55,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final isDesktop = width > 1024;
+    final isDesktop = width >= 1024;
     final todayStr = DateFormat('dd/MM/yyyy').format(DateTime.now());
+
+    if (!isDesktop) return _buildMobileScreen();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
@@ -140,25 +143,13 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                             20,
                                           ),
                                         ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 3.5,
-                                              backgroundColor: Color(
-                                                0xFF2E7D32,
-                                              ),
-                                            ),
-                                            SizedBox(width: 6),
-                                            Text(
-                                              'Thuật toán xếp lịch tự động thông minh',
-                                              style: TextStyle(
-                                                color: Color(0xFF2E7D32),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ],
+                                        child: const Text(
+                                          '● Thuật toán xếp lịch tự động thông minh',
+                                          style: TextStyle(
+                                            color: Color(0xFF2E7D32),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -594,8 +585,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   ),
                                 ],
                                 onChanged: (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _selectedBranch = v);
+                                  }
                                 },
                               ),
                             ),
@@ -632,8 +624,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   ),
                                 ],
                                 onChanged: (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _selectedShift = v);
+                                  }
                                 },
                               ),
                             ),
@@ -670,8 +663,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   ),
                                 ],
                                 onChanged: (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _selectedStatus = v);
+                                  }
                                 },
                               ),
                             ),
@@ -720,6 +714,337 @@ class _ClassListScreenState extends State<ClassListScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildMobileScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FF),
+      appBar: widget.showAppBar
+          ? AppBar(title: const Text('Lớp học'), backgroundColor: Colors.white)
+          : null,
+      body: BlocBuilder<ClassesBloc, ClassesState>(
+        builder: (context, state) {
+          final classes = state is ClassesLoaded
+              ? state.classes
+              : <ClassModel>[];
+          final query = _searchController.text.trim().toLowerCase();
+          final branchNames = <String, String>{
+            for (final classItem in classes)
+              classItem.branchId: classItem.branchName ?? classItem.branchId,
+          };
+          final filtered = classes.where((classItem) {
+            final matchesQuery =
+                query.isEmpty ||
+                classItem.code.toLowerCase().contains(query) ||
+                classItem.name.toLowerCase().contains(query) ||
+                (classItem.mainTeacherName ?? '').toLowerCase().contains(query);
+            return matchesQuery &&
+                (_selectedStatus == 'ALL' ||
+                    classItem.status == _selectedStatus) &&
+                (_selectedBranch == 'ALL' ||
+                    classItem.branchId == _selectedBranch);
+          }).toList();
+          final activeCount = classes
+              .where((item) => item.status == 'IN_PROGRESS')
+              .length;
+          return SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(MobileTokens.gutter),
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Quản lý lớp học',
+                            style: TextStyle(
+                              fontSize: 23,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Lớp, giáo viên và lịch học',
+                            style: TextStyle(color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Làm mới danh sách lớp',
+                      onPressed: () => context.read<ClassesBloc>().add(
+                        const FetchClasses(refresh: true),
+                      ),
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: MobileTokens.sectionGap),
+                MobileSectionCard(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.school_rounded,
+                        color: Color(0xFF003FB1),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '${classes.length} lớp • $activeCount đang học',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (widget.allowCreate) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _showCreateClassDialog,
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Tạo lớp học'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: MobileTokens.sectionGap),
+                TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm tên lớp, mã lớp, giáo viên',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: query.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children:
+                        const [
+                              ('ALL', 'Tất cả'),
+                              ('IN_PROGRESS', 'Đang học'),
+                              ('OPEN_FOR_ENROLLMENT', 'Đang tuyển'),
+                              ('PLANNING', 'Sắp mở'),
+                              ('COMPLETED', 'Đã kết thúc'),
+                            ]
+                            .map(
+                              (entry) => Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: Text(entry.$2),
+                                  selected: _selectedStatus == entry.$1,
+                                  onSelected: (_) => setState(
+                                    () => _selectedStatus = entry.$1,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ),
+                if (branchNames.length > 1) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey(_selectedBranch),
+                    initialValue: _selectedBranch,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Chi nhánh',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: 'ALL',
+                        child: Text('Tất cả chi nhánh'),
+                      ),
+                      ...branchNames.entries.map(
+                        (entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(
+                            entry.value,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedBranch = value);
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: MobileTokens.sectionGap),
+                if (state is ClassesLoading)
+                  const LoadingWidget(message: 'Đang tải danh sách lớp...')
+                else if (state is ClassesError)
+                  MobileSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFDC2626),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Không tải được danh sách lớp',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(state.message, softWrap: true),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: () => context.read<ClassesBloc>().add(
+                            const FetchClasses(),
+                          ),
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (filtered.isEmpty)
+                  const MobileSectionCard(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: Text('Không có lớp học phù hợp')),
+                    ),
+                  )
+                else
+                  ...filtered.map(_buildMobileClassCard),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMobileClassCard(ClassModel classItem) {
+    final status = switch (classItem.status) {
+      'IN_PROGRESS' => ('Đang học', const Color(0xFF047857)),
+      'OPEN_FOR_ENROLLMENT' => ('Đang tuyển', const Color(0xFF003FB1)),
+      'COMPLETED' => ('Đã kết thúc', const Color(0xFF64748B)),
+      'PLANNING' => ('Sắp mở', const Color(0xFFD97706)),
+      _ => (classItem.status, const Color(0xFF64748B)),
+    };
+    final capacity = classItem.maxCapacity;
+    final ratio = capacity > 0
+        ? (classItem.studentsCount / capacity).clamp(0.0, 1.0)
+        : 0.0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: MobileSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    classItem.code,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF003FB1),
+                    ),
+                  ),
+                ),
+                MobileStatusPill(label: status.$1, color: status.$2),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              classItem.name,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+            if (classItem.courseTitle != null)
+              Text(
+                classItem.courseTitle!,
+                style: const TextStyle(color: Color(0xFF64748B)),
+              ),
+            const SizedBox(height: 14),
+            _mobileClassInfo(
+              Icons.person_outline_rounded,
+              classItem.mainTeacherName ?? 'Chưa phân công giáo viên',
+            ),
+            _mobileClassInfo(
+              Icons.event_outlined,
+              _mobileScheduleLabel(classItem),
+            ),
+            _mobileClassInfo(
+              Icons.place_outlined,
+              '${classItem.roomName ?? 'Chưa có phòng'} • ${classItem.branchName ?? 'Chưa có chi nhánh'}',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${classItem.studentsCount}/$capacity học viên',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 5),
+            LinearProgressIndicator(value: ratio),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(
+                  RouteNames.classDetail.replaceFirst(':id', classItem.id),
+                ),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: const Text('Xem lớp học và điểm danh'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mobileClassInfo(IconData icon, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 17, color: const Color(0xFF64748B)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(value)),
+      ],
+    ),
+  );
+
+  String _mobileScheduleLabel(ClassModel classItem) {
+    const weekdayLabels = {
+      'MONDAY': 'T2',
+      'TUESDAY': 'T3',
+      'WEDNESDAY': 'T4',
+      'THURSDAY': 'T5',
+      'FRIDAY': 'T6',
+      'SATURDAY': 'T7',
+      'SUNDAY': 'CN',
+    };
+    if (classItem.scheduleDays.isEmpty) return 'Chưa xếp lịch';
+    final days = classItem.scheduleDays
+        .map((day) => weekdayLabels[day] ?? day)
+        .join(' • ');
+    if (classItem.startTime.isEmpty || classItem.endTime.isEmpty) return days;
+    return '$days  ${classItem.startTime}–${classItem.endTime}';
   }
 
   Widget _buildStatCard({
@@ -973,7 +1298,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           ),
                         ),
                         SizedBox(
-                          width: 120,
+                          width: 180,
                           child: Text(
                             'THAO TÁC',
                             textAlign: TextAlign.right,
@@ -991,7 +1316,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: classes.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, index) =>
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     itemBuilder: (ctx, idx) {
                       final c = classes[idx];
@@ -1184,7 +1509,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                               ),
                             ),
                             SizedBox(
-                              width: 120,
+                              width: 180,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [

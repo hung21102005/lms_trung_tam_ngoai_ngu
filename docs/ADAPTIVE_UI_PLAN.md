@@ -34,7 +34,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
 | Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Dashboard, users, branches/rooms and admissions Mobile checkpoints complete; settings pending |
-| Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Debts report Mobile checkpoint complete; other screens pending |
+| Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Class list and debts report Mobile checkpoints complete; create/edit class, schedules, courses and wider reports pending |
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
 
 Route inventory source: `lib/core/router/route_names.dart`; screen inventory: `lib/features/**/presentation/screens/` and `lib/features/dashboard/presentation/views/`. Nested home tabs and dialogs are included in each module above, rather than counted as standalone routes. Reclassify after visual QA.
@@ -50,7 +50,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Profile | `profile_screen`, `edit_profile_screen`, `change_password_screen` | A/B | Pending verification |
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C | Pending |
-| Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Shared Mobile schedule/class detail and Teacher my-classes list implemented; management screens pending |
+| Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Admin class list, shared Mobile schedule/class detail and Teacher my-classes list implemented; class create and secondary management pending |
 | Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history and embedded Teacher attendance Mobile implemented; standalone marking pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Embedded workflow and review Mobile implemented; remaining screens pending |
@@ -209,3 +209,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Replaced the export button's placeholder success notice with a download from the existing `/reports/export/debts` endpoint and a local save action. Download and file picker behavior against a running Backend/device remain **unverified**.
 - Existing report test plus six width tests: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
 - Admin settings, courses/classes, finance forms and wider reports are still pending, as are Parent-specific grades/finance, Teacher secondary screens and live API/device/Desktop visual regression.
+
+### Checkpoint 2026-10-28 — Admin class management Mobile list
+
+- Replaced the Admin class list's 1050 px horizontally scrolling table on Mobile/Tablet with a dedicated card list. It displays live class status, course, teacher, schedule, room/branch and enrollment progress from the existing `ClassesBloc`. Search, status and branch filters work on the loaded classes; create and class-detail actions use the existing routes. Shared `MobileSectionCard`, `MobileStatusPill` and spacing tokens keep it consistent with the mobile design system. Desktop retains its original table/calendar structure, with a small header/action-width repair found during regression.
+- Widget tests with a repository fake: **12/12 pass** at 320, 375, 393, 430, 800 and 1200 px, including Mobile search with a simulated 300 px keyboard inset, status filter, loading, empty/error states and create/detail navigation. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
+- The Desktop list still contains pre-existing static fallback labels and a placeholder teacher-assignment panel. Class creation/edit, actual scheduling, API persistence and authorization were not exercised against a running Backend. Physical Android/Mobile Web visual QA and Desktop screenshot comparison remain **unverified**. Next Admin priorities: class create/edit forms, course management and `system_settings_view` (which currently initializes several settings tabs with local defaults rather than server values).
