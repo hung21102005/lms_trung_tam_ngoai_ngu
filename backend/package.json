@@ -16,6 +16,7 @@
     "start:prod": "node dist/main",
     "seed": "tsx prisma/seed.ts",
     "seed:learning-flow": "tsx prisma/seed-learning-flow.ts",
+    "seed:curriculum": "tsx prisma/seed-curriculum-catalog.ts",
     "smoke:learning-flow": "node test/learning-flow.smoke.mjs",
     "lint": "oxlint src/ test/",
     "test": "vitest run",

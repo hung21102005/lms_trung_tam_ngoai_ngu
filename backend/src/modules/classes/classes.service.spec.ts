@@ -117,6 +117,30 @@ describe('ClassesService', () => {
   });
 
   describe('create class & auto-generate sessions', () => {
+    const baseCreate = {
+      code: 'NEW-CLASS-01', name: 'Lớp mới', courseId: 'course-1',
+      levelId: 'level-1', branchId: 'branch-1', startDate: '2026-11-02',
+      scheduleDays: ['MONDAY'], startTime: '18:00', endTime: '19:30',
+    };
+
+    it('rejects a level from a different course', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.course.findUnique.mockResolvedValueOnce(mockCourse);
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({ ...mockLevel, courseId: 'other-course' });
+      mockPrismaService.branch.findUnique.mockResolvedValueOnce(mockBranch);
+      await expect(service.create(baseCreate, adminActor)).rejects.toThrow('Cấp độ không thuộc khóa học');
+      expect(mockPrismaService.class.create).not.toHaveBeenCalled();
+    });
+
+    it('does not open a class from a draft catalog course', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.course.findUnique.mockResolvedValueOnce({ ...mockCourse, isActive: false, publicationStatus: 'DRAFT' });
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce(mockLevel);
+      mockPrismaService.branch.findUnique.mockResolvedValueOnce(mockBranch);
+      await expect(service.create(baseCreate, adminActor)).rejects.toThrow('Khóa học chưa được duyệt');
+      expect(mockPrismaService.class.create).not.toHaveBeenCalled();
+    });
+
     it('rejects class creation outside the staff branch', async () => {
       await expect(
         service.create(

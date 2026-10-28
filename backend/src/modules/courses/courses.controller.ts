@@ -26,7 +26,7 @@ import {
   CreateLessonMaterialDto,
   QueryCoursesDto,
 } from './dto/index.js';
-import { JwtAuthGuard, RolesGuard, Roles, Public } from '../auth/index.js';
+import { JwtAuthGuard, RolesGuard, Roles } from '../auth/index.js';
 
 @ApiTags('Courses & Curriculum')
 @Controller()
@@ -37,15 +37,17 @@ export class CoursesController {
   // COURSES
   // --------------------------------------------------------------------------
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @Get('courses')
-  @ApiOperation({ summary: 'Lấy danh sách khóa học (Công khai hoặc tra cứu nội bộ)' })
+  @ApiOperation({ summary: 'Lấy danh sách khóa học nội bộ' })
   @ApiResponse({ status: 200, description: 'Lấy danh sách khóa học thành công' })
   findAllCourses(@Query() query: QueryCoursesDto) {
     return this.coursesService.findAll(query);
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @Get('courses/:id')
   @ApiOperation({ summary: 'Xem chi tiết khóa học kèm danh sách cấp độ & bài học' })
   @ApiResponse({ status: 200, description: 'Lấy chi tiết khóa học thành công' })
@@ -81,7 +83,8 @@ export class CoursesController {
   // LEVELS
   // --------------------------------------------------------------------------
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @Get('courses/:id/levels')
   @ApiOperation({ summary: 'Lấy danh sách cấp độ của khóa học' })
   @ApiResponse({ status: 200, description: 'Lấy danh sách cấp độ thành công' })

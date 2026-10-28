@@ -53,6 +53,13 @@ enum ClassStatus {
   CANCELLED // Đã hủy
 }
 
+enum PublicationStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
 enum EnrollmentStatus {
   ENROLLED // Đang theo học chính thức
   RESERVED // Bảo lưu kết quả
@@ -186,9 +193,9 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rooms Room[]
-  users User[]
-  leads AdmissionLead[]
+  rooms   Room[]
+  users   User[]
+  leads   AdmissionLead[]
   classes Class[]
 
   @@map("branches")
@@ -266,24 +273,24 @@ model User {
   approvedMakeupRequests MakeupRequest[] @relation("ApprovedByMakeupRelation")
 
   // Bài tập & Chấm điểm
-  createdAssignments    Assignment[]    @relation("CreatedAssignmentsRelation")
-  submissions           Submission[]    @relation("StudentSubmissionsRelation")
-  gradedSubmissions     Submission[]    @relation("GradedSubmissionsRelation")
+  createdAssignments Assignment[] @relation("CreatedAssignmentsRelation")
+  submissions        Submission[] @relation("StudentSubmissionsRelation")
+  gradedSubmissions  Submission[] @relation("GradedSubmissionsRelation")
 
   // Ngân hàng câu hỏi & Đề thi (Exams)
-  createdQuestionBanks  QuestionBank[]  @relation("CreatedQuestionBanksRelation")
-  createdExams          Exam[]          @relation("CreatedExamsRelation")
-  examAttempts          ExamAttempt[]   @relation("StudentExamAttemptsRelation")
-  gradedExamAnswers     ExamAnswer[]    @relation("GradedExamAnswersRelation")
+  createdQuestionBanks QuestionBank[] @relation("CreatedQuestionBanksRelation")
+  createdExams         Exam[]         @relation("CreatedExamsRelation")
+  examAttempts         ExamAttempt[]  @relation("StudentExamAttemptsRelation")
+  gradedExamAnswers    ExamAnswer[]   @relation("GradedExamAnswersRelation")
 
   // Tài chính & Học phí (Finance & Payments)
-  studentInvoices       Invoice[]       @relation("StudentInvoicesRelation")
-  createdInvoices       Invoice[]       @relation("CreatedInvoicesRelation")
-  studentPayments       Payment[]       @relation("StudentPaymentsRelation")
-  receivedPayments      Payment[]       @relation("ReceivedPaymentsRelation")
+  studentInvoices  Invoice[] @relation("StudentInvoicesRelation")
+  createdInvoices  Invoice[] @relation("CreatedInvoicesRelation")
+  studentPayments  Payment[] @relation("StudentPaymentsRelation")
+  receivedPayments Payment[] @relation("ReceivedPaymentsRelation")
 
   // Thông báo (Notifications)
-  notifications         Notification[]  @relation("UserNotificationsRelation")
+  notifications Notification[] @relation("UserNotificationsRelation")
 
   @@map("users")
 }
@@ -420,17 +427,47 @@ model AdmissionLead {
 // 5. KHÓA HỌC & GIÁO TRÌNH (COURSES & CURRICULUM)
 // ------------------------------------------------------------------------------
 
+model TrainingProgram {
+  id             String            @id @default(uuid())
+  code           String            @unique
+  slug           String            @unique
+  nameVi         String
+  nameEn         String
+  category       String
+  description    String?
+  targetAudience String?
+  learningPath   Json?
+  language       String            @default("English")
+  status         PublicationStatus @default(DRAFT)
+  isPublic       Boolean           @default(false)
+  displayOrder   Int               @default(0)
+  thumbnailUrl   String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  courses Course[]
+
+  @@map("training_programs")
+}
+
 model Course {
-  id             String   @id @default(uuid())
-  code           String   @unique // Mã khóa học: IELTS, COMM, KIDS, TOEIC...
-  title          String   // Tiêu đề: Khóa học Luyện thi IELTS, Tiếng Anh Giao tiếp...
-  description    String?  // Giới thiệu khóa học
-  targetAudience String?  // Đối tượng: Học sinh THPT, Sinh viên, Người đi làm...
-  language       String   @default("English") // Ngôn ngữ: English, Japanese, Korean, Chinese...
-  thumbnailUrl   String?  // Ảnh đại diện
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String            @id @default(uuid())
+  code              String            @unique // Mã khóa học: IELTS, COMM, KIDS, TOEIC...
+  title             String // Tiêu đề: Khóa học Luyện thi IELTS, Tiếng Anh Giao tiếp...
+  description       String? // Giới thiệu khóa học
+  targetAudience    String? // Đối tượng: Học sinh THPT, Sinh viên, Người đi làm...
+  language          String            @default("English") // Ngôn ngữ: English, Japanese, Korean, Chinese...
+  thumbnailUrl      String? // Ảnh đại diện
+  isActive          Boolean           @default(true)
+  programId         String?
+  program           TrainingProgram?  @relation(fields: [programId], references: [id], onDelete: SetNull)
+  slug              String?           @unique
+  publicationStatus PublicationStatus @default(DRAFT)
+  curriculumVersion String            @default("1.0")
+  publicDescription String?
+  academicProfile   Json?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   levels  CourseLevel[]
   classes Class[]
@@ -439,17 +476,27 @@ model Course {
 }
 
 model CourseLevel {
-  id                String   @id @default(uuid())
-  courseId          String
-  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  code              String   // Mã cấp độ: FOUNDATION, BAND-5.5, BAND-6.5, ADVANCED...
-  name              String   // Tên cấp độ: IELTS Foundation, IELTS 5.5 - 6.5...
-  description       String?  // Mục tiêu chuẩn đầu ra của level
-  order             Int      @default(1)
-  estimatedSessions Int      @default(24) // Số buổi học dự kiến
-  tuitionFee        Decimal  @db.Decimal(12, 2) @default(0) // Học phí mặc định cho cấp độ này
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                     String   @id @default(uuid())
+  courseId               String
+  course                 Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  code                   String // Mã cấp độ: FOUNDATION, BAND-5.5, BAND-6.5, ADVANCED...
+  name                   String // Tên cấp độ: IELTS Foundation, IELTS 5.5 - 6.5...
+  description            String? // Mục tiêu chuẩn đầu ra của level
+  order                  Int      @default(1)
+  estimatedSessions      Int      @default(24) // Số buổi học dự kiến
+  tuitionFee             Decimal  @default(0) @db.Decimal(12, 2) // Học phí mặc định cho cấp độ này
+  cefrLevel              String?
+  ieltsTargetBand        Decimal? @db.Decimal(3, 1)
+  toeicTargetScore       Int?
+  cambridgeQualification String?
+  entryRequirements      String?
+  expectedOutcomes       Json?
+  assessmentScheme       Json?
+  completionCriteria     String?
+  recommendedHours       Int?
+  curriculumVersion      String   @default("1.0")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   modules Module[]
   classes Class[]
@@ -462,7 +509,7 @@ model Module {
   id          String      @id @default(uuid())
   levelId     String
   level       CourseLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
-  title       String      // Tên module/chương: Listening & Speaking Fundamentals...
+  title       String // Tên module/chương: Listening & Speaking Fundamentals...
   order       Int         @default(1)
   description String?
   createdAt   DateTime    @default(now())
@@ -477,9 +524,9 @@ model Lesson {
   id              String   @id @default(uuid())
   moduleId        String
   module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title           String   // Tên bài học: Unit 1 - Personal Information & Greetings
+  title           String // Tên bài học: Unit 1 - Personal Information & Greetings
   order           Int      @default(1)
-  content         String?  // Nội dung tóm tắt hoặc giáo án (markdown/text)
+  content         String? // Nội dung tóm tắt hoặc giáo án (markdown/text)
   durationMinutes Int      @default(90) // Thời lượng buổi học (phút)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -494,10 +541,10 @@ model LessonMaterial {
   id            String           @id @default(uuid())
   lessonId      String
   lesson        Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  title         String           // Tên tài liệu: Slide bài giảng Unit 1, File nghe Audio Track 01...
-  fileUrl       String           // URL download/stream từ Firebase Storage
+  title         String // Tên tài liệu: Slide bài giảng Unit 1, File nghe Audio Track 01...
+  fileUrl       String // URL download/stream từ Firebase Storage
   fileType      MaterialFileType @default(DOCUMENT)
-  fileSizeBytes Int?             // Dung lượng file (bytes)
+  fileSizeBytes Int? // Dung lượng file (bytes)
   order         Int              @default(1)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -512,7 +559,7 @@ model LessonMaterial {
 model Class {
   id                 String      @id @default(uuid())
   code               String      @unique // Mã lớp học: IELTS-F-2026-01, COMM-A1-02...
-  name               String      // Tên hiển thị của lớp: IELTS Foundation T2-T4-T6
+  name               String // Tên hiển thị của lớp: IELTS Foundation T2-T4-T6
   courseId           String
   course             Course      @relation(fields: [courseId], references: [id], onDelete: Restrict)
   levelId            String
@@ -529,11 +576,11 @@ model Class {
   startDate          DateTime    @db.Date
   endDate            DateTime?   @db.Date
   scheduleDays       String[]    @default([]) // Các ngày học trong tuần: ["MONDAY", "WEDNESDAY", "FRIDAY"]
-  startTime          String      // Giờ bắt đầu: "18:00"
-  endTime            String      // Giờ kết thúc: "19:30"
+  startTime          String // Giờ bắt đầu: "18:00"
+  endTime            String // Giờ kết thúc: "19:30"
   totalSessions      Int         @default(24) // Tổng số buổi học
   maxCapacity        Int         @default(20) // Sĩ số tối đa
-  tuitionFee         Decimal     @db.Decimal(12, 2) @default(0) // Học phí thực tế áp dụng cho lớp này
+  tuitionFee         Decimal     @default(0) @db.Decimal(12, 2) // Học phí thực tế áp dụng cho lớp này
   notes              String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -555,7 +602,7 @@ model ClassStudent {
   student     User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   status      EnrollmentStatus @default(ENROLLED)
   joinedAt    DateTime         @default(now())
-  tuitionPaid Decimal          @db.Decimal(12, 2) @default(0)
+  tuitionPaid Decimal          @default(0) @db.Decimal(12, 2)
   notes       String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -570,14 +617,14 @@ model ClassSession {
   class         Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
   lessonId      String?
   lesson        Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  sessionNumber Int           // Buổi số 1, 2, 3...
-  title         String        // Tên buổi học: Buổi 1: Unit 1 Greetings...
+  sessionNumber Int // Buổi số 1, 2, 3...
+  title         String // Tên buổi học: Buổi 1: Unit 1 Greetings...
   date          DateTime      @db.Date // Ngày diễn ra
-  startTime     String        // Giờ bắt đầu: "18:00"
-  endTime       String        // Giờ kết thúc: "19:30"
+  startTime     String // Giờ bắt đầu: "18:00"
+  endTime       String // Giờ kết thúc: "19:30"
   roomId        String?
   room          Room?         @relation(fields: [roomId], references: [id], onDelete: SetNull)
-  teacherId     String?       // Giáo viên trực tiếp dạy buổi này
+  teacherId     String? // Giáo viên trực tiếp dạy buổi này
   teacher       User?         @relation("SessionTeacherRelation", fields: [teacherId], references: [id], onDelete: SetNull)
   status        SessionStatus @default(SCHEDULED)
   notes         String?
@@ -638,20 +685,20 @@ model MakeupRequest {
 // ------------------------------------------------------------------------------
 
 model Assignment {
-  id          String         @id @default(uuid())
+  id          String           @id @default(uuid())
   classId     String
-  class       Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  class       Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
   createdById String
-  createdBy   User           @relation("CreatedAssignmentsRelation", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User             @relation("CreatedAssignmentsRelation", fields: [createdById], references: [id], onDelete: Cascade)
   title       String
   description String?
-  type        AssignmentType @default(HOMEWORK)
+  type        AssignmentType   @default(HOMEWORK)
   status      AssignmentStatus @default(PUBLISHED)
   deadline    DateTime?
-  maxScore    Decimal        @db.Decimal(5, 2) @default(10)
-  attachments Json?          // Danh sách tài liệu đính kèm: [{ name, url, fileType, fileSizeBytes }]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  maxScore    Decimal          @default(10) @db.Decimal(5, 2)
+  attachments Json? // Danh sách tài liệu đính kèm: [{ name, url, fileType, fileSizeBytes }]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   submissions Submission[]
 
@@ -659,23 +706,23 @@ model Assignment {
 }
 
 model Submission {
-  id           String           @id @default(uuid())
-  assignmentId String
-  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  studentId    String
-  student      User             @relation("StudentSubmissionsRelation", fields: [studentId], references: [id], onDelete: Cascade)
-  content      String?          // Nội dung văn bản / essay
-  fileUrls     Json?            // Danh sách file nộp: [{ type: "audio"|"document"|"image", url: "...", name: "..." }]
-  submittedAt  DateTime?
-  score        Decimal?         @db.Decimal(5, 2)
-  feedback     String?          // Nhận xét của giáo viên
-  gradedById   String?
-  gradedBy     User?            @relation("GradedSubmissionsRelation", fields: [gradedById], references: [id], onDelete: SetNull)
-  gradedAt     DateTime?
+  id                String           @id @default(uuid())
+  assignmentId      String
+  assignment        Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId         String
+  student           User             @relation("StudentSubmissionsRelation", fields: [studentId], references: [id], onDelete: Cascade)
+  content           String? // Nội dung văn bản / essay
+  fileUrls          Json? // Danh sách file nộp: [{ type: "audio"|"document"|"image", url: "...", name: "..." }]
+  submittedAt       DateTime?
+  score             Decimal?         @db.Decimal(5, 2)
+  feedback          String? // Nhận xét của giáo viên
+  gradedById        String?
+  gradedBy          User?            @relation("GradedSubmissionsRelation", fields: [gradedById], references: [id], onDelete: SetNull)
+  gradedAt          DateTime?
   resultPublishedAt DateTime?
-  status       SubmissionStatus @default(SUBMITTED)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  status            SubmissionStatus @default(SUBMITTED)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@unique([assignmentId, studentId])
   @@map("submissions")
@@ -686,15 +733,15 @@ model Submission {
 // ------------------------------------------------------------------------------
 
 model QuestionBank {
-  id          String     @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
-  language    String?    // 'EN', 'JA', 'KO', 'ZH'...
-  level       String?    // 'A1', 'A2', 'B1', 'B2', 'IELTS', 'TOEIC'...
+  language    String? // 'EN', 'JA', 'KO', 'ZH'...
+  level       String? // 'A1', 'A2', 'B1', 'B2', 'IELTS', 'TOEIC'...
   createdById String
-  createdBy   User       @relation("CreatedQuestionBanksRelation", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdBy   User     @relation("CreatedQuestionBanksRelation", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   questions Question[]
 
@@ -706,13 +753,13 @@ model Question {
   questionBankId String
   questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
   type           QuestionType @default(MULTIPLE_CHOICE)
-  prompt         String       // Đề bài hoặc câu hỏi
-  audioUrl       String?      // Audio cho bài thi nghe
-  imageUrl       String?      // Hình ảnh minh họa
-  options        Json?        // Lựa chọn: [{ id: "A", text: "..." }]
-  correctAnswers Json?        // Đáp án đúng: ["A"] hoặc ["is", "are"] hoặc {"A": "1"}
-  explanation    String?      // Giải thích chi tiết
-  points         Decimal      @db.Decimal(5, 2) @default(1.0)
+  prompt         String // Đề bài hoặc câu hỏi
+  audioUrl       String? // Audio cho bài thi nghe
+  imageUrl       String? // Hình ảnh minh họa
+  options        Json? // Lựa chọn: [{ id: "A", text: "..." }]
+  correctAnswers Json? // Đáp án đúng: ["A"] hoặc ["is", "are"] hoặc {"A": "1"}
+  explanation    String? // Giải thích chi tiết
+  points         Decimal      @default(1.0) @db.Decimal(5, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -722,23 +769,23 @@ model Question {
 }
 
 model Exam {
-  id               String       @id @default(uuid())
+  id               String     @id @default(uuid())
   title            String
   description      String?
   classId          String?
-  class            Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
-  durationMinutes  Int          @default(45)
-  passPercentage   Decimal      @db.Decimal(5, 2) @default(50.0)
-  totalPoints      Decimal      @db.Decimal(5, 2) @default(10.0)
-  shuffleQuestions Boolean      @default(false)
-  maxAttempts      Int          @default(1)
-  status           ExamStatus   @default(DRAFT)
+  class            Class?     @relation(fields: [classId], references: [id], onDelete: SetNull)
+  durationMinutes  Int        @default(45)
+  passPercentage   Decimal    @default(50.0) @db.Decimal(5, 2)
+  totalPoints      Decimal    @default(10.0) @db.Decimal(5, 2)
+  shuffleQuestions Boolean    @default(false)
+  maxAttempts      Int        @default(1)
+  status           ExamStatus @default(DRAFT)
   startTime        DateTime?
   endTime          DateTime?
   createdById      String
-  createdBy        User         @relation("CreatedExamsRelation", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdBy        User       @relation("CreatedExamsRelation", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   examQuestions ExamQuestion[]
   attempts      ExamAttempt[]
@@ -753,7 +800,7 @@ model ExamQuestion {
   questionId String
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   orderIndex Int      @default(0)
-  points     Decimal  @db.Decimal(5, 2) @default(1.0)
+  points     Decimal  @default(1.0) @db.Decimal(5, 2)
 
   answers ExamAnswer[]
 
@@ -771,7 +818,7 @@ model ExamAttempt {
   startedAt     DateTime      @default(now())
   submittedAt   DateTime?
   score         Decimal?      @db.Decimal(5, 2)
-  maxScore      Decimal       @db.Decimal(5, 2) @default(10.0)
+  maxScore      Decimal       @default(10.0) @db.Decimal(5, 2)
   isPassed      Boolean?
   status        AttemptStatus @default(IN_PROGRESS)
   createdAt     DateTime      @default(now())
@@ -788,7 +835,7 @@ model ExamAnswer {
   attempt         ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   examQuestionId  String
   examQuestion    ExamQuestion @relation(fields: [examQuestionId], references: [id], onDelete: Cascade)
-  studentAnswer   Json?        // Đáp án học viên chọn hoặc nhập
+  studentAnswer   Json? // Đáp án học viên chọn hoặc nhập
   isCorrect       Boolean?
   score           Decimal?     @db.Decimal(5, 2)
   teacherFeedback String?
@@ -809,7 +856,7 @@ model ExamAnswer {
 model Promotion {
   id            String        @id @default(uuid())
   code          String        @unique // Mã khuyến mãi: SUMMER2026, EARLYBIRD...
-  name          String        // Tên chương trình ưu đãi
+  name          String // Tên chương trình ưu đãi
   description   String?
   type          PromotionType @default(PERCENTAGE)
   value         Decimal       @db.Decimal(12, 2) // Giá trị giảm: 10 (%) hoặc 500000 (VNĐ)
@@ -817,7 +864,7 @@ model Promotion {
   maxDiscount   Decimal?      @db.Decimal(12, 2) // Mức giảm tối đa (đối với %)
   startDate     DateTime      @db.Date
   endDate       DateTime      @db.Date
-  usageLimit    Int?          // Giới hạn số lượt sử dụng toàn hệ thống
+  usageLimit    Int? // Giới hạn số lượt sử dụng toàn hệ thống
   usedCount     Int           @default(0)
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
@@ -831,20 +878,20 @@ model Promotion {
 model Invoice {
   id          String        @id @default(uuid())
   code        String        @unique // Mã hóa đơn: HD-2026-0001
-  title       String        // Tiêu đề: Học phí IELTS Foundation K01
+  title       String // Tiêu đề: Học phí IELTS Foundation K01
   studentId   String
   student     User          @relation("StudentInvoicesRelation", fields: [studentId], references: [id], onDelete: Cascade)
   classId     String?
   class       Class?        @relation(fields: [classId], references: [id], onDelete: SetNull)
   subtotal    Decimal       @db.Decimal(12, 2) // Học phí gốc
-  discount    Decimal       @db.Decimal(12, 2) @default(0) // Giảm giá / Khuyến mãi
+  discount    Decimal       @default(0) @db.Decimal(12, 2) // Giảm giá / Khuyến mãi
   totalAmount Decimal       @db.Decimal(12, 2) // Tổng tiền phải nộp sau giảm trừ
-  paidAmount  Decimal       @db.Decimal(12, 2) @default(0) // Số tiền đã thanh toán
+  paidAmount  Decimal       @default(0) @db.Decimal(12, 2) // Số tiền đã thanh toán
   balance     Decimal       @db.Decimal(12, 2) // Số tiền còn lại phải trả
   status      InvoiceStatus @default(PENDING)
   dueDate     DateTime?     @db.Date // Hạn chót thanh toán
   issuedDate  DateTime      @default(now()) @db.Date // Ngày lập hóa đơn
-  notes       String?       // Ghi chú thêm
+  notes       String? // Ghi chú thêm
   promotionId String?
   promotion   Promotion?    @relation(fields: [promotionId], references: [id], onDelete: SetNull)
   createdById String?
@@ -867,7 +914,7 @@ model Payment {
   amount        Decimal       @db.Decimal(12, 2) // Số tiền thanh toán lần này
   method        PaymentMethod @default(CASH)
   status        PaymentStatus @default(SUCCESS)
-  transactionId String?       // Mã giao dịch ngân hàng / VNPay / MoMo
+  transactionId String? // Mã giao dịch ngân hàng / VNPay / MoMo
   payDate       DateTime      @default(now())
   notes         String?
   receivedById  String?
@@ -886,10 +933,10 @@ model Notification {
   id        String           @id @default(uuid())
   userId    String
   user      User             @relation("UserNotificationsRelation", fields: [userId], references: [id], onDelete: Cascade)
-  title     String           // Tiêu đề thông báo
-  body      String           // Nội dung thông báo
+  title     String // Tiêu đề thông báo
+  body      String // Nội dung thông báo
   type      NotificationType @default(SYSTEM)
-  data      Json?            // Payload phụ trợ: { entityType: "INVOICE", entityId: "..." }
+  data      Json? // Payload phụ trợ: { entityType: "INVOICE", entityId: "..." }
   isRead    Boolean          @default(false)
   readAt    DateTime?
   createdAt DateTime         @default(now())

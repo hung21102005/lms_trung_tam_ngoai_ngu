@@ -335,6 +335,13 @@ export class ClassesService {
       throw new NotFoundException(
         `Không tìm thấy chi nhánh với ID: ${dto.branchId}`,
       );
+    if (level.courseId !== dto.courseId) {
+      throw new BadRequestException('Cấp độ không thuộc khóa học đã chọn');
+    }
+    if (course.isActive === false ||
+        (course.publicationStatus && course.publicationStatus !== 'PUBLISHED')) {
+      throw new BadRequestException('Khóa học chưa được duyệt và kích hoạt để mở lớp');
+    }
 
     // 3. Phân tích các ngày trong tuần (scheduleDays)
     const dayMap: Record<string, number> = {
