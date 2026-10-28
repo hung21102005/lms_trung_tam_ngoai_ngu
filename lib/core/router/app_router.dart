@@ -23,6 +23,9 @@ import '../../features/courses/presentation/bloc/courses_bloc.dart';
 import '../../features/courses/presentation/screens/course_list_screen.dart';
 import '../../features/courses/presentation/screens/course_detail_screen.dart';
 import '../../features/courses/presentation/screens/student_courses_screen.dart';
+import '../../features/courses/presentation/screens/program_catalog_screen.dart';
+import '../../features/courses/data/repositories/program_catalog_repository.dart';
+import '../network/api_client.dart';
 import '../../features/classes/presentation/bloc/classes_bloc.dart';
 import '../../features/classes/presentation/screens/class_list_screen.dart';
 import '../../features/classes/presentation/screens/class_create_screen.dart';
@@ -120,6 +123,23 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     // Courses & Curriculum Routes
+    GoRoute(
+      path: RouteNames.programs,
+      builder: (context, state) {
+        final auth = context.read<AuthBloc>().state;
+        if (auth is! AuthenticatedState ||
+            !(auth.user.isSuperAdmin ||
+                auth.user.isBranchAdmin ||
+                auth.user.isAcademicStaff)) {
+          return const Scaffold(
+            body: Center(child: Text('Không có quyền truy cập')),
+          );
+        }
+        return ProgramCatalogScreen(
+          repository: ProgramCatalogRepository(getIt<ApiClient>()),
+        );
+      },
+    ),
     GoRoute(
       path: RouteNames.courses,
       builder: (context, state) {

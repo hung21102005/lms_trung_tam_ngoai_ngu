@@ -44,3 +44,5 @@ Các đề cương và seed phải viết nội dung gốc, không sao chép bà
 ## Seed và duyệt
 
 Import theo code cố định: `create` nếu chưa có, `skip` nếu đã có; không update record do Admin chỉnh, không xóa dữ liệu và không sinh lớp. Chạy `npm run seed:curriculum` trong `backend/` sau khi áp dụng migration. Trên PostgreSQL cục bộ, lần đầu tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần, 188 bài học; lần thứ hai tạo 0 và bỏ qua 7/47 bản ghi đã có. Đây là đề cương bốn bài học mẫu có cấu trúc cho từng khóa, cần biên tập thêm giáo án, tài liệu, hoạt động và tiêu chí đánh giá trước khi công bố. API nội bộ đã hỗ trợ duyệt và công bố có điều kiện; giao diện Admin và kiểm thử qua HTTP vẫn chưa hoàn thành. Admin cần rà soát học thuật trước khi chuyển bản nháp sang công bố.
+
+Màn hình Admin chương trình đã nối API cho danh sách, tạo/sửa và các bước duyệt/công khai. Màn hình khóa học vẫn chưa có luồng gắn chương trình, biên tập dữ liệu công khai và duyệt khóa; không công bố seed nháp trước khi hoàn tất phần này.

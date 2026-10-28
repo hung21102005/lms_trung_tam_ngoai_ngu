@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/mobile/mobile_ui.dart';
@@ -400,62 +401,75 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Đang xuất khung chương trình đào tạo (.xlsx)...',
-                                        ),
+                            Flexible(
+                              child: Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Đang xuất khung chương trình đào tạo (.xlsx)...',
+                                              ),
+                                            ),
+                                          );
+                                    },
+                                    icon: const Icon(
+                                      Icons.file_download_outlined,
+                                      size: 18,
+                                      color: Color(0xFF003FB1),
+                                    ),
+                                    label: const Text(
+                                      'Xuất khung CTĐT (.xlsx)',
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF0F172A),
+                                      side: const BorderSide(
+                                        color: Color(0xFFCBD5E1),
                                       ),
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.file_download_outlined,
-                                    size: 18,
-                                    color: Color(0xFF003FB1),
-                                  ),
-                                  label: const Text('Xuất khung CTĐT (.xlsx)'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF0F172A),
-                                    side: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
-                                    ),
-                                    backgroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      backgroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: _showCreateCourseDialog,
-                                  icon: const Icon(
-                                    Icons.add_circle_rounded,
-                                    size: 18,
-                                  ),
-                                  label: const Text('+ Tạo khóa học mới'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF003FB1),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
+                                  ElevatedButton.icon(
+                                    onPressed: _showCreateCourseDialog,
+                                    icon: const Icon(
+                                      Icons.add_circle_rounded,
+                                      size: 18,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                    label: const Text('+ Tạo khóa học mới'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF003FB1),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 1,
                                     ),
-                                    elevation: 1,
                                   ),
-                                ),
-                              ],
+                                  OutlinedButton.icon(
+                                    onPressed: () =>
+                                        context.push(RouteNames.programs),
+                                    icon: const Icon(
+                                      Icons.account_tree_outlined,
+                                    ),
+                                    label: const Text('Chương trình'),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         )
@@ -584,6 +598,12 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                     ),
                                     elevation: 1,
                                   ),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: () =>
+                                      context.push(RouteNames.programs),
+                                  icon: const Icon(Icons.account_tree_outlined),
+                                  label: const Text('Chương trình'),
                                 ),
                               ],
                             ),
@@ -1002,6 +1022,12 @@ class _CourseListScreenState extends State<CourseListScreen> {
             onPressed: _showCreateCourseDialog,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Tạo khóa học mới'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => context.push(RouteNames.programs),
+            icon: const Icon(Icons.account_tree_outlined),
+            label: const Text('Quản lý chương trình'),
           ),
           const SizedBox(height: 16),
           TextField(

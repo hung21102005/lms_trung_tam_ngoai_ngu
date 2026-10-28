@@ -20,6 +20,7 @@ class RouteNames {
 
   // Courses & Curriculum
   static const String courses = '/courses';
+  static const String programs = '/admin/programs';
   static const String courseDetail = '/courses/:id';
 
   // Classes & Scheduling

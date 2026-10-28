@@ -57,7 +57,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | Checkpoint | Trạng thái | Kết quả / giới hạn |
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
-| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Đã kiểm tra quan hệ Course/Level khi mở lớp. Có API nội bộ quản trị chương trình, duyệt công bố và sửa cấp độ; API catalog công khai chỉ đọc bản đã duyệt và bật hiển thị. Còn thiếu UI Admin quản trị/duyệt, cập nhật học phần/bài học, biên tập nội dung học thuật chi tiết và kiểm thử HTTP thực tế. |
+| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình (danh sách, tạo/sửa, chuyển trạng thái, bật/tắt công khai), API sửa cấp độ và API catalog công khai. Còn thiếu UI gắn/chỉnh sửa/công bố khóa học, UI sửa cấp độ/học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
 | 3 Class offering | Pending | Chờ catalog ổn định |
 | 4 Public website | Pending | Chờ publication API |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
@@ -86,3 +86,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - `PATCH /levels/:id` cho Admin/học vụ sửa tên, mã, chuẩn CEFR/IELTS/TOEIC/Cambridge, điều kiện đầu vào, tiêu chí hoàn thành và thời lượng tham khảo. Backend chặn mã trùng trong cùng khóa và khóa đã lưu trữ.
 - Kiểm thử tập trung `CoursesService`: 14/14 đạt; toàn bộ backend: 16 files, 139 tests đạt; `npm run build` đạt.
 - Việc sửa cấp độ hiện chưa có giao diện Admin và chưa kiểm thử HTTP. Tiếp theo: nối Admin Course UI với danh mục chương trình, cấp độ và workflow duyệt bằng API hiện có, rồi biên tập sâu học phần/bài học.
+
+## Checkpoint tạm dừng theo yêu cầu người dùng (2026-10-28)
+
+- Đã thêm màn hình Admin quản trị chương trình (`/admin/programs`) dùng `ProgramCatalogRepository` và `ApiClient` hiện có: danh sách, chi tiết, tạo, sửa, gửi duyệt, duyệt, trả nháp, lưu trữ và bật/tắt hiển thị công khai. Danh sách khóa trong chi tiết hiện chỉ đọc và mở sang màn hình khóa cũ. Mobile có thẻ, bottom sheet và form cuộn theo bàn phím; Desktop giữ màn hình khóa cũ, bổ sung lối vào chương trình.
+- Đã sửa tràn hàng nút của màn hình khóa Desktop ở 1200 px sau khi thêm lối vào. Widget tests cho màn hình chương trình và hồi quy hai màn hình khóa: **28/28 đạt**, gồm 320/375/393/430/800/1200 px, tạo chương trình và chuyển trạng thái qua API giả trong test. Analyzer phạm vi 6 file: **0 issues**. Chưa build Web ở checkpoint này.
+- Chưa kiểm chứng HTTP với Backend chạy, phân quyền thực tế, dữ liệu tạo/sửa trên DB qua UI, thiết bị thật hoặc screenshot Desktop/Mobile. Không đánh dấu giai đoạn 01 hoàn thành.
+- **Điểm tiếp tục chính xác:** nối khóa học với chương trình khi tạo/sửa; cho Admin chỉnh slug, mô tả công khai và trạng thái hoạt động, duyệt khóa học qua API hiện có; sau đó UI sửa cấp độ/học phần/bài học, kiểm thử HTTP và cập nhật catalog. Không tạo thêm API trùng.
