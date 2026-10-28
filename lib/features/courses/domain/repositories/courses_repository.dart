@@ -41,6 +41,11 @@ abstract class CoursesRepository {
     double tuitionFee = 0,
   });
 
+  Future<CourseLevelModel> updateLevel(
+    String levelId,
+    Map<String, dynamic> changes,
+  );
+
   Future<ModuleModel> createModule(
     String levelId, {
     required String title,

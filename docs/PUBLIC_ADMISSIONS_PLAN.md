@@ -57,7 +57,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | Checkpoint | Trạng thái | Kết quả / giới hạn |
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
-| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình (danh sách, tạo/sửa, chuyển trạng thái, bật/tắt công khai), API sửa cấp độ và API catalog công khai. Còn thiếu UI gắn/chỉnh sửa/công bố khóa học, UI sửa cấp độ/học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
+| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình/khóa: tạo, gắn khóa có sẵn, sửa trường công khai, duyệt/công bố; màn hình sửa cấp độ qua API hiện có. Còn thiếu UI sửa học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
 | 3 Class offering | Pending | Chờ catalog ổn định |
 | 4 Public website | Pending | Chờ publication API |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
@@ -93,3 +93,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Đã sửa tràn hàng nút của màn hình khóa Desktop ở 1200 px sau khi thêm lối vào. Widget tests cho màn hình chương trình và hồi quy hai màn hình khóa: **28/28 đạt**, gồm 320/375/393/430/800/1200 px, tạo chương trình và chuyển trạng thái qua API giả trong test. Analyzer phạm vi 6 file: **0 issues**. Chưa build Web ở checkpoint này.
 - Chưa kiểm chứng HTTP với Backend chạy, phân quyền thực tế, dữ liệu tạo/sửa trên DB qua UI, thiết bị thật hoặc screenshot Desktop/Mobile. Không đánh dấu giai đoạn 01 hoàn thành.
 - **Điểm tiếp tục chính xác:** nối khóa học với chương trình khi tạo/sửa; cho Admin chỉnh slug, mô tả công khai và trạng thái hoạt động, duyệt khóa học qua API hiện có; sau đó UI sửa cấp độ/học phần/bài học, kiểm thử HTTP và cập nhật catalog. Không tạo thêm API trùng.
+
+## Checkpoint UI khóa học và cấp độ (2026-10-28)
+
+- Trong chi tiết chương trình, Admin/học vụ có thể tạo khóa gắn chương trình, tìm và gắn khóa chưa thuộc chương trình, sửa slug/mô tả công khai/trạng thái hoạt động, gửi duyệt/duyệt công bố/lưu trữ khóa. Chi nhánh chỉ đọc. Những thao tác này dùng `/courses` và `/courses/:id/publication` hiện có, không tạo API mới.
+- Chi tiết khóa học có form sửa cấp độ trên Mobile (bottom sheet cuộn theo bàn phím) và Desktop (dialog), gồm chuẩn CEFR/IELTS/TOEIC/Cambridge, điều kiện đầu vào, tiêu chí hoàn thành và thời lượng. Form dùng `CoursesBloc` và `PATCH /levels/:id`; vai trò không đủ quyền không thấy nút sửa.
+- Widget tests chương trình và khóa học: **33/33 đạt**; scoped analyzer: **0 issues**; `flutter build web --no-wasm-dry-run`: **đạt**. Kiểm chứng API/DB qua HTTP và thiết bị thật vẫn **chưa kiểm chứng**.
+- **Tiếp theo:** hoàn thiện UI biên tập học phần/bài học bằng API hiện có hoặc bổ sung API phù hợp nếu thiếu; biên tập nội dung học thuật seed trước khi công bố. Sau đó kiểm thử HTTP end-to-end cho publication và catalog. Giai đoạn 01 vẫn **chưa hoàn thành**.

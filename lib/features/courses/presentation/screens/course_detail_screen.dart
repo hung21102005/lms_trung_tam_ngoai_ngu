@@ -18,8 +18,13 @@ import 'lesson_detail_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final String courseId;
+  final bool canEditAcademicLevel;
 
-  const CourseDetailScreen({super.key, required this.courseId});
+  const CourseDetailScreen({
+    super.key,
+    required this.courseId,
+    this.canEditAcademicLevel = true,
+  });
 
   @override
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
@@ -169,6 +174,53 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             child: const Text('Thêm cấp độ'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showEditLevelDialog(CourseLevelModel level) async {
+    final bloc = context.read<CoursesBloc>();
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => BlocProvider.value(
+          value: bloc,
+          child: _EditLevelForm(
+            level: level,
+            onSubmit: (changes) => bloc.add(
+              UpdateCourseLevelEvent(
+                courseId: widget.courseId,
+                levelId: level.id,
+                changes: changes,
+              ),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620, maxHeight: 760),
+          child: BlocProvider.value(
+            value: bloc,
+            child: _EditLevelForm(
+              level: level,
+              onSubmit: (changes) => bloc.add(
+                UpdateCourseLevelEvent(
+                  courseId: widget.courseId,
+                  levelId: level.id,
+                  changes: changes,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -430,6 +482,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               Text('${level.modules.length} học phần'),
             ],
           ),
+          if (widget.canEditAcademicLevel)
+            TextButton.icon(
+              onPressed: () => _showEditLevelDialog(level),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Sửa cấp độ'),
+            ),
           const Divider(height: 24),
           if (level.modules.isEmpty)
             const Text('Chưa có học phần hoặc bài học')
@@ -693,6 +751,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ),
             ),
             children: [
+              if (widget.canEditAcademicLevel)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _showEditLevelDialog(level),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Sửa cấp độ'),
+                  ),
+                ),
               const Divider(height: 1),
               if (level.modules.isEmpty)
                 const Padding(
@@ -999,4 +1066,203 @@ class _MobileCreateLevelSheetState extends State<_MobileCreateLevelSheet> {
       ),
     );
   }
+}
+
+class _EditLevelForm extends StatefulWidget {
+  final CourseLevelModel level;
+  final ValueChanged<Map<String, dynamic>> onSubmit;
+
+  const _EditLevelForm({required this.level, required this.onSubmit});
+
+  @override
+  State<_EditLevelForm> createState() => _EditLevelFormState();
+}
+
+class _EditLevelFormState extends State<_EditLevelForm> {
+  final _formKey = GlobalKey<FormState>();
+  late final Map<String, TextEditingController> _fields;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final level = widget.level;
+    _fields = {
+      'code': TextEditingController(text: level.code),
+      'name': TextEditingController(text: level.name),
+      'description': TextEditingController(text: level.description ?? ''),
+      'cefrLevel': TextEditingController(text: level.cefrLevel ?? ''),
+      'ieltsTargetBand': TextEditingController(
+        text: level.ieltsTargetBand?.toString() ?? '',
+      ),
+      'toeicTargetScore': TextEditingController(
+        text: level.toeicTargetScore?.toString() ?? '',
+      ),
+      'cambridgeQualification': TextEditingController(
+        text: level.cambridgeQualification ?? '',
+      ),
+      'entryRequirements': TextEditingController(
+        text: level.entryRequirements ?? '',
+      ),
+      'completionCriteria': TextEditingController(
+        text: level.completionCriteria ?? '',
+      ),
+      'recommendedHours': TextEditingController(
+        text: level.recommendedHours?.toString() ?? '',
+      ),
+      'estimatedSessions': TextEditingController(
+        text: level.estimatedSessions.toString(),
+      ),
+    };
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _fields.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_saving || !_formKey.currentState!.validate()) return;
+    String? text(String key) {
+      final value = _fields[key]!.text.trim();
+      return value.isEmpty ? null : value;
+    }
+
+    setState(() => _saving = true);
+    widget.onSubmit({
+      'code': text('code'),
+      'name': text('name'),
+      'description': text('description'),
+      'cefrLevel': text('cefrLevel'),
+      'ieltsTargetBand': text('ieltsTargetBand') == null
+          ? null
+          : double.parse(text('ieltsTargetBand')!),
+      'toeicTargetScore': text('toeicTargetScore') == null
+          ? null
+          : int.parse(text('toeicTargetScore')!),
+      'cambridgeQualification': text('cambridgeQualification'),
+      'entryRequirements': text('entryRequirements'),
+      'completionCriteria': text('completionCriteria'),
+      'recommendedHours': text('recommendedHours') == null
+          ? null
+          : int.parse(text('recommendedHours')!),
+      'estimatedSessions': int.parse(text('estimatedSessions')!),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<CoursesBloc, CoursesState>(
+    listener: (context, state) {
+      if (!_saving) return;
+      if (state is CourseOperationSuccess) {
+        Navigator.pop(context);
+      } else if (state is CoursesError) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(state.message)));
+      }
+    },
+    child: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Sửa cấp độ học thuật',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Các mục tiêu khảo thí là tham khảo; cần rà soát trước khi công bố khóa.',
+                ),
+                const SizedBox(height: 16),
+                _field('code', 'Mã cấp độ', required: true),
+                _field('name', 'Tên cấp độ', required: true),
+                _field('description', 'Mục tiêu đầu ra', lines: 3),
+                _field('cefrLevel', 'CEFR (nếu áp dụng)'),
+                _field(
+                  'ieltsTargetBand',
+                  'IELTS target band (nếu áp dụng)',
+                  number: true,
+                ),
+                _field(
+                  'toeicTargetScore',
+                  'TOEIC target score (nếu áp dụng)',
+                  number: true,
+                ),
+                _field(
+                  'cambridgeQualification',
+                  'Cambridge qualification (nếu áp dụng)',
+                ),
+                _field('entryRequirements', 'Yêu cầu đầu vào', lines: 2),
+                _field('completionCriteria', 'Tiêu chí hoàn thành', lines: 2),
+                _field('recommendedHours', 'Giờ học tham khảo', number: true),
+                _field(
+                  'estimatedSessions',
+                  'Số buổi dự kiến',
+                  number: true,
+                  required: true,
+                ),
+                FilledButton(
+                  onPressed: _saving ? null : _submit,
+                  child: Text(_saving ? 'Đang lưu...' : 'Lưu cấp độ'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _field(
+    String key,
+    String label, {
+    bool required = false,
+    bool number = false,
+    int lines = 1,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: TextFormField(
+      controller: _fields[key],
+      maxLines: lines,
+      keyboardType: number
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: (value) {
+        final trimmed = value?.trim() ?? '';
+        if (required && trimmed.isEmpty) return 'Vui lòng nhập $label';
+        if (trimmed.isEmpty || !number) return null;
+        if (key == 'ieltsTargetBand') {
+          final band = double.tryParse(trimmed);
+          if (band == null || band < 0 || band > 9) {
+            return 'IELTS phải từ 0 đến 9';
+          }
+        } else {
+          final parsed = int.tryParse(trimmed);
+          if (parsed == null || parsed <= 0) {
+            return 'Vui lòng nhập số nguyên dương';
+          }
+          if (key == 'toeicTargetScore' && (parsed < 10 || parsed > 990)) {
+            return 'TOEIC phải từ 10 đến 990';
+          }
+        }
+        return null;
+      },
+    ),
+  );
 }

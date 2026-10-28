@@ -21,6 +21,17 @@ class _Api extends Fake implements ApiClient {
       '_count': {'courses': 1},
     },
   ];
+  final course = <String, dynamic>{
+    'id': 'course-1',
+    'code': 'GEN-A1',
+    'title': 'General A1',
+    'slug': 'general-a1',
+    'description': 'Nội dung nội bộ',
+    'publicDescription': 'Nội dung công khai',
+    'programId': 'program-1',
+    'publicationStatus': 'DRAFT',
+    'isActive': false,
+  };
   final calls = <String>[];
 
   @override
@@ -34,13 +45,19 @@ class _Api extends Fake implements ApiClient {
     if (path == '/programs/program-1') {
       return {
         ...programs.first,
-        'courses': [
+        'courses': [course],
+      };
+    }
+    if (path == '/courses') {
+      return {
+        'items': [
           {
-            'id': 'course-1',
-            'code': 'GEN-A1',
-            'title': 'General A1',
+            'id': 'course-unassigned',
+            'code': 'FREE-01',
+            'title': 'Khóa chưa gắn',
             'publicationStatus': 'DRAFT',
             'isActive': false,
+            'programId': null,
           },
         ],
       };
@@ -59,6 +76,9 @@ class _Api extends Fake implements ApiClient {
     if (path == '/programs/program-1/status') {
       programs.first['status'] = data['status'];
     }
+    if (path == '/courses/course-1/publication') {
+      course['publicationStatus'] = data['status'];
+    }
     return {};
   }
 
@@ -70,6 +90,7 @@ class _Api extends Fake implements ApiClient {
     Options? options,
   }) async {
     calls.add('POST $path');
+    if (path == '/courses') return {'id': 'course-new'};
     programs.add({
       'id': 'program-2',
       ...Map<String, dynamic>.from(data as Map),
@@ -143,5 +164,100 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.calls, contains('POST /programs'));
     expect(find.text('Chương trình mới'), findsOneWidget);
+  });
+
+  testWidgets('course review action calls publication API', (tester) async {
+    final api = _Api();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(repository: ProgramCatalogRepository(api)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác khóa học'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gửi duyệt khóa'));
+    await tester.pumpAndSettle();
+    expect(
+      api.calls,
+      contains('PATCH /courses/course-1/publication IN_REVIEW'),
+    );
+  });
+
+  testWidgets('branch admin sees read-only program actions', (tester) async {
+    final api = _Api();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(
+          repository: ProgramCatalogRepository(api),
+          canManage: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thêm chương trình'), findsNothing);
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gửi duyệt'), findsNothing);
+    expect(find.byTooltip('Thao tác khóa học'), findsNothing);
+  });
+
+  testWidgets('creates a draft course in selected program', (tester) async {
+    final api = _Api();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(repository: ProgramCatalogRepository(api)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Tạo khóa trong chương trình'));
+    await tester.tap(find.text('Tạo khóa trong chương trình'));
+    await tester.pumpAndSettle();
+    for (final pair in [
+      ('Mã khóa học', 'GEN-A2'),
+      ('Tên khóa học', 'General A2'),
+      ('Đường dẫn công khai', 'general-a2'),
+      ('Mô tả nội bộ', 'Nội dung A2'),
+      ('Mô tả công khai', 'Học tiếng Anh A2'),
+    ]) {
+      await tester.enterText(
+        find.widgetWithText(TextFormField, pair.$1),
+        pair.$2,
+      );
+    }
+    await tester.ensureVisible(find.text('Lưu khóa học'));
+    await tester.tap(find.text('Lưu khóa học'));
+    await tester.pumpAndSettle();
+    expect(api.calls, contains('POST /courses'));
+  });
+
+  testWidgets('suggests existing unassigned course for attachment', (
+    tester,
+  ) async {
+    final api = _Api();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(repository: ProgramCatalogRepository(api)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Gắn khóa đã có'));
+    await tester.tap(find.text('Gắn khóa đã có'));
+    await tester.pumpAndSettle();
+    expect(find.text('Khóa chưa gắn'), findsOneWidget);
+    await tester.tap(find.text('Khóa chưa gắn'));
+    await tester.pumpAndSettle();
+    expect(
+      api.calls.any(
+        (call) => call.startsWith('PATCH /courses/course-unassigned'),
+      ),
+      isTrue,
+    );
   });
 }

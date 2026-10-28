@@ -137,6 +137,7 @@ final GoRouter appRouter = GoRouter(
         }
         return ProgramCatalogScreen(
           repository: ProgramCatalogRepository(getIt<ApiClient>()),
+          canManage: auth.user.isSuperAdmin || auth.user.isAcademicStaff,
         );
       },
     ),
@@ -163,7 +164,12 @@ final GoRouter appRouter = GoRouter(
         final id = state.pathParameters['id'] ?? '';
         return BlocProvider<CoursesBloc>(
           create: (_) => getIt<CoursesBloc>(),
-          child: CourseDetailScreen(courseId: id),
+          child: CourseDetailScreen(
+            courseId: id,
+            canEditAcademicLevel:
+                auth is AuthenticatedState &&
+                (auth.user.isSuperAdmin || auth.user.isAcademicStaff),
+          ),
         );
       },
     ),

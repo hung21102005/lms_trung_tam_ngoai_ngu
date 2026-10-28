@@ -43,6 +43,11 @@ abstract class CoursesRemoteDataSource {
     double tuitionFee = 0,
   });
 
+  Future<CourseLevelModel> updateLevel(
+    String levelId,
+    Map<String, dynamic> changes,
+  );
+
   Future<ModuleModel> createModule(
     String levelId, {
     required String title,
@@ -80,12 +85,11 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
     int page = 1,
     int limit = 50,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'limit': limit,
-    };
+    final queryParams = <String, dynamic>{'page': page, 'limit': limit};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
-    if (language != null && language.isNotEmpty) queryParams['language'] = language;
+    if (language != null && language.isNotEmpty) {
+      queryParams['language'] = language;
+    }
     if (isActive != null) queryParams['isActive'] = isActive;
 
     final response = await apiClient.get(
@@ -93,7 +97,9 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       queryParameters: queryParams,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
 
     if (data is Map<String, dynamic> && data['items'] is List) {
       return (data['items'] as List)
@@ -111,7 +117,9 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
   @override
   Future<CourseModel> getCourseDetail(String id) async {
     final response = await apiClient.get(ApiEndpoints.courseDetail(id));
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
 
     if (data is Map<String, dynamic>) {
       return CourseModel.fromJson(data);
@@ -137,12 +145,11 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
     if (targetAudience != null) body['targetAudience'] = targetAudience;
     if (thumbnailUrl != null) body['thumbnailUrl'] = thumbnailUrl;
 
-    final response = await apiClient.post(
-      ApiEndpoints.courses,
-      data: body,
-    );
+    final response = await apiClient.post(ApiEndpoints.courses, data: body);
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return CourseModel.fromJson(data);
     }
@@ -174,7 +181,9 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       data: updateData,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return CourseModel.fromJson(data);
     }
@@ -205,11 +214,26 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       data: body,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return CourseLevelModel.fromJson(data);
     }
     throw Exception('Không thể tạo cấp độ');
+  }
+
+  @override
+  Future<CourseLevelModel> updateLevel(
+    String levelId,
+    Map<String, dynamic> changes,
+  ) async {
+    final response = await apiClient.patch('/levels/$levelId', data: changes);
+    final data = response is Map<String, dynamic>
+        ? response['data'] ?? response
+        : response;
+    if (data is Map<String, dynamic>) return CourseLevelModel.fromJson(data);
+    throw const FormatException('Dữ liệu cấp độ sau khi lưu không hợp lệ');
   }
 
   @override
@@ -219,10 +243,7 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
     int order = 1,
     String? description,
   }) async {
-    final body = <String, dynamic>{
-      'title': title,
-      'order': order,
-    };
+    final body = <String, dynamic>{'title': title, 'order': order};
     if (description != null) body['description'] = description;
 
     final response = await apiClient.post(
@@ -230,7 +251,9 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       data: body,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return ModuleModel.fromJson(data);
     }
@@ -257,7 +280,9 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       data: body,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return LessonModel.fromJson(data);
     }
@@ -284,7 +309,9 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       data: body,
     );
 
-    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    final data = response is Map<String, dynamic>
+        ? (response['data'] ?? response)
+        : response;
     if (data is Map<String, dynamic>) {
       return LessonMaterialModel.fromJson(data);
     }

@@ -36,7 +36,9 @@ class CourseModel extends Equatable {
     List<CourseLevelModel> parsedLevels = [];
     if (rawLevels is List) {
       parsedLevels = rawLevels
-          .map((item) => CourseLevelModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => CourseLevelModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
 
@@ -80,18 +82,18 @@ class CourseModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        code,
-        title,
-        description,
-        targetAudience,
-        language,
-        thumbnailUrl,
-        isActive,
-        levelsCount,
-        classesCount,
-        levels,
-      ];
+    id,
+    code,
+    title,
+    description,
+    targetAudience,
+    language,
+    thumbnailUrl,
+    isActive,
+    levelsCount,
+    classesCount,
+    levels,
+  ];
 }
 
 class CourseLevelModel extends Equatable {
@@ -103,6 +105,13 @@ class CourseLevelModel extends Equatable {
   final int order;
   final int estimatedSessions;
   final double tuitionFee;
+  final String? cefrLevel;
+  final double? ieltsTargetBand;
+  final int? toeicTargetScore;
+  final String? cambridgeQualification;
+  final String? entryRequirements;
+  final String? completionCriteria;
+  final int? recommendedHours;
   final List<ModuleModel> modules;
   final int classesCount;
 
@@ -115,6 +124,13 @@ class CourseLevelModel extends Equatable {
     this.order = 1,
     this.estimatedSessions = 24,
     this.tuitionFee = 0,
+    this.cefrLevel,
+    this.ieltsTargetBand,
+    this.toeicTargetScore,
+    this.cambridgeQualification,
+    this.entryRequirements,
+    this.completionCriteria,
+    this.recommendedHours,
     this.modules = const [],
     this.classesCount = 0,
   });
@@ -142,6 +158,19 @@ class CourseLevelModel extends Equatable {
       tuitionFee: (json['tuitionFee'] != null)
           ? double.tryParse(json['tuitionFee'].toString()) ?? 0.0
           : 0.0,
+      cefrLevel: json['cefrLevel'] as String?,
+      ieltsTargetBand: double.tryParse(
+        json['ieltsTargetBand']?.toString() ?? '',
+      ),
+      toeicTargetScore: int.tryParse(
+        json['toeicTargetScore']?.toString() ?? '',
+      ),
+      cambridgeQualification: json['cambridgeQualification'] as String?,
+      entryRequirements: json['entryRequirements'] as String?,
+      completionCriteria: json['completionCriteria'] as String?,
+      recommendedHours: int.tryParse(
+        json['recommendedHours']?.toString() ?? '',
+      ),
       modules: parsedModules,
       classesCount: cCount,
     );
@@ -157,22 +186,36 @@ class CourseLevelModel extends Equatable {
       'order': order,
       'estimatedSessions': estimatedSessions,
       'tuitionFee': tuitionFee,
+      'cefrLevel': cefrLevel,
+      'ieltsTargetBand': ieltsTargetBand,
+      'toeicTargetScore': toeicTargetScore,
+      'cambridgeQualification': cambridgeQualification,
+      'entryRequirements': entryRequirements,
+      'completionCriteria': completionCriteria,
+      'recommendedHours': recommendedHours,
     };
   }
 
   @override
   List<Object?> get props => [
-        id,
-        courseId,
-        code,
-        name,
-        description,
-        order,
-        estimatedSessions,
-        tuitionFee,
-        modules,
-        classesCount,
-      ];
+    id,
+    courseId,
+    code,
+    name,
+    description,
+    order,
+    estimatedSessions,
+    tuitionFee,
+    cefrLevel,
+    ieltsTargetBand,
+    toeicTargetScore,
+    cambridgeQualification,
+    entryRequirements,
+    completionCriteria,
+    recommendedHours,
+    modules,
+    classesCount,
+  ];
 }
 
 class ModuleModel extends Equatable {
@@ -239,7 +282,10 @@ class LessonModel extends Equatable {
     List<LessonMaterialModel> parsedMaterials = [];
     if (rawMaterials is List) {
       parsedMaterials = rawMaterials
-          .map((item) => LessonMaterialModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) =>
+                LessonMaterialModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
 
@@ -256,14 +302,14 @@ class LessonModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        moduleId,
-        title,
-        order,
-        content,
-        durationMinutes,
-        materials,
-      ];
+    id,
+    moduleId,
+    title,
+    order,
+    content,
+    durationMinutes,
+    materials,
+  ];
 }
 
 class LessonMaterialModel extends Equatable {
@@ -299,12 +345,12 @@ class LessonMaterialModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        lessonId,
-        title,
-        fileUrl,
-        fileType,
-        fileSizeBytes,
-        order,
-      ];
+    id,
+    lessonId,
+    title,
+    fileUrl,
+    fileType,
+    fileSizeBytes,
+    order,
+  ];
 }

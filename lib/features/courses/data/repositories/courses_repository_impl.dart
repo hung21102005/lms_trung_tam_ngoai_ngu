@@ -93,6 +93,12 @@ class CoursesRepositoryImpl implements CoursesRepository {
   }
 
   @override
+  Future<CourseLevelModel> updateLevel(
+    String levelId,
+    Map<String, dynamic> changes,
+  ) => remoteDataSource.updateLevel(levelId, changes);
+
+  @override
   Future<ModuleModel> createModule(
     String levelId, {
     required String title,

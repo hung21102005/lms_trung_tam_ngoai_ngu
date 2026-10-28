@@ -12,11 +12,7 @@ class FetchCourses extends CoursesEvent {
   final String? language;
   final bool refresh;
 
-  const FetchCourses({
-    this.search,
-    this.language,
-    this.refresh = false,
-  });
+  const FetchCourses({this.search, this.language, this.refresh = false});
 
   @override
   List<Object?> get props => [search, language, refresh];
@@ -47,7 +43,13 @@ class CreateCourseEvent extends CoursesEvent {
   });
 
   @override
-  List<Object?> get props => [code, title, description, targetAudience, language];
+  List<Object?> get props => [
+    code,
+    title,
+    description,
+    targetAudience,
+    language,
+  ];
 }
 
 class CreateCourseLevelEvent extends CoursesEvent {
@@ -71,12 +73,27 @@ class CreateCourseLevelEvent extends CoursesEvent {
 
   @override
   List<Object?> get props => [
-        courseId,
-        code,
-        name,
-        description,
-        order,
-        estimatedSessions,
-        tuitionFee,
-      ];
+    courseId,
+    code,
+    name,
+    description,
+    order,
+    estimatedSessions,
+    tuitionFee,
+  ];
+}
+
+class UpdateCourseLevelEvent extends CoursesEvent {
+  final String courseId;
+  final String levelId;
+  final Map<String, dynamic> changes;
+
+  const UpdateCourseLevelEvent({
+    required this.courseId,
+    required this.levelId,
+    required this.changes,
+  });
+
+  @override
+  List<Object?> get props => [courseId, levelId, changes];
 }

@@ -67,6 +67,10 @@ class ProgramCourseRecord {
   final String title;
   final String status;
   final bool isActive;
+  final String? programId;
+  final String slug;
+  final String description;
+  final String publicDescription;
 
   const ProgramCourseRecord({
     required this.id,
@@ -74,6 +78,10 @@ class ProgramCourseRecord {
     required this.title,
     required this.status,
     required this.isActive,
+    this.programId,
+    this.slug = '',
+    this.description = '',
+    this.publicDescription = '',
   });
 
   factory ProgramCourseRecord.fromJson(Map<String, dynamic> json) =>
@@ -83,6 +91,10 @@ class ProgramCourseRecord {
         title: json['title'] as String? ?? '',
         status: json['publicationStatus'] as String? ?? 'DRAFT',
         isActive: json['isActive'] as bool? ?? false,
+        programId: json['programId'] as String?,
+        slug: json['slug'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        publicDescription: json['publicDescription'] as String? ?? '',
       );
 }
 
@@ -156,5 +168,57 @@ class ProgramCatalogRepository {
 
   Future<void> changeCourseStatus(String id, String status) async {
     await apiClient.patch('/courses/$id/publication', data: {'status': status});
+  }
+
+  Future<List<ProgramCourseRecord>> searchUnassignedCourses(
+    String search,
+  ) async {
+    final data = _unwrap(
+      await apiClient.get(
+        '/courses',
+        queryParameters: {'search': search, 'page': 1, 'limit': 50},
+      ),
+    );
+    if (data is! Map || data['items'] is! List) {
+      throw const FormatException('Danh sách khóa học không hợp lệ');
+    }
+    return (data['items'] as List)
+        .map(
+          (item) => ProgramCourseRecord.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .where((course) => course.programId == null)
+        .toList();
+  }
+
+  Future<void> attachCourse(String courseId, String programId) async {
+    await apiClient.patch('/courses/$courseId', data: {'programId': programId});
+  }
+
+  Future<void> saveCourse({
+    String? id,
+    required String programId,
+    required String code,
+    required String title,
+    required String slug,
+    required String description,
+    required String publicDescription,
+    required bool isActive,
+  }) async {
+    final data = <String, dynamic>{
+      'programId': programId,
+      'slug': slug,
+      'description': description,
+      'publicDescription': publicDescription,
+      'isActive': isActive,
+    };
+    if (id == null) {
+      data['code'] = code;
+      data['title'] = title;
+      await apiClient.post('/courses', data: data);
+    } else {
+      await apiClient.patch('/courses/$id', data: data);
+    }
   }
 }

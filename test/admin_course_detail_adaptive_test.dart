@@ -12,6 +12,21 @@ class _Repository extends Fake implements CoursesRepository {
   final bool empty;
   final bool fail;
   String? createdLevelCode;
+  Map<String, dynamic>? updatedLevelChanges;
+
+  @override
+  Future<CourseLevelModel> updateLevel(
+    String levelId,
+    Map<String, dynamic> changes,
+  ) async {
+    updatedLevelChanges = changes;
+    return CourseLevelModel(
+      id: levelId,
+      courseId: 'course-1',
+      code: changes['code'] as String,
+      name: changes['name'] as String,
+    );
+  }
 
   @override
   Future<CourseLevelModel> createLevel(
@@ -101,6 +116,8 @@ void main() {
     await tester.pumpWidget(_app(_Repository()));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.textContaining('Học phần phát triển'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+    await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Học phần phát triển'));
     await tester.pumpAndSettle();
     expect(find.text('Bài học đầu tiên'), findsOneWidget);
@@ -156,6 +173,36 @@ void main() {
     await tester.tap(find.text('Lưu cấp độ'));
     await tester.pumpAndSettle();
     expect(repository.createdLevelCode, 'A1');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Mobile sửa chuẩn đầu ra cấp độ và lưu qua repository', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+    final repository = _Repository();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Sửa cấp độ'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -260));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sửa cấp độ'));
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'CEFR (nếu áp dụng)'),
+      'B1',
+    );
+    await tester.ensureVisible(find.text('Lưu cấp độ'));
+    await tester.tap(find.text('Lưu cấp độ'));
+    await tester.pumpAndSettle();
+    expect(repository.updatedLevelChanges?['cefrLevel'], 'B1');
+    expect(repository.updatedLevelChanges?['code'], 'FOUNDATION-01');
     expect(tester.takeException(), isNull);
   });
 }
