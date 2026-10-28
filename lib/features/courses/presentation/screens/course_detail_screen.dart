@@ -901,7 +901,10 @@ class _MobileCreateLevelSheetState extends State<_MobileCreateLevelSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+          maxHeight:
+              (MediaQuery.sizeOf(context).height * 0.9 -
+                      MediaQuery.viewInsetsOf(context).bottom)
+                  .clamp(120.0, double.infinity),
         ),
         child: SafeArea(
           top: false,
