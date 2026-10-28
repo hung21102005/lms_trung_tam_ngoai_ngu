@@ -25,13 +25,99 @@ import {
   CreateLessonDto,
   CreateLessonMaterialDto,
   QueryCoursesDto,
+  CreateProgramDto,
+  UpdateProgramDto,
+  PublicationDto,
+  ProgramVisibilityDto,
 } from './dto/index.js';
-import { JwtAuthGuard, RolesGuard, Roles } from '../auth/index.js';
+import { JwtAuthGuard, RolesGuard, Roles, Public } from '../auth/index.js';
 
 @ApiTags('Courses & Curriculum')
 @Controller()
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
+
+  @Public()
+  @Get('public/programs')
+  @ApiOperation({ summary: 'Chương trình đã duyệt và bật hiển thị công khai' })
+  findPublicPrograms() {
+    return this.coursesService.findPublicPrograms();
+  }
+
+  @Public()
+  @Get('public/courses')
+  @ApiOperation({ summary: 'Khóa học đã duyệt trong chương trình công khai' })
+  findPublicCourses() {
+    return this.coursesService.findPublicCourses();
+  }
+
+  @Public()
+  @Get('public/courses/:slug')
+  @ApiOperation({ summary: 'Chi tiết khóa học công khai theo slug' })
+  findPublicCourse(@Param('slug') slug: string) {
+    return this.coursesService.findPublicCourse(slug);
+  }
+
+  // --------------------------------------------------------------------------
+  // TRAINING PROGRAMS
+  // --------------------------------------------------------------------------
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Get('programs')
+  @ApiOperation({ summary: 'Danh mục chương trình đào tạo nội bộ' })
+  findPrograms() {
+    return this.coursesService.findPrograms();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Get('programs/:id')
+  @ApiOperation({ summary: 'Chi tiết chương trình và các khóa học' })
+  findProgram(@Param('id') id: string) {
+    return this.coursesService.findProgram(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Post('programs')
+  @ApiOperation({ summary: 'Tạo chương trình nháp' })
+  createProgram(@Body() dto: CreateProgramDto) {
+    return this.coursesService.createProgram(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('programs/:id')
+  @ApiOperation({ summary: 'Chỉnh sửa chương trình đào tạo' })
+  updateProgram(@Param('id') id: string, @Body() dto: UpdateProgramDto) {
+    return this.coursesService.updateProgram(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('programs/:id/status')
+  @ApiOperation({ summary: 'Duyệt hoặc lưu trữ chương trình theo trạng thái' })
+  changeProgramStatus(@Param('id') id: string, @Body() dto: PublicationDto) {
+    return this.coursesService.changeProgramStatus(id, dto.status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('programs/:id/visibility')
+  @ApiOperation({ summary: 'Bật hoặc tắt hiển thị chương trình công khai' })
+  setProgramVisibility(
+    @Param('id') id: string,
+    @Body() dto: ProgramVisibilityDto,
+  ) {
+    return this.coursesService.setProgramVisibility(id, dto.isPublic);
+  }
 
   // --------------------------------------------------------------------------
   // COURSES
@@ -41,7 +127,10 @@ export class CoursesController {
   @ApiBearerAuth('JWT-auth')
   @Get('courses')
   @ApiOperation({ summary: 'Lấy danh sách khóa học nội bộ' })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách khóa học thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách khóa học thành công',
+  })
   findAllCourses(@Query() query: QueryCoursesDto) {
     return this.coursesService.findAll(query);
   }
@@ -49,7 +138,9 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @Get('courses/:id')
-  @ApiOperation({ summary: 'Xem chi tiết khóa học kèm danh sách cấp độ & bài học' })
+  @ApiOperation({
+    summary: 'Xem chi tiết khóa học kèm danh sách cấp độ & bài học',
+  })
   @ApiResponse({ status: 200, description: 'Lấy chi tiết khóa học thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy khóa học' })
   findOneCourse(@Param('id') id: string) {
@@ -61,7 +152,9 @@ export class CoursesController {
   @ApiBearerAuth('JWT-auth')
   @Post('courses')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Tạo khóa học mới (Super Admin, Branch Admin, Academic Staff)' })
+  @ApiOperation({
+    summary: 'Tạo khóa học mới (Super Admin, Branch Admin, Academic Staff)',
+  })
   @ApiResponse({ status: 201, description: 'Tạo khóa học thành công' })
   @ApiResponse({ status: 409, description: 'Mã khóa học đã tồn tại' })
   createCourse(@Body() dto: CreateCourseDto) {
@@ -77,6 +170,15 @@ export class CoursesController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy khóa học' })
   updateCourse(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.coursesService.update(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Patch('courses/:id/publication')
+  @ApiOperation({ summary: 'Duyệt hoặc lưu trữ khóa học theo trạng thái' })
+  changeCourseStatus(@Param('id') id: string, @Body() dto: PublicationDto) {
+    return this.coursesService.changeCourseStatus(id, dto.status);
   }
 
   // --------------------------------------------------------------------------
@@ -99,8 +201,14 @@ export class CoursesController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Tạo cấp độ mới trong khóa học' })
   @ApiResponse({ status: 201, description: 'Tạo cấp độ thành công' })
-  @ApiResponse({ status: 409, description: 'Mã cấp độ đã tồn tại trong khóa học' })
-  createLevel(@Param('id') courseId: string, @Body() dto: CreateCourseLevelDto) {
+  @ApiResponse({
+    status: 409,
+    description: 'Mã cấp độ đã tồn tại trong khóa học',
+  })
+  createLevel(
+    @Param('id') courseId: string,
+    @Body() dto: CreateCourseLevelDto,
+  ) {
     return this.coursesService.createLevel(courseId, dto);
   }
 
@@ -161,9 +269,14 @@ export class CoursesController {
   @ApiBearerAuth('JWT-auth')
   @Post('lessons/:id/materials')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Đính kèm tài liệu học tập (slide, audio, pdf) vào bài học' })
+  @ApiOperation({
+    summary: 'Đính kèm tài liệu học tập (slide, audio, pdf) vào bài học',
+  })
   @ApiResponse({ status: 201, description: 'Thêm tài liệu thành công' })
-  createMaterial(@Param('id') lessonId: string, @Body() dto: CreateLessonMaterialDto) {
+  createMaterial(
+    @Param('id') lessonId: string,
+    @Body() dto: CreateLessonMaterialDto,
+  ) {
     return this.coursesService.createLessonMaterial(lessonId, dto);
   }
 }

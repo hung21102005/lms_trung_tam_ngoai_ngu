@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, Matches, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  Matches,
+  IsBoolean,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateCourseDto {
   @ApiProperty({
@@ -8,7 +15,9 @@ export class CreateCourseDto {
   })
   @IsNotEmpty({ message: 'Mã khóa học không được để trống' })
   @IsString()
-  @Matches(/^[A-Z0-9_-]+$/, { message: 'Mã khóa học chỉ gồm chữ hoa, chữ số, gạch dưới và gạch nối' })
+  @Matches(/^[A-Z0-9_-]+$/, {
+    message: 'Mã khóa học chỉ gồm chữ hoa, chữ số, gạch dưới và gạch nối',
+  })
   code!: string;
 
   @ApiProperty({
@@ -60,4 +69,22 @@ export class CreateCourseDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Chương trình đào tạo chứa khóa học' })
+  @IsOptional()
+  @IsUUID()
+  programId?: string;
+
+  @ApiPropertyOptional({ example: 'ielts-target-65' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  slug?: string;
+
+  @ApiPropertyOptional({
+    description: 'Mô tả hiển thị trong catalog công khai',
+  })
+  @IsOptional()
+  @IsString()
+  publicDescription?: string;
 }

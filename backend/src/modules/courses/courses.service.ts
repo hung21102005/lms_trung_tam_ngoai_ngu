@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
+import { PublicationStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   CreateCourseDto,
@@ -12,11 +14,231 @@ import {
   CreateLessonDto,
   CreateLessonMaterialDto,
   QueryCoursesDto,
+  CreateProgramDto,
+  UpdateProgramDto,
 } from './dto/index.js';
 
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  findPublicPrograms() {
+    return this.prisma.trainingProgram.findMany({
+      where: { status: PublicationStatus.PUBLISHED, isPublic: true },
+      orderBy: [{ displayOrder: 'asc' }, { nameVi: 'asc' }],
+      select: {
+        id: true,
+        code: true,
+        slug: true,
+        nameVi: true,
+        nameEn: true,
+        category: true,
+        description: true,
+        targetAudience: true,
+        learningPath: true,
+        thumbnailUrl: true,
+      },
+    });
+  }
+
+  findPublicCourses() {
+    return this.prisma.course.findMany({
+      where: {
+        publicationStatus: PublicationStatus.PUBLISHED,
+        isActive: true,
+        slug: { not: null },
+        program: { status: PublicationStatus.PUBLISHED, isPublic: true },
+      },
+      orderBy: { title: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        slug: true,
+        title: true,
+        publicDescription: true,
+        targetAudience: true,
+        thumbnailUrl: true,
+        program: { select: { slug: true, nameVi: true } },
+        levels: {
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            cefrLevel: true,
+            ieltsTargetBand: true,
+            toeicTargetScore: true,
+            cambridgeQualification: true,
+            recommendedHours: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findPublicCourse(slug: string) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        slug,
+        publicationStatus: PublicationStatus.PUBLISHED,
+        isActive: true,
+        program: { status: PublicationStatus.PUBLISHED, isPublic: true },
+      },
+      select: {
+        id: true,
+        code: true,
+        slug: true,
+        title: true,
+        publicDescription: true,
+        targetAudience: true,
+        thumbnailUrl: true,
+        program: { select: { slug: true, nameVi: true, nameEn: true } },
+        levels: {
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            description: true,
+            cefrLevel: true,
+            ieltsTargetBand: true,
+            toeicTargetScore: true,
+            cambridgeQualification: true,
+            entryRequirements: true,
+            expectedOutcomes: true,
+            assessmentScheme: true,
+            completionCriteria: true,
+            recommendedHours: true,
+            modules: {
+              orderBy: { order: 'asc' },
+              select: {
+                title: true,
+                description: true,
+                order: true,
+                lessons: {
+                  orderBy: { order: 'asc' },
+                  select: { title: true, order: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!course)
+      throw new NotFoundException('Không tìm thấy khóa học công khai');
+    return course;
+  }
+
+  // --------------------------------------------------------------------------
+  // TRAINING PROGRAMS — internal catalog and explicit publication workflow
+  // --------------------------------------------------------------------------
+
+  findPrograms() {
+    return this.prisma.trainingProgram.findMany({
+      orderBy: [{ displayOrder: 'asc' }, { nameVi: 'asc' }],
+      include: { _count: { select: { courses: true } } },
+    });
+  }
+
+  async findProgram(id: string) {
+    const program = await this.prisma.trainingProgram.findUnique({
+      where: { id },
+      include: { courses: { orderBy: { title: 'asc' } } },
+    });
+    if (!program)
+      throw new NotFoundException('Không tìm thấy chương trình đào tạo');
+    return program;
+  }
+
+  async createProgram(dto: CreateProgramDto) {
+    const existing = await this.prisma.trainingProgram.findFirst({
+      where: { OR: [{ code: dto.code }, { slug: dto.slug }] },
+    });
+    if (existing)
+      throw new ConflictException('Mã hoặc đường dẫn chương trình đã tồn tại');
+    return this.prisma.trainingProgram.create({
+      data: { ...dto, status: PublicationStatus.DRAFT, isPublic: false },
+    });
+  }
+
+  async updateProgram(id: string, dto: UpdateProgramDto) {
+    const program = await this.findProgram(id);
+    if (program.status === PublicationStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'Chương trình đã lưu trữ, không thể chỉnh sửa',
+      );
+    }
+    if (dto.code || dto.slug) {
+      const existing = await this.prisma.trainingProgram.findFirst({
+        where: {
+          id: { not: id },
+          OR: [
+            ...(dto.code ? [{ code: dto.code }] : []),
+            ...(dto.slug ? [{ slug: dto.slug }] : []),
+          ],
+        },
+      });
+      if (existing)
+        throw new ConflictException(
+          'Mã hoặc đường dẫn chương trình đã tồn tại',
+        );
+    }
+    return this.prisma.trainingProgram.update({ where: { id }, data: dto });
+  }
+
+  async changeProgramStatus(id: string, status: PublicationStatus) {
+    const program = await this.findProgram(id);
+    const allowed: Record<PublicationStatus, PublicationStatus[]> = {
+      DRAFT: [PublicationStatus.IN_REVIEW],
+      IN_REVIEW: [PublicationStatus.DRAFT, PublicationStatus.PUBLISHED],
+      PUBLISHED: [PublicationStatus.ARCHIVED],
+      ARCHIVED: [],
+    };
+    if (!allowed[program.status].includes(status)) {
+      throw new BadRequestException(
+        'Chuyển trạng thái chương trình không hợp lệ',
+      );
+    }
+    if (
+      status === PublicationStatus.PUBLISHED &&
+      (!program.description?.trim() || !program.targetAudience?.trim())
+    ) {
+      throw new BadRequestException(
+        'Cần mô tả và đối tượng học trước khi duyệt chương trình',
+      );
+    }
+    if (
+      status === PublicationStatus.ARCHIVED &&
+      program.courses.some(
+        (course) => course.publicationStatus === PublicationStatus.PUBLISHED,
+      )
+    ) {
+      throw new BadRequestException(
+        'Cần lưu trữ các khóa đang công bố trước khi lưu trữ chương trình',
+      );
+    }
+    return this.prisma.trainingProgram.update({
+      where: { id },
+      data: {
+        status,
+        ...(status === PublicationStatus.ARCHIVED ? { isPublic: false } : {}),
+      },
+    });
+  }
+
+  async setProgramVisibility(id: string, isPublic: boolean) {
+    const program = await this.findProgram(id);
+    if (isPublic && program.status !== PublicationStatus.PUBLISHED) {
+      throw new BadRequestException(
+        'Chỉ chương trình đã duyệt mới được hiển thị công khai',
+      );
+    }
+    return this.prisma.trainingProgram.update({
+      where: { id },
+      data: { isPublic },
+    });
+  }
 
   // --------------------------------------------------------------------------
   // COURSES
@@ -113,7 +335,26 @@ export class CoursesService {
     });
 
     if (existing) {
-      throw new ConflictException(`Mã khóa học '${dto.code}' đã tồn tại trên hệ thống`);
+      throw new ConflictException(
+        `Mã khóa học '${dto.code}' đã tồn tại trên hệ thống`,
+      );
+    }
+
+    if (dto.programId) {
+      const program = await this.prisma.trainingProgram.findUnique({
+        where: { id: dto.programId },
+      });
+      if (!program || program.status === PublicationStatus.ARCHIVED) {
+        throw new BadRequestException(
+          'Chương trình đào tạo không hợp lệ hoặc đã lưu trữ',
+        );
+      }
+    }
+    if (
+      dto.slug &&
+      (await this.prisma.course.findUnique({ where: { slug: dto.slug } }))
+    ) {
+      throw new ConflictException('Đường dẫn khóa học đã tồn tại');
     }
 
     return this.prisma.course.create({
@@ -130,13 +371,82 @@ export class CoursesService {
       });
 
       if (existing && existing.id !== id) {
-        throw new ConflictException(`Mã khóa học '${dto.code}' đã được sử dụng`);
+        throw new ConflictException(
+          `Mã khóa học '${dto.code}' đã được sử dụng`,
+        );
+      }
+    }
+
+    if (dto.programId) {
+      const program = await this.prisma.trainingProgram.findUnique({
+        where: { id: dto.programId },
+      });
+      if (!program || program.status === PublicationStatus.ARCHIVED) {
+        throw new BadRequestException(
+          'Chương trình đào tạo không hợp lệ hoặc đã lưu trữ',
+        );
+      }
+    }
+    if (dto.slug) {
+      const existing = await this.prisma.course.findUnique({
+        where: { slug: dto.slug },
+      });
+      if (existing && existing.id !== id) {
+        throw new ConflictException('Đường dẫn khóa học đã tồn tại');
       }
     }
 
     return this.prisma.course.update({
       where: { id },
       data: dto,
+    });
+  }
+
+  async changeCourseStatus(id: string, status: PublicationStatus) {
+    const course = await this.findOne(id);
+    const allowed: Record<PublicationStatus, PublicationStatus[]> = {
+      DRAFT: [PublicationStatus.IN_REVIEW],
+      IN_REVIEW: [PublicationStatus.DRAFT, PublicationStatus.PUBLISHED],
+      PUBLISHED: [PublicationStatus.ARCHIVED],
+      ARCHIVED: [],
+    };
+    if (!allowed[course.publicationStatus].includes(status)) {
+      throw new BadRequestException('Chuyển trạng thái khóa học không hợp lệ');
+    }
+    if (status === PublicationStatus.PUBLISHED) {
+      if (
+        !course.programId ||
+        !course.isActive ||
+        !course.description?.trim() ||
+        !course.publicDescription?.trim() ||
+        !course.levels.some((level) =>
+          level.modules.some((mod) => mod.lessons.length > 0),
+        )
+      ) {
+        throw new BadRequestException(
+          'Khóa học thiếu chương trình, trạng thái hoạt động hoặc nội dung học thuật để công bố',
+        );
+      }
+      const program = await this.prisma.trainingProgram.findUnique({
+        where: { id: course.programId },
+      });
+      if (program?.status !== PublicationStatus.PUBLISHED) {
+        throw new BadRequestException(
+          'Chương trình đào tạo chưa được duyệt công bố',
+        );
+      }
+    }
+    if (
+      status === PublicationStatus.ARCHIVED &&
+      course.levels.some((level) => level._count.classes > 0)
+    ) {
+      throw new BadRequestException(
+        'Khóa học đang có lớp; cần kết thúc các lớp trước khi lưu trữ',
+      );
+    }
+    return this.prisma.course.update({
+      where: { id },
+      data: { publicationStatus: status },
     });
   }
 
@@ -174,7 +484,9 @@ export class CoursesService {
     });
 
     if (existing) {
-      throw new ConflictException(`Cấp độ '${dto.code}' đã tồn tại trong khóa học này`);
+      throw new ConflictException(
+        `Cấp độ '${dto.code}' đã tồn tại trong khóa học này`,
+      );
     }
 
     return this.prisma.courseLevel.create({

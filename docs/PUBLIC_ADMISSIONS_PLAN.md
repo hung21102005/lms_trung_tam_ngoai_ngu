@@ -57,7 +57,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | Checkpoint | Trạng thái | Kết quả / giới hạn |
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
-| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Đã kiểm tra quan hệ Course/Level khi mở lớp và đóng các read API khóa học công khai cũ. Còn thiếu API/UI quản trị chương trình, quy trình duyệt/công bố, nội dung học thuật chi tiết và kiểm thử duyệt thực tế. |
+| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Đã kiểm tra quan hệ Course/Level khi mở lớp. Có API nội bộ quản trị chương trình và chuyển trạng thái duyệt, API catalog công khai chỉ đọc bản đã duyệt và bật hiển thị. Còn thiếu UI Admin quản trị/duyệt, cập nhật cấp độ/học phần/bài học, biên tập nội dung học thuật chi tiết và kiểm thử HTTP thực tế. |
 | 3 Class offering | Pending | Chờ catalog ổn định |
 | 4 Public website | Pending | Chờ publication API |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
@@ -73,3 +73,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - `npm run seed:curriculum` chạy hai lần: lần đầu tạo 7/47/47/94/188, lần hai tạo 0 và bỏ qua 7 chương trình/47 khóa.
 - `npm run build`: đạt. `npm run lint`: đạt với 12 cảnh báo ở code ngoài phạm vi mới. `npm run test`: 16 files, 130 tests đạt (chạy ngoài sandbox vì Vitest gặp lỗi quyền ghi cache tạm trong sandbox).
 - Chưa kiểm thử API qua HTTP, Flutter UI, publication workflow hoặc dữ liệu trên môi trường triển khai. Những mục này vẫn Pending.
+
+## Checkpoint API catalog và công bố (2026-10-28)
+
+- Nội bộ có `GET/POST/PATCH /programs`, `PATCH /programs/:id/status`, `PATCH /programs/:id/visibility`, `PATCH /courses/:id/publication`. Các thao tác ghi yêu cầu vai trò quản trị/học vụ. Chuyển trạng thái theo `DRAFT → IN_REVIEW → PUBLISHED → ARCHIVED`, có kiểm tra mô tả chương trình, liên kết chương trình, nội dung cấp độ/bài học và lớp đang mở trước khi công bố/lưu trữ khóa.
+- `GET /public/programs`, `GET /public/courses`, `GET /public/courses/:slug` chỉ trả bản công bố, khóa đang hoạt động và chương trình bật hiển thị. API công khai không trả bài học đầy đủ, học phí, lớp hoặc dữ liệu vận hành nội bộ.
+- `npm run build`: đạt; `npm run lint`: đạt với 12 cảnh báo ngoài phạm vi. `npm run test`: 16 files, 137 tests đạt, gồm kiểm thử lọc catalog công khai và chuyển trạng thái chương trình/khóa. Vẫn cần kiểm thử Flutter UI khi triển khai.
+- Chưa kiểm thử HTTP với Backend chạy, chưa có UI Admin cho duyệt, và seed hiện vẫn là đề cương chờ biên tập. Không đánh dấu giai đoạn 01 hoàn thành.

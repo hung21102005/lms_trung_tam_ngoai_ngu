@@ -5,3 +5,5 @@ export * from './create-module.dto.js';
 export * from './create-lesson.dto.js';
 export * from './create-material.dto.js';
 export * from './query-courses.dto.js';
+export * from './program.dto.js';
+export * from './publication.dto.js';

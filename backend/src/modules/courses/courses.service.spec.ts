@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoursesService } from './courses.service.js';
 import { PrismaService } from '../../database/index.js';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
+import { PublicationStatus } from '@prisma/client';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('CoursesService', () => {
@@ -17,8 +22,16 @@ describe('CoursesService', () => {
   };
 
   const mockPrismaService = {
+    trainingProgram: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     course: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       count: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -86,7 +99,9 @@ describe('CoursesService', () => {
     it('should throw NotFoundException if course not found', async () => {
       mockPrismaService.course.findUnique.mockResolvedValueOnce(null);
 
-      await expect(service.findOne('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return course if found', async () => {
@@ -94,6 +109,133 @@ describe('CoursesService', () => {
 
       const result = await service.findOne('course-uuid-1');
       expect(result).toEqual(mockCourse);
+    });
+  });
+
+  describe('publication workflow', () => {
+    it('filters public catalog by program and course publication state', async () => {
+      mockPrismaService.course.findMany.mockResolvedValueOnce([]);
+      await service.findPublicCourses();
+      expect(mockPrismaService.course.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            publicationStatus: PublicationStatus.PUBLISHED,
+            isActive: true,
+            program: { status: PublicationStatus.PUBLISHED, isPublic: true },
+          }),
+        }),
+      );
+    });
+
+    it('does not disclose an unavailable public course by slug', async () => {
+      mockPrismaService.course.findFirst.mockResolvedValueOnce(null);
+      await expect(service.findPublicCourse('private-course')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+    it('creates a program as private draft regardless of input', async () => {
+      mockPrismaService.trainingProgram.findFirst.mockResolvedValueOnce(null);
+      mockPrismaService.trainingProgram.create.mockResolvedValueOnce({
+        id: 'program-1',
+      });
+      await service.createProgram({
+        code: 'PRG-NEW',
+        slug: 'new-program',
+        nameVi: 'Mới',
+        nameEn: 'New',
+        category: 'GENERAL',
+      });
+      expect(mockPrismaService.trainingProgram.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          status: PublicationStatus.DRAFT,
+          isPublic: false,
+        }),
+      });
+    });
+
+    it('rejects public visibility before program approval', async () => {
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValueOnce({
+        id: 'program-1',
+        status: PublicationStatus.DRAFT,
+        courses: [],
+      });
+      await expect(
+        service.setProgramVisibility('program-1', true),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.trainingProgram.update).not.toHaveBeenCalled();
+    });
+
+    it('requires review transition and academic description before program approval', async () => {
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValueOnce({
+        id: 'program-1',
+        status: PublicationStatus.DRAFT,
+        courses: [],
+      });
+      await expect(
+        service.changeProgramStatus('program-1', PublicationStatus.PUBLISHED),
+      ).rejects.toThrow(BadRequestException);
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValueOnce({
+        id: 'program-1',
+        status: PublicationStatus.IN_REVIEW,
+        description: '',
+        targetAudience: 'Người học',
+        courses: [],
+      });
+      await expect(
+        service.changeProgramStatus('program-1', PublicationStatus.PUBLISHED),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('blocks draft course publication without an approved program', async () => {
+      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+        id: 'course-1',
+        publicationStatus: PublicationStatus.IN_REVIEW,
+        programId: 'program-1',
+        isActive: true,
+        description: 'Mô tả',
+        publicDescription: 'Mô tả công khai',
+        levels: [
+          {
+            modules: [{ lessons: [{ id: 'lesson-1' }] }],
+            _count: { classes: 0 },
+          },
+        ],
+      });
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValueOnce({
+        status: PublicationStatus.DRAFT,
+      });
+      await expect(
+        service.changeCourseStatus('course-1', PublicationStatus.PUBLISHED),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.course.update).not.toHaveBeenCalled();
+    });
+
+    it('publishes a reviewed course with approved program and lessons', async () => {
+      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+        id: 'course-1',
+        publicationStatus: PublicationStatus.IN_REVIEW,
+        programId: 'program-1',
+        isActive: true,
+        description: 'Mô tả',
+        publicDescription: 'Mô tả công khai',
+        levels: [
+          {
+            modules: [{ lessons: [{ id: 'lesson-1' }] }],
+            _count: { classes: 0 },
+          },
+        ],
+      });
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValueOnce({
+        status: PublicationStatus.PUBLISHED,
+      });
+      mockPrismaService.course.update.mockResolvedValueOnce({
+        publicationStatus: PublicationStatus.PUBLISHED,
+      });
+      await service.changeCourseStatus('course-1', PublicationStatus.PUBLISHED);
+      expect(mockPrismaService.course.update).toHaveBeenCalledWith({
+        where: { id: 'course-1' },
+        data: { publicationStatus: PublicationStatus.PUBLISHED },
+      });
     });
   });
 });
