@@ -311,7 +311,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             : 'Tạm ngưng hoạt động',
                       ),
                       value: isActive,
-                      activeColor: const Color(0xFF003FB1),
+                      activeThumbColor: const Color(0xFF003FB1),
                       onChanged: (v) => setDialogState(() => isActive = v),
                     ),
                   ],
@@ -470,7 +470,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   if (!isEdit && _branches.isNotEmpty) ...[
                     DropdownButtonFormField<String>(
                       isExpanded: true,
-                      value: branchId,
+                      initialValue: branchId,
                       decoration: const InputDecoration(
                         labelText: 'Thuộc Chi nhánh *',
                         border: OutlineInputBorder(),
@@ -555,7 +555,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         ),
                       ),
                       value: isActive,
-                      activeColor: const Color(0xFF003FB1),
+                        activeThumbColor: const Color(0xFF003FB1),
                       onChanged: (v) => setDialogState(() => isActive = v),
                     ),
                   ],
@@ -962,10 +962,11 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         );
       }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Không thể xuất danh sách phòng học: $error')),
         );
+      }
     }
   }
 
@@ -1232,6 +1233,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       ),
                       if (_branches.isNotEmpty)
                         Container(
+                          width: isDesktop ? null : width - 32,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
@@ -1240,6 +1242,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
+                              isExpanded: !isDesktop,
                               value: _selectedBranchId,
                               items: _branches.map((b) {
                                 return DropdownMenuItem<String>(
@@ -1260,6 +1263,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         ),
                       if (_activeTab != 1) ...[
                         Container(
+                          width: isDesktop ? null : width - 32,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
@@ -1268,6 +1272,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
+                              isExpanded: !isDesktop,
                               value: _selectedFloor,
                               items: const [
                                 DropdownMenuItem(
@@ -1288,13 +1293,15 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                 ),
                               ],
                               onChanged: (v) {
-                                if (v != null)
+                                if (v != null) {
                                   setState(() => _selectedFloor = v);
+                                }
                               },
                             ),
                           ),
                         ),
                         Container(
+                          width: isDesktop ? null : width - 32,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
@@ -1303,6 +1310,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
+                              isExpanded: !isDesktop,
                               value: _selectedStatus,
                               items: [
                                 const DropdownMenuItem(
@@ -1323,8 +1331,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                 ),
                               ],
                               onChanged: (v) {
-                                if (v != null)
+                                if (v != null) {
                                   setState(() => _selectedStatus = v);
+                                }
                               },
                             ),
                           ),
@@ -1393,20 +1402,13 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF2E7D32)),
-                  SizedBox(width: 6),
-                  Text(
-                    'Giám sát cơ sở thời gian thực',
-                    style: TextStyle(
-                      color: Color(0xFF2E7D32),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+              child: const Text(
+                '● Giám sát cơ sở thời gian thực',
+                style: TextStyle(
+                  color: Color(0xFF2E7D32),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],
@@ -1711,11 +1713,13 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         color: Color(0xFF64748B),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'Hotline: $phone',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
+                      Flexible(
+                        child: Text(
+                          'Hotline: $phone',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
                         ),
                       ),
                     ],
@@ -1729,11 +1733,13 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         color: Color(0xFF64748B),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'Email: $email',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
+                      Flexible(
+                        child: Text(
+                          'Email: $email',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
                         ),
                       ),
                     ],
@@ -2036,8 +2042,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 4,
                             children: [
                               Text(
                                 '$code • $name',
@@ -2047,7 +2054,6 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                   color: Color(0xFF0F172A),
                                 ),
                               ),
-                              const SizedBox(width: 10),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -2345,36 +2351,42 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Tầng $floor',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF003FB1),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Tầng $floor',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF003FB1),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          code,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Color(0xFF0F172A),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              code,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -2445,8 +2457,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 8,
+                        runSpacing: 2,
                         children: [
                           const Text(
                             'Sĩ số / Sức chứa:',
@@ -2576,8 +2590,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
               border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 TextButton.icon(
                   onPressed: () => _showRoomScheduleDialog(room),
@@ -2634,25 +2650,32 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(context).width - 80,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: const Color(0xFF003FB1)),
-            const SizedBox(width: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 12, color: const Color(0xFF003FB1)),
+              const SizedBox(width: 4),
+            ],
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
+              ),
+            ),
           ],
-          Text(
-            label,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
-          ),
-        ],
+        ),
       ),
     );
   }
