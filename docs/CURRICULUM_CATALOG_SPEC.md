@@ -52,3 +52,5 @@ Checkpoint tiếp theo bổ sung API và form sửa học phần/bài học. Vi�
 Form tạo học phần và bài học đã được nối với API tạo hiện có. Phần tài liệu học thuật, kiểm thử HTTP/DB và rà soát chất lượng nội dung seed vẫn còn cần thực hiện trước khi công bố.
 
 Đã có luồng chọn tệp thật và gắn tài liệu vào bài học qua API upload/tài liệu hiện hữu. Chưa kiểm chứng Firebase Storage và DB trực tiếp; nội dung seed vẫn là đề cương cần biên tập, không tự động công bố.
+
+Audit chỉ đọc ngày 2026-10-28 xác nhận 7 chương trình, 47 khóa seed, đúng liên kết và cấu trúc; cả 47 khóa vẫn đánh dấu cần duyệt học thuật. Public catalog HTTP trả danh sách rỗng vì chưa công bố. Kết quả này không thay cho rà soát giáo án/tài liệu bởi học vụ và không tự đổi trạng thái bản nháp.

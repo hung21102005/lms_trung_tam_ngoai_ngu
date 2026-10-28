@@ -2,8 +2,25 @@ import { describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
 import { curriculumCatalog } from '../prisma/curriculum-catalog.data.js';
 import { seedCurriculumCatalog } from '../prisma/seed-curriculum-catalog.js';
+import { auditCurriculumCatalog } from '../prisma/audit-curriculum-catalog.js';
 
 describe('curriculum catalog', () => {
+  it('read-only audit reports missing seed records', async () => {
+    const fake = {
+      trainingProgram: { findMany: async () => [] },
+      course: { findMany: async () => [] },
+    } as unknown as PrismaClient;
+    const report = await auditCurriculumCatalog(fake);
+    expect(report).toMatchObject({
+      expectedPrograms: 7,
+      foundPrograms: 0,
+      expectedCourses: 47,
+      foundCourses: 0,
+      pendingAcademicReview: 0,
+    });
+    expect(report.issues).toHaveLength(54);
+  });
+
   it('has distinct programs and 47 substantially described draft courses', () => {
     expect(curriculumCatalog).toHaveLength(7);
     const programCodes = curriculumCatalog.map((program) => program.code);

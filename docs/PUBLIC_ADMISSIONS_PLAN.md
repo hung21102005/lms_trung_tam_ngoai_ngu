@@ -121,3 +121,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Backend chặn thêm tài liệu vào khóa đã lưu trữ. Không thêm API hoặc migration. Test datasource xác nhận multipart upload trước khi tạo bản ghi tài liệu; widget test xác nhận form không cho lưu khi thiếu tệp. **Chưa kiểm chứng thực tế** FilePicker/Firebase Storage/DB trên thiết bị và Backend đang chạy; việc upload thành công nhưng lưu bản ghi thất bại có thể để lại tệp chưa được liên kết và cần cơ chế dọn sau.
 - Flutter analyzer phạm vi thay đổi **0 issues**, widget regression chương trình/khóa/tài liệu **38/38 đạt**, `flutter build web --no-wasm-dry-run` **đạt**. Backend build **đạt**, lint **đạt** với 12 cảnh báo cũ, test backend **145/145 đạt**.
 - **Điểm tiếp tục:** rà soát nội dung seed và luồng publication qua HTTP/DB, sau đó hoàn thiện mở lớp (lịch, phòng, giáo viên, học phí, cửa sổ đăng ký). Website công khai và registration/CRM vẫn Pending.
+
+## Checkpoint audit catalog và HTTP chỉ đọc (2026-10-28)
+
+- Thêm `npm run audit:curriculum` chỉ đọc PostgreSQL, đối chiếu đúng 7 chương trình và 47 khóa seed, liên kết chương trình, trạng thái nháp và cấu trúc cấp độ/học phần/bài học. Kết quả cục bộ: **7/7 chương trình, 47/47 khóa, 0 vấn đề cấu trúc; 47 khóa vẫn cần duyệt học thuật thủ công**. Audit tự động không đánh giá chất lượng giáo án.
+- Khởi động Backend tạm để kiểm tra HTTP rồi đã dừng: `GET /public/programs` và `/public/courses` trả **200** với danh sách rỗng vì seed chưa công bố; slug không tồn tại trả **404**; `/courses` và `/programs` không JWT trả **401**. E2E test học thuật cũ được cập nhật theo hợp đồng API hiện tại và **3/3 đạt**.
+- Backend build và kiểm thử seed/audit tập trung đạt. Chưa kiểm thử thao tác **ghi** qua HTTP (duyệt/công bố, tạo/sửa) để tránh thay đổi dữ liệu thật; chưa kiểm chứng thiết bị thật. Giai đoạn 01 vẫn chưa hoàn thành do 47 khóa seed cần duyệt nội dung trước khi công bố.
+- **Tiếp theo:** hoàn thiện mở lớp với ràng buộc khóa/level, phòng, giáo viên, lịch, học phí, cửa sổ đăng ký; tiếp tục giữ website công khai và registration ở trạng thái Pending cho đến khi lớp được công bố an toàn.

@@ -41,11 +41,12 @@ describe('Academic Core Flow (e2e)', () => {
     }
   });
 
-  it('should fetch public courses list (GET /courses)', async () => {
-    const res = await request(app.getHttpServer()).get('/courses');
+  it('should expose only the published catalog without authentication', async () => {
+    const res = await request(app.getHttpServer()).get('/public/courses');
     expect(res.status).toBe(200);
-    expect(res.body.items).toBeDefined();
-    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(Array.isArray(res.body)).toBe(true);
+    const internal = await request(app.getHttpServer()).get('/courses');
+    expect(internal.status).toBe(401);
   });
 
   it('should fetch classes list with auth (GET /classes)', async () => {
