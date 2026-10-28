@@ -129,6 +129,8 @@ void main() {
 
       // Verify students are rendered
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
       expect(find.text('Trần Thị B'), findsOneWidget);
 
       // Verify status choice chips
@@ -138,7 +140,7 @@ void main() {
       expect(find.text('Có phép'), findsWidgets);
 
       // Verify submit button is displayed
-      expect(find.text('Lưu & Hoàn Tất Điểm Danh'), findsOneWidget);
+      expect(find.text('Lưu điểm danh'), findsOneWidget);
     },
   );
 }

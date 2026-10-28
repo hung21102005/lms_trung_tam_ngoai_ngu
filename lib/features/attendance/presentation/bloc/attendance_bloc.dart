@@ -39,8 +39,19 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
       final current = state as SessionAttendanceLoadedState;
       final updatedStudents = current.data.students.map((s) {
         if (s.studentId == event.studentId) {
-          s.status = event.status;
-          if (event.notes != null) s.notes = event.notes;
+          return StudentAttendanceItemModel(
+            studentId: s.studentId,
+            userCode: s.userCode,
+            fullName: s.fullName,
+            avatarUrl: s.avatarUrl,
+            phone: s.phone,
+            email: s.email,
+            attendanceId: s.attendanceId,
+            status: event.status,
+            checkInTime: s.checkInTime,
+            notes: event.notes ?? s.notes,
+            markedAt: s.markedAt,
+          );
         }
         return s;
       }).toList();
@@ -86,8 +97,7 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
           ),
         );
       } catch (e) {
-        emit(current.copyWith(isSubmitting: false));
-        emit(AttendanceErrorState(e.toString()));
+        emit(current.copyWith(isSubmitting: false, errorMessage: e.toString()));
       }
     }
   }

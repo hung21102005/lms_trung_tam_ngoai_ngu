@@ -17,27 +17,31 @@ class SessionAttendanceLoadedState extends AttendanceState {
   final SessionAttendanceResponseModel data;
   final bool isSubmitting;
   final String? successMessage;
+  final String? errorMessage;
 
   const SessionAttendanceLoadedState({
     required this.data,
     this.isSubmitting = false,
     this.successMessage,
+    this.errorMessage,
   });
 
   SessionAttendanceLoadedState copyWith({
     SessionAttendanceResponseModel? data,
     bool? isSubmitting,
     String? successMessage,
+    String? errorMessage,
   }) {
     return SessionAttendanceLoadedState(
       data: data ?? this.data,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       successMessage: successMessage,
+      errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [data, isSubmitting, successMessage];
+  List<Object?> get props => [data, isSubmitting, successMessage, errorMessage];
 }
 
 class StudentAttendanceLoadedState extends AttendanceState {

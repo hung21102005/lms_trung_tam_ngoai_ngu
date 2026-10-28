@@ -29,7 +29,7 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Student invoices/payment, notifications | B/C | P2 | Mobile invoice list/detail and payment control layout plus shared notification list implemented; live payment/device QA pending |
 | Teacher home/dashboard, reports | B/C | P1 | Mobile live dashboard and teaching reports implemented; device/API QA pending |
 | Teacher classes/list/detail/schedule | B/C | P1 | My classes list, shared class detail and schedule Mobile implemented; other class screens pending |
-| Teacher attendance and class workflow | B/C | P1 | Attendance roster/logbook Mobile implemented; other class workflows pending |
+| Teacher attendance and class workflow | B/C | P1 | Embedded roster/logbook and standalone attendance marking Mobile implemented; API/device QA pending |
 | Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Workflow, create/edit form and submission review Mobile implemented; secondary gradebook pending |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Question bank list/create Mobile implemented; exam creation/results, notifications/profile pending |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
@@ -38,6 +38,16 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
 
 Route inventory source: `lib/core/router/route_names.dart`; screen inventory: `lib/features/**/presentation/screens/` and `lib/features/dashboard/presentation/views/`. Nested home tabs and dialogs are included in each module above, rather than counted as standalone routes. Reclassify after visual QA.
+
+### Remaining work by role (audit at `c781002`, updated after each checkpoint)
+
+| Role | Pending screens and flows | Priority |
+| --- | --- | --- |
+| Student | Finish real-device/API checks for assignment recording, playback, file picker/upload, draft/resubmit and published grades; review Auth/Profile, payment and exam flows on device; audit secondary dialogs and long data. | P0–P2 |
+| Teacher | Secondary assignment grading/gradebook views (one legacy view still has hardcoded data); create exam and exam results, question management beyond list/create; legacy dashboard, profile and notification verification. Standalone attendance screen is implemented in the checkpoint below, with device/API checks pending. | P1–P2 |
+| Parent | Child-specific grades and finance routes remain a functional gap; verify schedule/attendance with a real parent account and audit child switching, profile and notifications. | P2 |
+| Admin | Settings tabs with local defaults, class edit/schedule workflows, attendance management, reports overview and finance forms, user add/edit/import/export dialogs, plus visual/device/API audit for branches, rooms, leads, debts and courses. Course Desktop export is still a notice. | P3 |
+| Shared | Auth/Profile review, consistent mobile navigation/components, 320–1200 px regression, device keyboard/safe-area and Desktop screenshot comparison. | P1–P3 |
 
 ### Source screen checklist
 
@@ -51,7 +61,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Student courses | `student_courses_screen`, `lesson_detail_screen` | B/C | Course/curriculum and lesson detail Mobile views implemented; device QA pending |
 | Course management | `course_list_screen`, `course_detail_screen` | C → B | Admin course list/detail and create/add-level Mobile forms implemented; live API/device QA pending |
 | Classes | `class_list_screen`, `class_detail_screen`, `class_create_screen`, `schedule_screen`, `teacher_my_classes_screen` | B/C | Admin class list/create form, shared Mobile schedule/class detail and Teacher my-classes list implemented; edit and secondary management pending |
-| Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history and embedded Teacher attendance Mobile implemented; standalone marking pending |
+| Attendance | `my_attendance_screen`, `attendance_mark_screen` | B/C | Student history, embedded Teacher attendance and standalone marking Mobile implemented; API/device QA pending |
 | Student assignments | `student_assignments_view`, `assignment_list_screen`, `assignment_detail_screen`, `submit_assignment_screen` | C → B | Mobile UI implemented for list/detail/work; verification in progress |
 | Teacher assignments | `create_assignment_screen`, `grade_submission_screen`, `submission_review_screen`, `teacher_grading_view`, `teacher_gradebook_view`, `teacher_class_workflow_view` | B/C | Embedded workflow and review Mobile implemented; remaining screens pending |
 | Teacher workflows | `teacher_attendance_view`, `teacher_dashboard_screen`, `teacher_dashboard_live_screen`, `teacher_reports_screen` | B/C | Live dashboard, embedded attendance and teaching reports Mobile implemented; legacy dashboard pending |
@@ -246,3 +256,10 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Added a dedicated Mobile/Tablet question bank card layout and a create bottom sheet with required-name validation. It continues using the existing `ExamsBloc` and repository. The previous create dialog dispatched `CreateQuestionBankEvent` and immediately dispatched a reload, allowing concurrent handlers to race. The screen now reloads only after `ExamActionSuccessState`, so the newly created bank appears after a successful save. Desktop list/dialog layout remains in place.
 - Widget tests with a repository fake: **9/9 pass** at 320, 375, 393, 430, 800 and 1200 px, including long title, creation and post-save reload, empty/error states, and a 320×600 keyboard inset without overflow. Combined regression with Admin course screens: **29/29 pass**. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
 - The keyboard test only checks layout and does not prove that the save button is reachable with a real device keyboard. Backend persistence, role permissions, Desktop screenshot comparison and physical device visuals remain **unverified**. Teacher exam creation/results and question management beyond this list/create screen remain pending.
+
+### Checkpoint 2026-10-28 — Teacher standalone attendance marking Mobile
+
+- Added a separate Mobile/Tablet screen for `/sessions/:id/attendance`: session overview, horizontally scannable counts, roster filters, touch-sized status controls, notes and a persistent Save action. Desktop retains its existing structure. A source-level Bloc fix copies each changed student instead of mutating a loaded model in place, so status changes reliably rebuild the UI. A failed save now shows an error while keeping the unsaved roster and notes available for retry.
+- Widget tests with a repository fake: **11/11 pass** for this screen at 320, 375, 393, 430, 800 and 1200 px, including a long class name, keyboard open at 320 px, status/note payload, bulk marking, filters, loading, empty/API error and failed-save retention. Combined targeted regression with the previous standalone screen test and embedded Teacher attendance tests: **20/20 pass**. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
+- A screenshot/golden attempt at 320 and 1200 px was used to inspect structural density; the test environment could not download the Vietnamese BeVietnamPro font, rendering text as squares. Those images were **discarded**, and typography/visual signoff remains **unverified**. The 320 px header and quick action were tightened after the structural review. The larger, untouched `challenger_m3_attendance_logbook_test.dart` suite currently fails 15 cases against the embedded Teacher view because expected labels/layout do not match; this is tracked for a separate audit, not counted as passing regression.
+- Actual attendance persistence and authorization with a running Backend, physical Android/Mobile Web touch behavior and Desktop screenshot comparison remain **unverified**. Course Desktop export and remaining role-specific Pending items are listed above.
