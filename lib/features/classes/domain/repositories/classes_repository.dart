@@ -49,6 +49,8 @@ abstract class ClassesRepository {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   });
 

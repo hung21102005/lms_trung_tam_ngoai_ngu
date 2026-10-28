@@ -75,6 +75,260 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
     super.dispose();
   }
 
+  Future<void> _showEditClassDialog(ClassModel classObj) async {
+    final bloc = context.read<ClassesBloc>();
+    final formKey = GlobalKey<FormState>();
+    var name = classObj.name;
+    var capacityText = '${classObj.maxCapacity}';
+    var feeText = classObj.tuitionFee.toStringAsFixed(0);
+    var notes = classObj.notes ?? '';
+    final classStart = classObj.startDate ?? DateTime.now();
+    var openAt = classObj.registrationOpenAt ?? classStart;
+    var closeAt = classObj.registrationCloseAt ?? classStart;
+    var selectedStatus = classObj.status;
+    var saving = false;
+    String? error;
+
+    Future<void> pickDate(
+      BuildContext modalContext,
+      StateSetter refresh, {
+      required bool opening,
+    }) async {
+      final picked = await showDatePicker(
+        context: modalContext,
+        initialDate: opening ? openAt : closeAt,
+        firstDate: DateTime(2000),
+        lastDate: classStart,
+      );
+      if (picked != null) {
+        refresh(() {
+          if (opening) {
+            openAt = picked;
+          } else {
+            closeAt = picked;
+          }
+        });
+      }
+    }
+
+    Widget form(BuildContext modalContext, StateSetter refresh) {
+      final isMobile = MediaQuery.sizeOf(modalContext).width < 600;
+      final maxHeight = MediaQuery.sizeOf(modalContext).height * 0.85;
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(modalContext).bottom,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 520, maxHeight: maxHeight),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(isMobile ? 20 : 24),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Sửa thông tin lớp',
+                      style: AppTextStyles.h4(modalContext),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Lịch học, phòng và giảng viên được điều chỉnh theo từng buổi.',
+                      style: AppTextStyles.caption(modalContext),
+                    ),
+                    const SizedBox(height: 20),
+                    AppTextField(
+                      label: 'Tên lớp',
+                      initialValue: name,
+                      onChanged: (value) => name = value,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Vui lòng nhập tên lớp'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    AppTextField(
+                      label: 'Sĩ số tối đa',
+                      initialValue: capacityText,
+                      onChanged: (value) => capacityText = value,
+                      keyboardType: TextInputType.number,
+                      validator: (value) => (int.tryParse(value ?? '') ?? 0) < 1
+                          ? 'Sĩ số phải lớn hơn 0'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    AppTextField(
+                      label: 'Học phí (VNĐ)',
+                      initialValue: feeText,
+                      onChanged: (value) => feeText = value,
+                      keyboardType: TextInputType.number,
+                      validator: (value) =>
+                          double.tryParse(value ?? '') == null ||
+                              double.parse(value!) < 0
+                          ? 'Học phí không hợp lệ'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Thời gian nhận đăng ký',
+                      style: AppTextStyles.label(modalContext),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: saving
+                              ? null
+                              : () => pickDate(
+                                  modalContext,
+                                  refresh,
+                                  opening: true,
+                                ),
+                          icon: const Icon(Icons.event_available_outlined),
+                          label: Text(
+                            'Mở: ${DateFormat('dd/MM/yyyy').format(openAt)}',
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: saving
+                              ? null
+                              : () => pickDate(
+                                  modalContext,
+                                  refresh,
+                                  opening: false,
+                                ),
+                          icon: const Icon(Icons.event_busy_outlined),
+                          label: Text(
+                            'Đóng: ${DateFormat('dd/MM/yyyy').format(closeAt)}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedStatus,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Trạng thái tuyển sinh',
+                      ),
+                      items: [
+                        if (classObj.status == 'PLANNING' ||
+                            classObj.status == 'OPEN_FOR_ENROLLMENT')
+                          const DropdownMenuItem(
+                            value: 'PLANNING',
+                            child: Text('Đang lập kế hoạch'),
+                          ),
+                        if (classObj.status == 'PLANNING' ||
+                            classObj.status == 'OPEN_FOR_ENROLLMENT')
+                          const DropdownMenuItem(
+                            value: 'OPEN_FOR_ENROLLMENT',
+                            child: Text('Mở đăng ký'),
+                          ),
+                        if (classObj.status != 'PLANNING' &&
+                            classObj.status != 'OPEN_FOR_ENROLLMENT')
+                          DropdownMenuItem(
+                            value: classObj.status,
+                            child: Text(classObj.status),
+                          ),
+                      ],
+                      onChanged: saving
+                          ? null
+                          : (value) => refresh(
+                              () => selectedStatus = value ?? selectedStatus,
+                            ),
+                    ),
+                    const SizedBox(height: 14),
+                    AppTextField(
+                      label: 'Ghi chú',
+                      initialValue: notes,
+                      onChanged: (value) => notes = value,
+                      maxLines: 2,
+                    ),
+                    if (error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        error!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              if (openAt.isAfter(closeAt) ||
+                                  closeAt.isAfter(classStart)) {
+                                refresh(
+                                  () => error = 'Ngày đăng ký phải đúng thứ tự và không sau khai giảng.',
+                                );
+                                return;
+                              }
+                              refresh(() {
+                                saving = true;
+                                error = null;
+                              });
+                              try {
+                                await bloc.repository.updateClass(
+                                  classObj.id,
+                                  name: name.trim(),
+                                  maxCapacity: int.parse(capacityText.trim()),
+                                  tuitionFee: double.parse(feeText.trim()),
+                                  registrationOpenAt: DateFormat('yyyy-MM-dd')
+                                      .format(openAt),
+                                  registrationCloseAt: DateFormat('yyyy-MM-dd')
+                                      .format(closeAt),
+                                  status: selectedStatus,
+                                  notes: notes.trim(),
+                                );
+                                if (!modalContext.mounted) return;
+                                Navigator.of(modalContext).pop();
+                                bloc.add(FetchClassDetail(classObj.id));
+                              } catch (caught) {
+                                if (modalContext.mounted) {
+                                  refresh(() {
+                                    saving = false;
+                                    error = caught.toString();
+                                  });
+                                }
+                              }
+                            },
+                      child: Text(saving ? 'Đang lưu...' : 'Lưu thông tin lớp'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (MediaQuery.sizeOf(context).width < 600) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (modalContext) => StatefulBuilder(
+          builder: (modalContext, refresh) => form(modalContext, refresh),
+        ),
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (modalContext) => Dialog(
+          child: StatefulBuilder(
+            builder: (modalContext, refresh) => form(modalContext, refresh),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _loadCurriculum(String levelId) async {
     final response = await _apiClient.get('/levels/$levelId/modules');
     final data = response is Map ? response['data'] ?? response : response;
@@ -583,6 +837,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
         AdaptiveSize.mobile;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: isDark
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
@@ -592,6 +847,17 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         foregroundColor: isDark ? Colors.white : AppColors.textPrimaryLight,
         actions: [
+          if (_canManageEnrollment)
+            IconButton(
+              onPressed: () {
+                final state = context.read<ClassesBloc>().state;
+                if (state is ClassDetailLoaded) {
+                  _showEditClassDialog(state.classDetail);
+                }
+              },
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Sửa thông tin lớp',
+            ),
           IconButton(
             onPressed: () {
               context.push(

@@ -93,6 +93,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) {
     return remoteDataSource.updateClass(
@@ -109,6 +111,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
       endTime: endTime,
       maxCapacity: maxCapacity,
       tuitionFee: tuitionFee,
+      registrationOpenAt: registrationOpenAt,
+      registrationCloseAt: registrationCloseAt,
       notes: notes,
     );
   }

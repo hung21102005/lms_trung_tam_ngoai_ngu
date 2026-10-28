@@ -78,6 +78,8 @@ class MockClassesRepository implements ClassesRepository {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async => throw UnimplementedError();
 
@@ -96,6 +98,8 @@ class MockClassesRepository implements ClassesRepository {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async => throw UnimplementedError();
 

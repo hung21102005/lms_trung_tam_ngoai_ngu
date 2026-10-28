@@ -437,6 +437,18 @@ export class ClassesService {
       dto.registrationCloseAt,
       dto.startDate,
     );
+    if (
+      dto.status === ClassStatus.OPEN_FOR_ENROLLMENT &&
+      (!dto.registrationOpenAt ||
+        !dto.registrationCloseAt ||
+        !dto.roomId ||
+        !dto.mainTeacherId ||
+        !(Number(dto.tuitionFee ?? level.tuitionFee) > 0))
+    ) {
+      throw new BadRequestException(
+        'Cần có thời gian đăng ký, phòng, giáo viên chính và học phí trước khi mở tuyển sinh',
+      );
+    }
 
     // 3. Phân tích các ngày trong tuần (scheduleDays)
     const dayMap: Record<string, number> = {
@@ -617,13 +629,22 @@ export class ClassesService {
 
   async update(id: string, dto: UpdateClassDto, actor: ClassActor) {
     const current = await this.findOne(id, actor);
-    if (
-      !actor.roles.includes('super_admin') &&
-      dto.branchId &&
-      dto.branchId !== actor.branchId
-    ) {
-      throw new ForbiddenException(
-        'Bạn không được chuyển lớp sang chi nhánh khác',
+    const scheduleFields: (keyof UpdateClassDto)[] = [
+      'courseId',
+      'levelId',
+      'branchId',
+      'roomId',
+      'mainTeacherId',
+      'assistantTeacherId',
+      'startDate',
+      'scheduleDays',
+      'startTime',
+      'endTime',
+      'totalSessions',
+    ];
+    if (scheduleFields.some((field) => dto[field] !== undefined)) {
+      throw new BadRequestException(
+        'Không thể đổi khóa, chi nhánh hoặc lịch phân công qua thông tin lớp; hãy điều chỉnh từng buổi học',
       );
     }
 
@@ -636,25 +657,55 @@ export class ClassesService {
       }
     }
 
-    const updateData: any = { ...dto };
-    if (dto.startDate) updateData.startDate = new Date(dto.startDate);
+    const capacity = dto.maxCapacity ?? current.maxCapacity;
+    const enrolled = current.students.filter(
+      (item) => item.status === EnrollmentStatus.ENROLLED,
+    ).length;
+    if (capacity < enrolled) {
+      throw new BadRequestException(
+        'Sĩ số tối đa không được thấp hơn số học viên đang học',
+      );
+    }
+    if (current.room && capacity > current.room.capacity) {
+      throw new BadRequestException('Sĩ số lớp vượt quá sức chứa phòng học');
+    }
+
+    const openAt = dto.registrationOpenAt ?? current.registrationOpenAt;
+    const closeAt = dto.registrationCloseAt ?? current.registrationCloseAt;
     if (
       dto.registrationOpenAt !== undefined ||
       dto.registrationCloseAt !== undefined ||
-      dto.startDate
+      dto.status === ClassStatus.OPEN_FOR_ENROLLMENT
     ) {
-      this.validateRegistrationWindow(
-        dto.registrationOpenAt ?? current.registrationOpenAt,
-        dto.registrationCloseAt ?? current.registrationCloseAt,
-        dto.startDate ?? current.startDate,
-      );
+      this.validateRegistrationWindow(openAt, closeAt, current.startDate);
     }
+    if (dto.status === ClassStatus.OPEN_FOR_ENROLLMENT) {
+      if (
+        !openAt ||
+        !closeAt ||
+        !current.roomId ||
+        !current.mainTeacherId ||
+        !(Number(dto.tuitionFee ?? current.tuitionFee) > 0)
+      ) {
+        throw new BadRequestException(
+          'Cần có thời gian đăng ký, phòng, giáo viên chính và học phí trước khi mở tuyển sinh',
+        );
+      }
+      if (
+        !current.course.isActive ||
+        current.course.publicationStatus !== 'PUBLISHED'
+      ) {
+        throw new BadRequestException(
+          'Khóa học chưa được công bố để mở tuyển sinh',
+        );
+      }
+    }
+
+    const updateData: any = { ...dto };
     if (dto.registrationOpenAt)
       updateData.registrationOpenAt = new Date(dto.registrationOpenAt);
     if (dto.registrationCloseAt)
       updateData.registrationCloseAt = new Date(dto.registrationCloseAt);
-    if (dto.scheduleDays)
-      updateData.scheduleDays = dto.scheduleDays.map((d) => d.toUpperCase());
 
     return this.prisma.class.update({
       where: { id },

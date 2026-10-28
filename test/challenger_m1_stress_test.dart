@@ -86,9 +86,9 @@ class FakeClassesRepository implements ClassesRepository {
     );
   }
   @override
-  Future<ClassModel> createClass({required String code, required String name, required String courseId, required String levelId, required String branchId, String? roomId, String? mainTeacherId, String? assistantTeacherId, String status = 'PLANNING', required String startDate, required List<String> scheduleDays, required String startTime, required String endTime, int totalSessions = 24, int maxCapacity = 20, double? tuitionFee, String? notes}) async => throw UnimplementedError();
+  Future<ClassModel> createClass({required String code, required String name, required String courseId, required String levelId, required String branchId, String? roomId, String? mainTeacherId, String? assistantTeacherId, String status = 'PLANNING', required String startDate, required List<String> scheduleDays, required String startTime, required String endTime, int totalSessions = 24, int maxCapacity = 20, double? tuitionFee, String? registrationOpenAt, String? registrationCloseAt, String? notes}) async => throw UnimplementedError();
   @override
-  Future<ClassModel> updateClass(String id, {String? code, String? name, String? roomId, String? mainTeacherId, String? assistantTeacherId, String? status, String? startDate, List<String>? scheduleDays, String? startTime, String? endTime, int? maxCapacity, double? tuitionFee, String? notes}) async => throw UnimplementedError();
+  Future<ClassModel> updateClass(String id, {String? code, String? name, String? roomId, String? mainTeacherId, String? assistantTeacherId, String? status, String? startDate, List<String>? scheduleDays, String? startTime, String? endTime, int? maxCapacity, double? tuitionFee, String? registrationOpenAt, String? registrationCloseAt, String? notes}) async => throw UnimplementedError();
   @override
   Future<ClassStudentModel> enrollStudent(String classId, {required String studentId, double tuitionPaid = 0, String? notes}) async => throw UnimplementedError();
   @override
@@ -187,6 +187,8 @@ class FakeReportsRepository implements ReportsRepository {
 }
 
 class FakeCoursesRepository implements CoursesRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<List<CourseModel>> getCourses({String? search, String? language, bool? isActive, int page = 1, int limit = 50}) async => [];
   @override

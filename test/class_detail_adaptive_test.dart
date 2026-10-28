@@ -24,18 +24,22 @@ class _ApiClient extends Fake implements ApiClient {
 }
 
 class _AuthRepository implements AuthRepository {
+  _AuthRepository({this.roles = const ['student']});
+
+  final List<String> roles;
+
   @override
   Future<bool> isLoggedIn() async => true;
 
   @override
-  Future<UserEntity> getMe() async => const UserEntity(
+  Future<UserEntity> getMe() async => UserEntity(
     id: 'student-1',
     userCode: 'HV001',
     fullName: 'Học viên',
     status: 'ACTIVE',
     isFirstLogin: false,
-    roles: ['student'],
-    permissions: [],
+    roles: roles,
+    permissions: const [],
   );
 
   @override
@@ -43,6 +47,9 @@ class _AuthRepository implements AuthRepository {
 }
 
 class _ClassesRepository implements ClassesRepository {
+  Map<String, Object?>? updatedClass;
+  bool failUpdate = false;
+
   @override
   Future<ClassModel> getClassDetail(String id) async => ClassModel(
     id: id,
@@ -68,6 +75,36 @@ class _ClassesRepository implements ClassesRepository {
       ),
     ],
   );
+
+  @override
+  Future<ClassModel> updateClass(
+    String id, {
+    String? code,
+    String? name,
+    String? roomId,
+    String? mainTeacherId,
+    String? assistantTeacherId,
+    String? status,
+    String? startDate,
+    List<String>? scheduleDays,
+    String? startTime,
+    String? endTime,
+    int? maxCapacity,
+    double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
+    String? notes,
+  }) async {
+    if (failUpdate) throw StateError('Không lưu được lớp');
+    updatedClass = {
+      'id': id,
+      'name': name,
+      'status': status,
+      'registrationOpenAt': registrationOpenAt,
+      'registrationCloseAt': registrationCloseAt,
+    };
+    return getClassDetail(id);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -114,4 +151,82 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  for (final width in [320.0, 1200.0]) {
+    testWidgets('quản trị sửa lớp ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final authBloc = AuthBloc(
+        authRepository: _AuthRepository(roles: ['super_admin']),
+      );
+      final repository = _ClassesRepository();
+      final classesBloc = ClassesBloc(repository: repository);
+      addTearDown(authBloc.close);
+      addTearDown(classesBloc.close);
+      authBloc.add(CheckAuthStatusEvent());
+      await authBloc.stream.firstWhere((state) => state is AuthenticatedState);
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthBloc>.value(value: authBloc),
+            BlocProvider<ClassesBloc>.value(value: classesBloc),
+          ],
+          child: const MaterialApp(home: ClassDetailScreen(classId: 'class-1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Sửa thông tin lớp'));
+      await tester.pumpAndSettle();
+      expect(find.text('Thời gian nhận đăng ký'), findsOneWidget);
+      await tester.tap(find.text('Lưu thông tin lớp'));
+      await tester.pumpAndSettle();
+      expect(repository.updatedClass?['id'], 'class-1');
+      expect(repository.updatedClass?['registrationOpenAt'], isNotNull);
+      expect(repository.updatedClass?['registrationCloseAt'], isNotNull);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('Mobile giữ form sửa lớp khi API lỗi và bàn phím mở', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 650);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+    final authBloc = AuthBloc(
+      authRepository: _AuthRepository(roles: ['super_admin']),
+    );
+    final repository = _ClassesRepository()..failUpdate = true;
+    final classesBloc = ClassesBloc(repository: repository);
+    addTearDown(authBloc.close);
+    addTearDown(classesBloc.close);
+    authBloc.add(CheckAuthStatusEvent());
+    await authBloc.stream.firstWhere((state) => state is AuthenticatedState);
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ClassesBloc>.value(value: classesBloc),
+        ],
+        child: const MaterialApp(home: ClassDetailScreen(classId: 'class-1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Sửa thông tin lớp'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'opening edit sheet');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'keyboard opened');
+    await tester.ensureVisible(find.text('Lưu thông tin lớp'));
+    await tester.tap(find.text('Lưu thông tin lớp'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Không lưu được lớp'), findsOneWidget);
+    expect(find.text('Sửa thông tin lớp'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

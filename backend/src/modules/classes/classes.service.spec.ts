@@ -205,6 +205,16 @@ describe('ClassesService', () => {
       ).rejects.toThrow('phải khác nhau');
     });
 
+    it('does not open enrollment without a complete class offering', async () => {
+      await prepareCatalog();
+      await expect(
+        service.create(
+          { ...baseCreate, status: ClassStatus.OPEN_FOR_ENROLLMENT },
+          adminActor,
+        ),
+      ).rejects.toThrow('Cần có thời gian đăng ký');
+    });
+
     it.each([
       [{ ...baseCreate, startTime: '19:30' }, 'Giờ kết thúc phải sau'],
       [{ ...baseCreate, scheduleDays: [] }, 'ít nhất một ngày học'],
@@ -454,6 +464,65 @@ describe('ClassesService', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('update class offering', () => {
+    const current = {
+      ...mockClass,
+      status: ClassStatus.PLANNING,
+      course: { ...mockCourse, isActive: true, publicationStatus: 'PUBLISHED' },
+      room: mockRoom,
+      registrationOpenAt: new Date('2026-10-01'),
+      registrationCloseAt: new Date('2026-10-31'),
+      students: [{ status: EnrollmentStatus.ENROLLED }],
+      sessions: [],
+    };
+
+    it('blocks timetable changes that would leave generated sessions stale', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce(current);
+      await expect(
+        service.update('class-1', { startTime: '19:00' }, adminActor),
+      ).rejects.toThrow('điều chỉnh từng buổi học');
+      expect(mockPrismaService.class.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks reducing capacity below active enrollment', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce(current);
+      await expect(
+        service.update('class-1', { maxCapacity: 0 }, adminActor),
+      ).rejects.toThrow('thấp hơn số học viên');
+    });
+
+    it('requires a complete offering before opening enrollment', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce({
+        ...current,
+        roomId: null,
+      });
+      await expect(
+        service.update(
+          'class-1',
+          { status: ClassStatus.OPEN_FOR_ENROLLMENT },
+          adminActor,
+        ),
+      ).rejects.toThrow('Cần có thời gian đăng ký');
+    });
+
+    it('updates the registration period without changing sessions', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce(current);
+      mockPrismaService.class.update.mockResolvedValueOnce({
+        ...current,
+        registrationCloseAt: new Date('2026-11-01'),
+      });
+      await service.update(
+        'class-1',
+        { registrationCloseAt: '2026-11-01' },
+        adminActor,
+      );
+      expect(mockPrismaService.class.update).toHaveBeenCalledWith({
+        where: { id: 'class-1' },
+        data: { registrationCloseAt: new Date('2026-11-01') },
+      });
     });
   });
 

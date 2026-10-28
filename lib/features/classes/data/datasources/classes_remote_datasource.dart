@@ -51,6 +51,8 @@ abstract class ClassesRemoteDataSource {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   });
 
@@ -221,6 +223,8 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async {
     final body = <String, dynamic>{};
@@ -238,6 +242,12 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
     if (endTime != null) body['endTime'] = endTime;
     if (maxCapacity != null) body['maxCapacity'] = maxCapacity;
     if (tuitionFee != null) body['tuitionFee'] = tuitionFee;
+    if (registrationOpenAt != null) {
+      body['registrationOpenAt'] = registrationOpenAt;
+    }
+    if (registrationCloseAt != null) {
+      body['registrationCloseAt'] = registrationCloseAt;
+    }
     if (notes != null) body['notes'] = notes;
 
     final response = await apiClient.patch(

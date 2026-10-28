@@ -140,6 +140,8 @@ class FakeClassesRepository implements ClassesRepository {
     int totalSessions = 24,
     int maxCapacity = 20,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async => throw UnimplementedError();
   @override
@@ -157,6 +159,8 @@ class FakeClassesRepository implements ClassesRepository {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async => throw UnimplementedError();
   @override
@@ -301,6 +305,8 @@ class FakeReportsRepository implements ReportsRepository {
 }
 
 class FakeCoursesRepository implements CoursesRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<List<CourseModel>> getCourses({
     String? search,

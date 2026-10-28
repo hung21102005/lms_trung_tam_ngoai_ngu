@@ -322,3 +322,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 
 - Existing class create form now exposes opening/closing dates for enrollment on Mobile and Desktop, using the same Bloc/Repository/API. Class detail shows the saved period to staff. The Mobile form keeps its one-column layout and scrollable action with keyboard inset.
 - Focused analyzer: **0 issues**; class create/list/detail widget regression: **28/28 pass** across 320–1200 px; `flutter build web --no-wasm-dry-run` passed. Backend tests: **153/153 pass**; local additive migration applied. Live class creation, physical device interaction and screenshot comparison remain **unverified**. Class edit UI and public offering flow remain pending.
+
+### Checkpoint 2026-10-28 — Adaptive class editor
+
+- Admin/academic staff can edit class offering details from class detail. Mobile uses a keyboard-aware sheet; Desktop uses a dialog. The form keeps values and shows an API error without closing. It reuses `ClassesRepository`; no new endpoint. The parent detail page does not shrink behind the keyboard.
+- Focused analyzer: **0 issues**; class create/list/detail/edit widget suite: **31/31 pass** at 320–1200 px including keyboard and API error. Web build passed; backend 162/162 tests and build passed. Physical device and live HTTP write flow remain **unverified**.
+- Full Flutter suite was attempted but did **not** pass: 45 failures were already reported before an unrelated teacher report test stalled. A stress test independently failed because its GetIt fixture lacks `ApiClient`, among other stale assumptions. Keep full regression pending; do not mark Adaptive UI complete.

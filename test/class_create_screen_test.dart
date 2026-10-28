@@ -74,6 +74,8 @@ class FakeClassesRepository implements ClassesRepository {
     String? endTime,
     int? maxCapacity,
     double? tuitionFee,
+    String? registrationOpenAt,
+    String? registrationCloseAt,
     String? notes,
   }) async {
     throw UnimplementedError();
