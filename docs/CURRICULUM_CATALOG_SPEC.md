@@ -50,3 +50,5 @@ Màn hình Admin chương trình đã nối API cho danh sách, tạo/sửa và 
 Checkpoint tiếp theo bổ sung API và form sửa học phần/bài học. Việc tạo học phần/bài học bằng giao diện, bổ sung tài liệu học thuật, rà soát nội dung seed và kiểm thử publication qua HTTP vẫn chưa hoàn tất.
 
 Form tạo học phần và bài học đã được nối với API tạo hiện có. Phần tài liệu học thuật, kiểm thử HTTP/DB và rà soát chất lượng nội dung seed vẫn còn cần thực hiện trước khi công bố.
+
+Đã có luồng chọn tệp thật và gắn tài liệu vào bài học qua API upload/tài liệu hiện hữu. Chưa kiểm chứng Firebase Storage và DB trực tiếp; nội dung seed vẫn là đề cương cần biên tập, không tự động công bố.

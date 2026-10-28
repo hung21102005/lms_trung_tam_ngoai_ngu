@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 
 abstract class CoursesEvent extends Equatable {
@@ -156,4 +158,23 @@ class CreateLessonEvent extends CoursesEvent {
 
   @override
   List<Object?> get props => [courseId, moduleId, values];
+}
+
+class UploadLessonMaterialEvent extends CoursesEvent {
+  final String courseId;
+  final String lessonId;
+  final String title;
+  final String fileName;
+  final Uint8List bytes;
+
+  const UploadLessonMaterialEvent({
+    required this.courseId,
+    required this.lessonId,
+    required this.title,
+    required this.fileName,
+    required this.bytes,
+  });
+
+  @override
+  List<Object?> get props => [courseId, lessonId, title, fileName, bytes];
 }

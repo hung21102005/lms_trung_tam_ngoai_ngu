@@ -311,3 +311,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Added create actions inside each course level/module. Mobile sheets and Desktop dialogs reuse the academic editor pattern, `CoursesBloc` and existing POST APIs. Archived courses and users without academic write permission do not see these actions; backend also rejects create/edit for archived courses.
 - Focused analyzer: **0 issues**. Combined curriculum/course widget suite: **36/36 pass**; backend suite: **144/144 pass**, build and lint pass (12 existing warnings); `flutter build web --no-wasm-dry-run`: **pass**. Live API/DB, device and Desktop screenshot QA remain **unverified**.
 - Lesson materials and detailed academic content review remain pending before the admissions work can advance safely.
+
+### Checkpoint 2026-10-28 — Admin lesson material upload
+
+- Admin/academic staff can pick a local file for a lesson in course detail. The Mobile sheet has SafeArea, keyboard-aware scrolling, name/file validation and a 50 MB limit. Shared repository first uploads through existing `/upload`, then creates the lesson material record through the existing API. Desktop uses a dialog; archived/read-only courses hide the action.
+- Focused analyzer: **0 issues**; curriculum/course/material widget suite: **38/38 pass**; `flutter build web --no-wasm-dry-run`: **pass**; backend suite: **145/145 pass**, build/lint pass with 12 existing warnings. Real file picker, Firebase Storage, live DB/API, physical device visuals and Desktop screenshots remain **unverified**.
+- Academic seed review and HTTP publication/catalog checks remain pending before class offering work.

@@ -349,4 +349,25 @@ void main() {
     expect(find.text('Thêm học phần'), findsNothing);
     expect(find.byTooltip('Sửa bài học'), findsNothing);
   });
+
+  testWidgets('Mobile tài liệu yêu cầu chọn tệp trước khi lưu', (tester) async {
+    tester.view.physicalSize = const Size(375, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_app(_Repository()));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -580));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Học phần phát triển'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -260));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thêm tài liệu').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lưu tài liệu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nhập tên tài liệu và chọn tệp từ máy'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -77,6 +77,21 @@ describe('CoursesService', () => {
   });
 
   describe('curriculum editing', () => {
+    it('rejects adding materials to an archived course', async () => {
+      mockPrismaService.lesson.findUnique.mockResolvedValueOnce({
+        module: {
+          level: { course: { publicationStatus: PublicationStatus.ARCHIVED } },
+        },
+      });
+      await expect(
+        service.createLessonMaterial('lesson-1', {
+          title: 'Slide',
+          fileUrl: 'https://example.com/slide.pdf',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.lessonMaterial.create).not.toHaveBeenCalled();
+    });
+
     it('rejects creating a module in an archived course', async () => {
       mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({
         course: { publicationStatus: PublicationStatus.ARCHIVED },

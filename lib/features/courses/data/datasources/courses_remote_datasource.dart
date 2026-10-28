@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/course_model.dart';
@@ -73,6 +77,13 @@ abstract class CoursesRemoteDataSource {
     required String fileUrl,
     String fileType = 'DOCUMENT',
     int? fileSizeBytes,
+  });
+
+  Future<LessonMaterialModel> uploadLessonMaterial(
+    String lessonId, {
+    required String title,
+    required String fileName,
+    required Uint8List bytes,
   });
 }
 
@@ -348,5 +359,54 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       return LessonMaterialModel.fromJson(data);
     }
     throw Exception('Không thể thêm tài liệu');
+  }
+
+  @override
+  Future<LessonMaterialModel> uploadLessonMaterial(
+    String lessonId, {
+    required String title,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    final file = MultipartFile.fromBytes(
+      bytes,
+      filename: fileName,
+      contentType: MultipartFile.lookupMediaType(fileName),
+    );
+    final response = await apiClient.post(
+      ApiEndpoints.uploadFile,
+      data: FormData.fromMap({'file': file, 'folder': 'materials'}),
+      options: Options(contentType: Headers.multipartFormDataContentType),
+    );
+    final payload = response is Map<String, dynamic>
+        ? response['data'] ?? response
+        : response;
+    if (payload is! Map || payload['url'] is! String) {
+      throw const FormatException(
+        'Không nhận được đường dẫn tài liệu sau tải lên',
+      );
+    }
+    final extension = fileName.split('.').last.toLowerCase();
+    final fileType = switch (extension) {
+      'pdf' => 'PDF',
+      'mp3' || 'wav' || 'm4a' => 'AUDIO',
+      'mp4' => 'VIDEO',
+      'jpg' || 'jpeg' || 'png' || 'webp' => 'IMAGE',
+      'doc' ||
+      'docx' ||
+      'xls' ||
+      'xlsx' ||
+      'ppt' ||
+      'pptx' ||
+      'txt' => 'DOCUMENT',
+      _ => 'OTHER',
+    };
+    return createMaterial(
+      lessonId,
+      title: title,
+      fileUrl: payload['url'] as String,
+      fileType: fileType,
+      fileSizeBytes: bytes.length,
+    );
   }
 }

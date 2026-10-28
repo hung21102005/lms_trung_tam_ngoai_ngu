@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../domain/repositories/courses_repository.dart';
 import '../datasources/courses_remote_datasource.dart';
 import '../models/course_model.dart';
@@ -154,4 +156,17 @@ class CoursesRepositoryImpl implements CoursesRepository {
       fileSizeBytes: fileSizeBytes,
     );
   }
+
+  @override
+  Future<LessonMaterialModel> uploadLessonMaterial(
+    String lessonId, {
+    required String title,
+    required String fileName,
+    required Uint8List bytes,
+  }) => remoteDataSource.uploadLessonMaterial(
+    lessonId,
+    title: title,
+    fileName: fileName,
+    bytes: bytes,
+  );
 }

@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -299,6 +302,43 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620, maxHeight: 740),
             child: editor,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showMaterialUpload(LessonModel lesson) async {
+    final bloc = context.read<CoursesBloc>();
+    final sheet = BlocProvider.value(
+      value: bloc,
+      child: _MaterialUploadSheet(
+        onSubmit: (title, fileName, bytes) => bloc.add(
+          UploadLessonMaterialEvent(
+            courseId: widget.courseId,
+            lessonId: lesson.id,
+            title: title,
+            fileName: fileName,
+            bytes: bytes,
+          ),
+        ),
+      ),
+    );
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => sheet,
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: sheet,
           ),
         ),
       );
@@ -630,11 +670,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           '${lesson.durationMinutes} phút · ${lesson.materials.length} tài liệu',
                         ),
                         trailing: _canEditCurriculum
-                            ? IconButton(
-                                tooltip: 'Sửa bài học',
-                                icon: const Icon(Icons.edit_outlined),
-                                onPressed: () =>
-                                    _showCurriculumEditor(lesson: lesson),
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Thêm tài liệu',
+                                    icon: const Icon(Icons.attach_file),
+                                    onPressed: () =>
+                                        _showMaterialUpload(lesson),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Sửa bài học',
+                                    icon: const Icon(Icons.edit_outlined),
+                                    onPressed: () =>
+                                        _showCurriculumEditor(lesson: lesson),
+                                  ),
+                                ],
                               )
                             : const Icon(Icons.chevron_right_rounded),
                         onTap: () => Navigator.of(context).push(
@@ -1051,10 +1102,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           ],
         ),
         trailing: _canEditCurriculum
-            ? IconButton(
-                tooltip: 'Sửa bài học',
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                onPressed: () => _showCurriculumEditor(lesson: lesson),
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Thêm tài liệu',
+                    icon: const Icon(Icons.attach_file, size: 18),
+                    onPressed: () => _showMaterialUpload(lesson),
+                  ),
+                  IconButton(
+                    tooltip: 'Sửa bài học',
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _showCurriculumEditor(lesson: lesson),
+                  ),
+                ],
               )
             : const Icon(Icons.arrow_forward_ios_rounded, size: 14),
         onTap: () {
@@ -1590,6 +1651,150 @@ class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _MaterialUploadSheet extends StatefulWidget {
+  final void Function(String title, String fileName, Uint8List bytes) onSubmit;
+
+  const _MaterialUploadSheet({required this.onSubmit});
+
+  @override
+  State<_MaterialUploadSheet> createState() => _MaterialUploadSheetState();
+}
+
+class _MaterialUploadSheetState extends State<_MaterialUploadSheet> {
+  final _title = TextEditingController();
+  String? _fileName;
+  Uint8List? _bytes;
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const [
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'txt',
+          'zip',
+          'rar',
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'mp3',
+          'm4a',
+          'wav',
+          'mp4',
+        ],
+      );
+      if (files.isEmpty || !mounted) return;
+      final chosen = files.first;
+      final bytes = await chosen.readAsBytes();
+      if (!mounted) return;
+      if (bytes.length > 50 * 1024 * 1024) {
+        setState(() => _error = 'Tệp phải nhỏ hơn 50 MB');
+        return;
+      }
+      setState(() {
+        _fileName = chosen.name;
+        _bytes = bytes;
+        _error = null;
+        if (_title.text.trim().isEmpty) _title.text = chosen.name;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = 'Không chọn được tệp: $error');
+    }
+  }
+
+  void _submit() {
+    if (_saving) return;
+    if (_title.text.trim().isEmpty || _bytes == null || _fileName == null) {
+      setState(() => _error = 'Nhập tên tài liệu và chọn tệp từ máy');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    widget.onSubmit(_title.text.trim(), _fileName!, _bytes!);
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<CoursesBloc, CoursesState>(
+    listener: (context, state) {
+      if (!_saving) return;
+      if (state is CourseOperationSuccess) {
+        Navigator.pop(context);
+      } else if (state is CoursesError) {
+        setState(() {
+          _saving = false;
+          _error = state.message;
+        });
+      }
+    },
+    child: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Thêm tài liệu bài học',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _title,
+                decoration: const InputDecoration(
+                  labelText: 'Tên tài liệu *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: Text(_fileName ?? 'Chọn tệp từ máy'),
+              ),
+              const Text(
+                'PDF, Office, TXT, ZIP/RAR, ảnh, âm thanh hoặc MP4 · tối đa 50 MB',
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: _saving ? null : _submit,
+                child: Text(_saving ? 'Đang tải lên...' : 'Lưu tài liệu'),
+              ),
+            ],
           ),
         ),
       ),

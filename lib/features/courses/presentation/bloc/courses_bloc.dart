@@ -17,6 +17,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<UpdateLessonEvent>(_onUpdateLesson);
     on<CreateModuleEvent>(_onCreateModule);
     on<CreateLessonEvent>(_onCreateLesson);
+    on<UploadLessonMaterialEvent>(_onUploadLessonMaterial);
   }
 
   Future<void> _onFetchCourses(
@@ -170,6 +171,24 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         durationMinutes: event.values['durationMinutes'] as int,
       );
       emit(const CourseOperationSuccess('Đã thêm bài học'));
+      add(FetchCourseDetail(event.courseId));
+    } catch (error) {
+      emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onUploadLessonMaterial(
+    UploadLessonMaterialEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.uploadLessonMaterial(
+        event.lessonId,
+        title: event.title,
+        fileName: event.fileName,
+        bytes: event.bytes,
+      );
+      emit(const CourseOperationSuccess('Đã thêm tài liệu bài học'));
       add(FetchCourseDetail(event.courseId));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));

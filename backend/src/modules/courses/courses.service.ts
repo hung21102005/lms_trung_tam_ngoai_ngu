@@ -674,10 +674,27 @@ export class CoursesService {
   async createLessonMaterial(lessonId: string, dto: CreateLessonMaterialDto) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
+      include: {
+        module: {
+          include: {
+            level: {
+              include: { course: { select: { publicationStatus: true } } },
+            },
+          },
+        },
+      },
     });
 
     if (!lesson) {
       throw new NotFoundException(`Không tìm thấy bài học với ID: ${lessonId}`);
+    }
+    if (
+      lesson.module.level.course.publicationStatus ===
+      PublicationStatus.ARCHIVED
+    ) {
+      throw new BadRequestException(
+        'Không thể thêm tài liệu vào khóa đã lưu trữ',
+      );
     }
 
     return this.prisma.lessonMaterial.create({

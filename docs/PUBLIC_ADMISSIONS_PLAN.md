@@ -114,3 +114,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Backend từ chối **tạo lẫn sửa** học phần/bài học khi khóa đã lưu trữ; giao diện ẩn các thao tác này cho khóa lưu trữ và người không đủ quyền. Không có migration hoặc seed mới.
 - Backend build **đạt**, lint **đạt** với 12 cảnh báo cũ ngoài phạm vi, toàn bộ backend test **144/144 đạt**. Flutter analyzer phạm vi thay đổi **0 issues**, widget regression chương trình/khóa **36/36 đạt**; `flutter build web --no-wasm-dry-run` **đạt**.
 - **Tiếp theo:** quản lý tài liệu bài học, rà soát nội dung seed, kiểm thử HTTP/DB của luồng công bố và catalog; sau đó mới chuyển hoàn toàn sang mở lớp. API chạy thật và thiết bị thật chưa kiểm chứng.
+
+## Checkpoint tài liệu bài học (2026-10-28)
+
+- Trong chi tiết khóa Admin/học vụ có thể chọn tệp từ máy cho bài học. Client dùng `/upload` hiện có để tải tệp thật, sau đó `POST /lessons/:id/materials` lưu URL, loại tệp và kích thước vào Database. Form kiểm tra tên, tệp và giới hạn 50 MB; hỗ trợ PDF, Office, TXT, ZIP/RAR, ảnh, âm thanh, MP4. Khi tải/lưu lỗi, form giữ dữ liệu để thử lại.
+- Backend chặn thêm tài liệu vào khóa đã lưu trữ. Không thêm API hoặc migration. Test datasource xác nhận multipart upload trước khi tạo bản ghi tài liệu; widget test xác nhận form không cho lưu khi thiếu tệp. **Chưa kiểm chứng thực tế** FilePicker/Firebase Storage/DB trên thiết bị và Backend đang chạy; việc upload thành công nhưng lưu bản ghi thất bại có thể để lại tệp chưa được liên kết và cần cơ chế dọn sau.
+- Flutter analyzer phạm vi thay đổi **0 issues**, widget regression chương trình/khóa/tài liệu **38/38 đạt**, `flutter build web --no-wasm-dry-run` **đạt**. Backend build **đạt**, lint **đạt** với 12 cảnh báo cũ, test backend **145/145 đạt**.
+- **Điểm tiếp tục:** rà soát nội dung seed và luồng publication qua HTTP/DB, sau đó hoàn thiện mở lớp (lịch, phòng, giáo viên, học phí, cửa sổ đăng ký). Website công khai và registration/CRM vẫn Pending.

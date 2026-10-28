@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../data/models/course_model.dart';
 
 abstract class CoursesRepository {
@@ -71,5 +73,12 @@ abstract class CoursesRepository {
     required String fileUrl,
     String fileType = 'DOCUMENT',
     int? fileSizeBytes,
+  });
+
+  Future<LessonMaterialModel> uploadLessonMaterial(
+    String lessonId, {
+    required String title,
+    required String fileName,
+    required Uint8List bytes,
   });
 }
