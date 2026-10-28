@@ -305,3 +305,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Course detail adds edit actions for existing modules and lessons. Mobile opens a keyboard-aware sheet; Desktop opens a dialog. Both reuse `CoursesBloc` and refresh the course after a successful save. Backend adds role-guarded `PATCH /modules/:id` and `PATCH /lessons/:id` without schema changes.
 - Backend build: **pass**; backend test suite: **142/142 pass**; lint exits successfully with 12 existing warnings outside changed files. Focused Flutter analyzer: **0 issues**; combined curriculum/course widget suite: **34/34 pass**; `flutter build web --no-wasm-dry-run`: **pass**. Live API, device interaction and Desktop screenshot comparison are **unverified**.
 - Mobile create flows for modules/lessons and materials, academic content review, HTTP publication workflow and wider Adaptive UI remain pending.
+
+### Checkpoint 2026-10-28 — Admin Mobile module/lesson creation
+
+- Added create actions inside each course level/module. Mobile sheets and Desktop dialogs reuse the academic editor pattern, `CoursesBloc` and existing POST APIs. Archived courses and users without academic write permission do not see these actions; backend also rejects create/edit for archived courses.
+- Focused analyzer: **0 issues**. Combined curriculum/course widget suite: **36/36 pass**; backend suite: **144/144 pass**, build and lint pass (12 existing warnings); `flutter build web --no-wasm-dry-run`: **pass**. Live API/DB, device and Desktop screenshot QA remain **unverified**.
+- Lesson materials and detailed academic content review remain pending before the admissions work can advance safely.

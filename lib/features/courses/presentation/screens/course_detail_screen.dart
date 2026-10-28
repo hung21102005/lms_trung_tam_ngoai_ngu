@@ -31,6 +31,13 @@ class CourseDetailScreen extends StatefulWidget {
 }
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
+  bool get _canEditCurriculum {
+    final state = context.read<CoursesBloc>().state;
+    return widget.canEditAcademicLevel &&
+        state is CourseDetailLoaded &&
+        state.course.publicationStatus != 'ARCHIVED';
+  }
+
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'vi_VN',
     symbol: 'đ',
@@ -228,6 +235,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Future<void> _showCurriculumEditor({
     ModuleModel? module,
     LessonModel? lesson,
+    String? newLevelId,
+    String? newModuleId,
+    int nextOrder = 1,
   }) async {
     final bloc = context.read<CoursesBloc>();
     final editor = BlocProvider.value(
@@ -235,6 +245,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       child: _CurriculumItemEditor(
         module: module,
         lesson: lesson,
+        creatingLesson: newModuleId != null,
+        nextOrder: nextOrder,
         onSubmit: (changes) {
           if (lesson != null) {
             bloc.add(
@@ -250,6 +262,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 courseId: widget.courseId,
                 moduleId: module.id,
                 changes: changes,
+              ),
+            );
+          } else if (newLevelId != null) {
+            bloc.add(
+              CreateModuleEvent(
+                courseId: widget.courseId,
+                levelId: newLevelId,
+                values: changes,
+              ),
+            );
+          } else if (newModuleId != null) {
+            bloc.add(
+              CreateLessonEvent(
+                courseId: widget.courseId,
+                moduleId: newModuleId,
+                values: changes,
               ),
             );
           }
@@ -534,11 +562,24 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               Text('${level.modules.length} học phần'),
             ],
           ),
-          if (widget.canEditAcademicLevel)
-            TextButton.icon(
-              onPressed: () => _showEditLevelDialog(level),
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Sửa cấp độ'),
+          if (_canEditCurriculum)
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showEditLevelDialog(level),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Sửa cấp độ'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showCurriculumEditor(
+                    newLevelId: level.id,
+                    nextOrder: level.modules.length + 1,
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Thêm học phần'),
+                ),
+              ],
             ),
           const Divider(height: 24),
           if (level.modules.isEmpty)
@@ -555,13 +596,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 ),
                 subtitle: Text('${module.lessons.length} bài học'),
                 children: [
-                  if (widget.canEditAcademicLevel)
+                  if (_canEditCurriculum)
                     Align(
                       alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () => _showCurriculumEditor(module: module),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Sửa học phần'),
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () =>
+                                _showCurriculumEditor(module: module),
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Sửa học phần'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showCurriculumEditor(
+                              newModuleId: module.id,
+                              nextOrder: module.lessons.length + 1,
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Thêm bài học'),
+                          ),
+                        ],
                       ),
                     ),
                   if (module.lessons.isEmpty)
@@ -574,7 +629,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         subtitle: Text(
                           '${lesson.durationMinutes} phút · ${lesson.materials.length} tài liệu',
                         ),
-                        trailing: widget.canEditAcademicLevel
+                        trailing: _canEditCurriculum
                             ? IconButton(
                                 tooltip: 'Sửa bài học',
                                 icon: const Icon(Icons.edit_outlined),
@@ -819,13 +874,26 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ),
             ),
             children: [
-              if (widget.canEditAcademicLevel)
+              if (_canEditCurriculum)
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => _showEditLevelDialog(level),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Sửa cấp độ'),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _showEditLevelDialog(level),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Sửa cấp độ'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _showCurriculumEditor(
+                          newLevelId: level.id,
+                          nextOrder: level.modules.length + 1,
+                        ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Thêm học phần'),
+                      ),
+                    ],
                   ),
                 ),
               const Divider(height: 1),
@@ -896,11 +964,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   '${module.lessons.length} bài học',
                   style: AppTextStyles.caption(context),
                 ),
-                if (widget.canEditAcademicLevel)
+                if (_canEditCurriculum)
                   IconButton(
                     tooltip: 'Sửa học phần',
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     onPressed: () => _showCurriculumEditor(module: module),
+                  ),
+                if (_canEditCurriculum)
+                  IconButton(
+                    tooltip: 'Thêm bài học',
+                    icon: const Icon(Icons.add, size: 18),
+                    onPressed: () => _showCurriculumEditor(
+                      newModuleId: module.id,
+                      nextOrder: module.lessons.length + 1,
+                    ),
                   ),
               ],
             ),
@@ -973,7 +1050,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             ],
           ],
         ),
-        trailing: widget.canEditAcademicLevel
+        trailing: _canEditCurriculum
             ? IconButton(
                 tooltip: 'Sửa bài học',
                 icon: const Icon(Icons.edit_outlined, size: 18),
@@ -1350,11 +1427,15 @@ class _EditLevelFormState extends State<_EditLevelForm> {
 class _CurriculumItemEditor extends StatefulWidget {
   final ModuleModel? module;
   final LessonModel? lesson;
+  final bool creatingLesson;
+  final int nextOrder;
   final ValueChanged<Map<String, dynamic>> onSubmit;
 
   const _CurriculumItemEditor({
     this.module,
     this.lesson,
+    this.creatingLesson = false,
+    this.nextOrder = 1,
     required this.onSubmit,
   });
 
@@ -1370,7 +1451,8 @@ class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
   late final TextEditingController _duration;
   bool _saving = false;
 
-  bool get _isLesson => widget.lesson != null;
+  bool get _isLesson => widget.lesson != null || widget.creatingLesson;
+  bool get _isNew => widget.lesson == null && widget.module == null;
 
   @override
   void initState() {
@@ -1382,7 +1464,8 @@ class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
       text: widget.lesson?.content ?? widget.module?.description ?? '',
     );
     _order = TextEditingController(
-      text: (widget.lesson?.order ?? widget.module?.order ?? 1).toString(),
+      text: (widget.lesson?.order ?? widget.module?.order ?? widget.nextOrder)
+          .toString(),
     );
     _duration = TextEditingController(
       text: widget.lesson?.durationMinutes.toString() ?? '90',
@@ -1437,7 +1520,7 @@ class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  _isLesson ? 'Sửa bài học' : 'Sửa học phần',
+                  '${_isNew ? 'Thêm' : 'Sửa'} ${_isLesson ? 'bài học' : 'học phần'}',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
@@ -1497,7 +1580,13 @@ class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
                 const SizedBox(height: 20),
                 FilledButton(
                   onPressed: _saving ? null : _submit,
-                  child: Text(_saving ? 'Đang lưu...' : 'Lưu thay đổi'),
+                  child: Text(
+                    _saving
+                        ? 'Đang lưu...'
+                        : _isNew
+                        ? 'Tạo ${_isLesson ? 'bài học' : 'học phần'}'
+                        : 'Lưu thay đổi',
+                  ),
                 ),
               ],
             ),

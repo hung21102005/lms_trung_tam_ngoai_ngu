@@ -9,6 +9,7 @@ class CourseModel extends Equatable {
   final String language;
   final String? thumbnailUrl;
   final bool isActive;
+  final String publicationStatus;
   final int levelsCount;
   final int classesCount;
   final List<CourseLevelModel> levels;
@@ -24,6 +25,7 @@ class CourseModel extends Equatable {
     this.language = 'English',
     this.thumbnailUrl,
     this.isActive = true,
+    this.publicationStatus = 'DRAFT',
     this.levelsCount = 0,
     this.classesCount = 0,
     this.levels = const [],
@@ -55,6 +57,7 @@ class CourseModel extends Equatable {
       language: json['language'] as String? ?? 'English',
       thumbnailUrl: json['thumbnailUrl'] as String?,
       isActive: json['isActive'] as bool? ?? true,
+      publicationStatus: json['publicationStatus'] as String? ?? 'DRAFT',
       levelsCount: lCount,
       classesCount: cCount,
       levels: parsedLevels,
@@ -77,6 +80,7 @@ class CourseModel extends Equatable {
       'language': language,
       'thumbnailUrl': thumbnailUrl,
       'isActive': isActive,
+      'publicationStatus': publicationStatus,
     };
   }
 
@@ -90,6 +94,7 @@ class CourseModel extends Equatable {
     language,
     thumbnailUrl,
     isActive,
+    publicationStatus,
     levelsCount,
     classesCount,
     levels,

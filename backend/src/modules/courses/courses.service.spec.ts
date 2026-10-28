@@ -77,6 +77,26 @@ describe('CoursesService', () => {
   });
 
   describe('curriculum editing', () => {
+    it('rejects creating a module in an archived course', async () => {
+      mockPrismaService.courseLevel.findUnique.mockResolvedValueOnce({
+        course: { publicationStatus: PublicationStatus.ARCHIVED },
+      });
+      await expect(
+        service.createModule('level-1', { title: 'Học phần mới' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.module.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects creating a lesson in an archived course', async () => {
+      mockPrismaService.module.findUnique.mockResolvedValueOnce({
+        level: { course: { publicationStatus: PublicationStatus.ARCHIVED } },
+      });
+      await expect(
+        service.createLesson('module-1', { title: 'Bài học mới' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.lesson.create).not.toHaveBeenCalled();
+    });
+
     it('updates a module while its course is editable', async () => {
       mockPrismaService.module.findUnique.mockResolvedValueOnce({
         level: { course: { publicationStatus: PublicationStatus.DRAFT } },

@@ -107,3 +107,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Chi tiết khóa học cho phép mở form sửa học phần/bài học. Mobile dùng sheet có SafeArea, cuộn theo bàn phím; Desktop dùng dialog. Dữ liệu đi qua `CoursesBloc`/repository rồi tải lại chi tiết khóa sau khi lưu. Form giữ nội dung nhập khi API lỗi để có thể thử lại.
 - Backend `npm run build`: **đạt**; `npm run lint`: **đạt** với 12 cảnh báo đã có ngoài phần vừa sửa; `npm run test`: **142/142 đạt**. Scoped Flutter analyzer: **0 issues**; widget regression chương trình/khóa học: **34/34 đạt**; `flutter build web --no-wasm-dry-run`: **đạt**.
 - Còn thiếu giao diện **tạo** học phần/bài học, quản lý tài liệu học thuật và rà soát nội dung seed. Chưa kiểm chứng HTTP/DB qua ứng dụng đang chạy hoặc thiết bị thật. Tiếp tục các mục đó trước khi công bố catalog.
+
+## Checkpoint tạo nội dung học thuật (2026-10-28)
+
+- Chi tiết khóa học có nút tạo học phần trong từng cấp độ và tạo bài học trong từng học phần. Form Mobile/Desktop dùng chung dữ liệu qua `CoursesBloc` và API POST sẵn có; có validation tiêu đề, thứ tự, thời lượng bài học và trạng thái đang lưu. Sau khi tạo, màn hình tải lại khóa học từ server.
+- Backend từ chối **tạo lẫn sửa** học phần/bài học khi khóa đã lưu trữ; giao diện ẩn các thao tác này cho khóa lưu trữ và người không đủ quyền. Không có migration hoặc seed mới.
+- Backend build **đạt**, lint **đạt** với 12 cảnh báo cũ ngoài phạm vi, toàn bộ backend test **144/144 đạt**. Flutter analyzer phạm vi thay đổi **0 issues**, widget regression chương trình/khóa **36/36 đạt**; `flutter build web --no-wasm-dry-run` **đạt**.
+- **Tiếp theo:** quản lý tài liệu bài học, rà soát nội dung seed, kiểm thử HTTP/DB của luồng công bố và catalog; sau đó mới chuyển hoàn toàn sang mở lớp. API chạy thật và thiết bị thật chưa kiểm chứng.

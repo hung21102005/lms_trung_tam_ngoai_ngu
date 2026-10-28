@@ -48,3 +48,5 @@ Import theo code cố định: `create` nếu chưa có, `skip` nếu đã có; 
 Màn hình Admin chương trình đã nối API cho danh sách, tạo/sửa và các bước duyệt/công khai. Trong chi tiết chương trình đã có tạo/gắn khóa, biên tập dữ liệu công khai và duyệt khóa qua API hiện có; chi tiết khóa có form sửa cấp độ. Vẫn cần biên tập học phần/bài học, kiểm thử HTTP và rà soát nội dung học thuật trước khi công bố seed nháp.
 
 Checkpoint tiếp theo bổ sung API và form sửa học phần/bài học. Việc tạo học phần/bài học bằng giao diện, bổ sung tài liệu học thuật, rà soát nội dung seed và kiểm thử publication qua HTTP vẫn chưa hoàn tất.
+
+Form tạo học phần và bài học đã được nối với API tạo hiện có. Phần tài liệu học thuật, kiểm thử HTTP/DB và rà soát chất lượng nội dung seed vẫn còn cần thực hiện trước khi công bố.

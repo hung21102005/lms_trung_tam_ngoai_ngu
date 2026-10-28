@@ -7,17 +7,46 @@ import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/bloc/cours
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/screens/course_detail_screen.dart';
 
 class _Repository extends Fake implements CoursesRepository {
-  _Repository({this.empty = false, this.fail = false});
+  _Repository({this.empty = false, this.fail = false, this.archived = false});
 
   final bool empty;
   final bool fail;
+  final bool archived;
   String? createdLevelCode;
   Map<String, dynamic>? updatedLevelChanges;
   Map<String, dynamic>? updatedModuleChanges;
   Map<String, dynamic>? updatedLessonChanges;
+  String? createdModuleTitle;
+  String? createdLessonTitle;
 
   @override
-  Future<ModuleModel> updateModule(String id, Map<String, dynamic> changes) async {
+  Future<ModuleModel> createModule(
+    String levelId, {
+    required String title,
+    int order = 1,
+    String? description,
+  }) async {
+    createdModuleTitle = title;
+    return ModuleModel(id: 'new-module', levelId: levelId, title: title);
+  }
+
+  @override
+  Future<LessonModel> createLesson(
+    String moduleId, {
+    required String title,
+    int order = 1,
+    String? content,
+    int durationMinutes = 90,
+  }) async {
+    createdLessonTitle = title;
+    return LessonModel(id: 'new-lesson', moduleId: moduleId, title: title);
+  }
+
+  @override
+  Future<ModuleModel> updateModule(
+    String id,
+    Map<String, dynamic> changes,
+  ) async {
     updatedModuleChanges = changes;
     return ModuleModel(
       id: id,
@@ -27,7 +56,10 @@ class _Repository extends Fake implements CoursesRepository {
   }
 
   @override
-  Future<LessonModel> updateLesson(String id, Map<String, dynamic> changes) async {
+  Future<LessonModel> updateLesson(
+    String id,
+    Map<String, dynamic> changes,
+  ) async {
     updatedLessonChanges = changes;
     return LessonModel(
       id: id,
@@ -77,6 +109,7 @@ class _Repository extends Fake implements CoursesRepository {
       code: 'IELTS-F-01',
       title: 'IELTS Foundation: chương trình luyện thi với tên rất dài trên màn hình nhỏ',
       description: 'Mô tả chương trình đào tạo dài để kiểm tra xuống dòng trên thiết bị nhỏ.',
+      publicationStatus: archived ? 'ARCHIVED' : 'DRAFT',
       levelsCount: empty ? 0 : 1,
       levels: empty
           ? const []
@@ -242,19 +275,78 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sửa học phần'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'Mô tả học phần'), 'Mục tiêu nghe nói');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Mô tả học phần'),
+      'Mục tiêu nghe nói',
+    );
     await tester.tap(find.text('Lưu thay đổi'));
     await tester.pumpAndSettle();
-    expect(repository.updatedModuleChanges?['description'], 'Mục tiêu nghe nói');
+    expect(
+      repository.updatedModuleChanges?['description'],
+      'Mục tiêu nghe nói',
+    );
 
     await tester.drag(find.byType(ListView).first, const Offset(0, -320));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Sửa bài học').first);
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'Nội dung bài học'), 'Bài tập tự luyện');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nội dung bài học'),
+      'Bài tập tự luyện',
+    );
     await tester.tap(find.text('Lưu thay đổi'));
     await tester.pumpAndSettle();
     expect(repository.updatedLessonChanges?['content'], 'Bài tập tự luyện');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Mobile tạo học phần và bài học qua Bloc', (tester) async {
+    tester.view.physicalSize = const Size(375, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _Repository();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -360));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Thêm học phần'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tiêu đề *'),
+      'Kỹ năng giao tiếp',
+    );
+    await tester.tap(find.text('Tạo học phần'));
+    await tester.pumpAndSettle();
+    expect(repository.createdModuleTitle, 'Kỹ năng giao tiếp');
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Học phần phát triển'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -220));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Thêm bài học'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tiêu đề *'),
+      'Luyện phát âm',
+    );
+    await tester.tap(find.text('Tạo bài học'));
+    await tester.pumpAndSettle();
+    expect(repository.createdLessonTitle, 'Luyện phát âm');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Khóa lưu trữ không hiện thao tác biên tập', (tester) async {
+    tester.view.physicalSize = const Size(375, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_app(_Repository(archived: true)));
+    await tester.pumpAndSettle();
+    expect(find.text('Sửa cấp độ'), findsNothing);
+    expect(find.text('Thêm học phần'), findsNothing);
+    expect(find.byTooltip('Sửa bài học'), findsNothing);
   });
 }

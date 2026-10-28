@@ -15,6 +15,8 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<UpdateCourseLevelEvent>(_onUpdateCourseLevel);
     on<UpdateModuleEvent>(_onUpdateModule);
     on<UpdateLessonEvent>(_onUpdateLesson);
+    on<CreateModuleEvent>(_onCreateModule);
+    on<CreateLessonEvent>(_onCreateLesson);
   }
 
   Future<void> _onFetchCourses(
@@ -131,6 +133,43 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       await repository.updateLesson(event.lessonId, event.changes);
       emit(const CourseOperationSuccess('Đã cập nhật bài học'));
+      add(FetchCourseDetail(event.courseId));
+    } catch (error) {
+      emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onCreateModule(
+    CreateModuleEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.createModule(
+        event.levelId,
+        title: event.values['title'] as String,
+        order: event.values['order'] as int,
+        description: event.values['description'] as String?,
+      );
+      emit(const CourseOperationSuccess('Đã thêm học phần'));
+      add(FetchCourseDetail(event.courseId));
+    } catch (error) {
+      emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onCreateLesson(
+    CreateLessonEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.createLesson(
+        event.moduleId,
+        title: event.values['title'] as String,
+        order: event.values['order'] as int,
+        content: event.values['content'] as String?,
+        durationMinutes: event.values['durationMinutes'] as int,
+      );
+      emit(const CourseOperationSuccess('Đã thêm bài học'));
       add(FetchCourseDetail(event.courseId));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));

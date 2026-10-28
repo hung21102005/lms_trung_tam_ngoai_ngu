@@ -551,10 +551,16 @@ export class CoursesService {
   async createModule(levelId: string, dto: CreateModuleDto) {
     const level = await this.prisma.courseLevel.findUnique({
       where: { id: levelId },
+      include: { course: { select: { publicationStatus: true } } },
     });
 
     if (!level) {
       throw new NotFoundException(`Không tìm thấy cấp độ với ID: ${levelId}`);
+    }
+    if (level.course.publicationStatus === PublicationStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'Không thể thêm học phần vào khóa đã lưu trữ',
+      );
     }
 
     return this.prisma.module.create({
@@ -610,10 +616,18 @@ export class CoursesService {
   async createLesson(moduleId: string, dto: CreateLessonDto) {
     const mod = await this.prisma.module.findUnique({
       where: { id: moduleId },
+      include: {
+        level: { include: { course: { select: { publicationStatus: true } } } },
+      },
     });
 
     if (!mod) {
       throw new NotFoundException(`Không tìm thấy module với ID: ${moduleId}`);
+    }
+    if (mod.level.course.publicationStatus === PublicationStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'Không thể thêm bài học vào khóa đã lưu trữ',
+      );
     }
 
     return this.prisma.lesson.create({
