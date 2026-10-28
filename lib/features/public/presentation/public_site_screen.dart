@@ -1,0 +1,819 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/route_names.dart';
+import '../../../core/theme/app_colors.dart';
+import '../data/public_catalog_repository.dart';
+
+enum PublicPage { home, courses, courseDetail, classes, consultation }
+
+class PublicSiteScreen extends StatefulWidget {
+  const PublicSiteScreen({
+    super.key,
+    required this.repository,
+    required this.page,
+    this.slug,
+    this.targetCourse,
+  });
+
+  final PublicCatalogRepository repository;
+  final PublicPage page;
+  final String? slug;
+  final String? targetCourse;
+
+  @override
+  State<PublicSiteScreen> createState() => _PublicSiteScreenState();
+}
+
+class _PublicSiteScreenState extends State<PublicSiteScreen> {
+  late Future<dynamic> _content;
+  int _classPage = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    _content = switch (widget.page) {
+      PublicPage.home => Future.wait([
+        widget.repository.programs(),
+        widget.repository.classes(),
+      ]),
+      PublicPage.courses => widget.repository.courses(),
+      PublicPage.courseDetail => widget.repository.course(widget.slug ?? ''),
+      PublicPage.classes => widget.repository.classes(page: _classPage),
+      PublicPage.consultation => Future.value(null),
+    };
+  }
+
+  void _refresh() => setState(_load);
+
+  void _navigate(String path) => context.go(path);
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mobile = constraints.maxWidth < 1000;
+        final current = switch (widget.page) {
+          PublicPage.home => 0,
+          PublicPage.courses || PublicPage.courseDetail => 1,
+          PublicPage.classes => 2,
+          PublicPage.consultation => 3,
+        };
+        const routes = [
+          RouteNames.publicHome,
+          RouteNames.publicCourses,
+          RouteNames.publicClasses,
+          RouteNames.publicConsultation,
+        ];
+        const labels = ['Trang chủ', 'Khóa học', 'Lớp khai giảng', 'Tư vấn'];
+        return Scaffold(
+          backgroundColor: AppColors.backgroundLight,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            title: const Text(
+              'EduLMS',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            actions: mobile
+                ? [
+                    IconButton(
+                      tooltip: 'Đăng nhập',
+                      onPressed: () => _navigate(RouteNames.login),
+                      icon: const Icon(Icons.login_rounded),
+                    ),
+                  ]
+                : [
+                    for (var i = 0; i < routes.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: TextButton(
+                          onPressed: () => _navigate(routes[i]),
+                          child: Text(labels[i]),
+                        ),
+                      ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: () => _navigate(RouteNames.login),
+                      child: const Text('Đăng nhập'),
+                    ),
+                    const SizedBox(width: 24),
+                  ],
+          ),
+          bottomNavigationBar: mobile
+              ? NavigationBar(
+                  selectedIndex: current,
+                  onDestinationSelected: (index) => _navigate(routes[index]),
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      label: 'Trang chủ',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.menu_book_outlined),
+                      label: 'Khóa học',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.event_outlined),
+                      label: 'Lớp học',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.support_agent_outlined),
+                      label: 'Tư vấn',
+                    ),
+                  ],
+                )
+              : null,
+          body: SafeArea(
+            child: widget.page == PublicPage.consultation
+                ? _ConsultationForm(
+                    repository: widget.repository,
+                    targetCourse: widget.targetCourse,
+                  )
+                : FutureBuilder<dynamic>(
+                    future: _content,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return _MessageState(
+                          icon: Icons.wifi_off_rounded,
+                          title: 'Không tải được nội dung',
+                          detail: '${snapshot.error}',
+                          action: TextButton.icon(
+                            onPressed: _refresh,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Thử lại'),
+                          ),
+                        );
+                      }
+                      return switch (widget.page) {
+                        PublicPage.home => _home(
+                          snapshot.data as List<dynamic>,
+                        ),
+                        PublicPage.courses => _courses(
+                          snapshot.data as List<Map<String, dynamic>>,
+                        ),
+                        PublicPage.courseDetail => _courseDetail(
+                          snapshot.data as Map<String, dynamic>,
+                        ),
+                        PublicPage.classes => _classes(
+                          snapshot.data as Map<String, dynamic>,
+                        ),
+                        PublicPage.consultation => const SizedBox.shrink(),
+                      };
+                    },
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pageScroll(List<Widget> children) => SingleChildScrollView(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1120),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ),
+    ),
+  );
+
+  Widget _home(List<dynamic> result) {
+    final programs = result[0] as List<Map<String, dynamic>>;
+    final classes = result[1] as Map<String, dynamic>;
+    final offerings = (classes['items'] as List).cast<Map<String, dynamic>>();
+    return _pageScroll([
+      _HeroCard(
+        title: 'Học tiếng Anh theo lộ trình của bạn',
+        subtitle: 'Khám phá chương trình đào tạo và lớp đang nhận đăng ký tại EduLMS.',
+        onExplore: () => _navigate(RouteNames.publicCourses),
+        onConsult: () => _navigate(RouteNames.publicConsultation),
+      ),
+      const SizedBox(height: 32),
+      _SectionHeading(
+        'Chương trình đào tạo',
+        () => _navigate(RouteNames.publicCourses),
+      ),
+      const SizedBox(height: 12),
+      if (programs.isEmpty)
+        const _EmptyCard('Chương trình đang được chuẩn bị công bố.')
+      else
+        _responsiveCards(
+          programs
+              .take(3)
+              .map(
+                (item) => _InfoCard(
+                  icon: Icons.school_outlined,
+                  title: _string(item['nameVi']),
+                  subtitle: _string(item['description']),
+                  footnote: _string(item['targetAudience']),
+                  onTap: () => _navigate(RouteNames.publicCourses),
+                ),
+              )
+              .toList(),
+        ),
+      const SizedBox(height: 32),
+      _SectionHeading(
+        'Lớp sắp khai giảng',
+        () => _navigate(RouteNames.publicClasses),
+      ),
+      const SizedBox(height: 12),
+      if (offerings.isEmpty)
+        const _EmptyCard('Hiện chưa có lớp mở đăng ký.')
+      else
+        _responsiveCards(offerings.take(3).map(_offeringCard).toList()),
+    ]);
+  }
+
+  Widget _courses(List<Map<String, dynamic>> courses) => _pageScroll([
+    const _PageHeading(
+      'Khóa học',
+      'Chọn lộ trình phù hợp với mục tiêu học tập của bạn.',
+    ),
+    const SizedBox(height: 24),
+    if (courses.isEmpty)
+      const _EmptyCard('Chưa có khóa học được công bố. Vui lòng quay lại sau.')
+    else
+      _responsiveCards(
+        courses.map((course) {
+          final program = course['program'] as Map?;
+          final levels = course['levels'] as List? ?? [];
+          return _InfoCard(
+            icon: Icons.menu_book_rounded,
+            title: _string(course['title']),
+            subtitle: _string(course['publicDescription']),
+            footnote:
+                '${_string(program?['nameVi'])} · ${levels.length} cấp độ',
+            onTap: () => _navigate(
+              '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
+            ),
+          );
+        }).toList(),
+      ),
+  ]);
+
+  Widget _courseDetail(Map<String, dynamic> course) {
+    final levels = course['levels'] as List? ?? [];
+    return _pageScroll([
+      TextButton.icon(
+        onPressed: () => _navigate(RouteNames.publicCourses),
+        icon: const Icon(Icons.arrow_back),
+        label: const Text('Tất cả khóa học'),
+      ),
+      const SizedBox(height: 8),
+      _PageHeading(
+        _string(course['title']),
+        _string(course['publicDescription']),
+      ),
+      const SizedBox(height: 16),
+      Text('Đối tượng: ${_string(course['targetAudience'])}'),
+      const SizedBox(height: 24),
+      FilledButton.icon(
+        onPressed: () => _navigate(
+          '${RouteNames.publicConsultation}?khoa-hoc=${Uri.encodeQueryComponent(_string(course['title']))}',
+        ),
+        icon: const Icon(Icons.support_agent_outlined),
+        label: const Text('Nhận tư vấn khóa học'),
+      ),
+      const SizedBox(height: 32),
+      const Text(
+        'Các cấp độ',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      if (levels.isEmpty)
+        const _EmptyCard('Thông tin cấp độ đang được cập nhật.')
+      else
+        _responsiveCards(
+          levels.map((raw) {
+            final level = raw as Map;
+            return _InfoCard(
+              icon: Icons.stacked_bar_chart_rounded,
+              title: _string(level['name']),
+              subtitle: _string(level['description']),
+              footnote: [
+                level['cefrLevel'],
+                level['recommendedHours'] == null
+                    ? null
+                    : '${level['recommendedHours']} giờ',
+              ].where((part) => part != null && '$part'.isNotEmpty).join(' · '),
+            );
+          }).toList(),
+        ),
+    ]);
+  }
+
+  Widget _classes(Map<String, dynamic> data) {
+    final items = (data['items'] as List).cast<Map<String, dynamic>>();
+    final totalPages = (data['totalPages'] as num?)?.toInt() ?? 0;
+    return _pageScroll([
+      const _PageHeading(
+        'Lớp sắp khai giảng',
+        'Lịch học, học phí và chỗ còn lại được cập nhật từ hệ thống.',
+      ),
+      const SizedBox(height: 24),
+      if (items.isEmpty)
+        const _EmptyCard('Hiện chưa có lớp đủ điều kiện mở đăng ký.')
+      else
+        _responsiveCards(items.map(_offeringCard).toList()),
+      if (totalPages > 1) ...[
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              tooltip: 'Trang trước',
+              onPressed: _classPage > 1
+                  ? () {
+                      setState(() {
+                        _classPage--;
+                        _load();
+                      });
+                    }
+                  : null,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Text('Trang $_classPage / $totalPages'),
+            IconButton(
+              tooltip: 'Trang sau',
+              onPressed: _classPage < totalPages
+                  ? () {
+                      setState(() {
+                        _classPage++;
+                        _load();
+                      });
+                    }
+                  : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
+        ),
+      ],
+    ]);
+  }
+
+  Widget _offeringCard(Map<String, dynamic> item) {
+    final course = item['course'] as Map?;
+    final branch = item['branch'] as Map?;
+    final price = num.tryParse('${item['tuitionFee']}');
+    final start = DateTime.tryParse('${item['startDate']}');
+    return _InfoCard(
+      icon: Icons.event_available_rounded,
+      title: _string(item['name']),
+      subtitle:
+          '${_string(course?['title'])}\n${_string(branch?['name'])} · ${_string(item['startTime'])}–${_string(item['endTime'])}',
+      footnote:
+          '${start == null ? '' : '${start.day}/${start.month}/${start.year} · '}${item['remainingSeats']} chỗ còn · ${price == null ? 'Liên hệ học phí' : '${price.toStringAsFixed(0)} đ'}',
+      onTap: () => _navigate(
+        '${RouteNames.publicConsultation}?khoa-hoc=${Uri.encodeQueryComponent(_string(course?['title']))}',
+      ),
+      actionLabel: 'Nhận tư vấn',
+    );
+  }
+
+  Widget _responsiveCards(List<Widget> cards) => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 900
+          ? 3
+          : constraints.maxWidth >= 600
+          ? 2
+          : 1;
+      if (columns == 1) {
+        return Column(
+          children: [
+            for (final card in cards)
+              Padding(padding: const EdgeInsets.only(bottom: 12), child: card),
+          ],
+        );
+      }
+      return Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: [
+          for (final card in cards)
+            SizedBox(
+              width: (constraints.maxWidth - 16 * (columns - 1)) / columns,
+              child: card,
+            ),
+        ],
+      );
+    },
+  );
+}
+
+String _string(dynamic value) => value == null ? '' : '$value';
+
+class _PageHeading extends StatelessWidget {
+  const _PageHeading(this.title, this.subtitle);
+  final String title;
+  final String subtitle;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        title,
+        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        subtitle,
+        style: const TextStyle(
+          fontSize: 16,
+          color: AppColors.textSecondaryLight,
+        ),
+      ),
+    ],
+  );
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.title,
+    required this.subtitle,
+    required this.onExplore,
+    required this.onConsult,
+  });
+  final String title;
+  final String subtitle;
+  final VoidCallback onExplore;
+  final VoidCallback onConsult;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(28),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [AppColors.primaryDark, AppColors.primaryLight],
+      ),
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.auto_stories_rounded, size: 36, color: Colors.white),
+        const SizedBox(height: 20),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          subtitle,
+          style: const TextStyle(fontSize: 16, color: Colors.white),
+        ),
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            FilledButton.tonal(
+              onPressed: onExplore,
+              child: const Text('Xem khóa học'),
+            ),
+            OutlinedButton(
+              onPressed: onConsult,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white),
+              ),
+              child: const Text('Nhận tư vấn'),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading(this.title, this.onTap);
+  final String title;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ),
+      TextButton(onPressed: onTap, child: const Text('Xem tất cả')),
+    ],
+  );
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.footnote,
+    this.onTap,
+    this.actionLabel,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String footnote;
+  final VoidCallback? onTap;
+  final String? actionLabel;
+  @override
+  Widget build(BuildContext context) => Card(
+    color: Colors.white,
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+      side: const BorderSide(color: AppColors.borderLight),
+    ),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: AppColors.neutral100,
+              child: Icon(icon, color: AppColors.primary),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textSecondaryLight),
+            ),
+            if (footnote.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                footnote,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            if (actionLabel != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                actionLabel!,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard(this.message);
+  final String message;
+  @override
+  Widget build(BuildContext context) => Card(
+    color: Colors.white,
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.inbox_outlined,
+            size: 40,
+            color: AppColors.textMutedLight,
+          ),
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center),
+        ],
+      ),
+    ),
+  );
+}
+
+class _MessageState extends StatelessWidget {
+  const _MessageState({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.action,
+  });
+  final IconData icon;
+  final String title;
+  final String detail;
+  final Widget action;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 48, color: AppColors.textSecondaryLight),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(detail, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          action,
+        ],
+      ),
+    ),
+  );
+}
+
+class _ConsultationForm extends StatefulWidget {
+  const _ConsultationForm({required this.repository, this.targetCourse});
+  final PublicCatalogRepository repository;
+  final String? targetCourse;
+  @override
+  State<_ConsultationForm> createState() => _ConsultationFormState();
+}
+
+class _ConsultationFormState extends State<_ConsultationForm> {
+  final _key = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  final _email = TextEditingController();
+  final _notes = TextEditingController();
+  late final TextEditingController _target = TextEditingController(
+    text: widget.targetCourse ?? '',
+  );
+  bool _saving = false;
+  bool _sent = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _email.dispose();
+    _notes.dispose();
+    _target.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_key.currentState!.validate() || _saving) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.repository.sendConsultation(
+        fullName: _name.text.trim(),
+        phone: _phone.text.trim(),
+        email: _email.text.trim(),
+        targetCourse: _target.text.trim(),
+        notes: _notes.text.trim(),
+      );
+      if (mounted) setState(() => _sent = true);
+    } catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: _sent
+            ? _MessageState(
+                icon: Icons.check_circle_outline,
+                title: 'Đã gửi yêu cầu tư vấn',
+                detail: 'EduLMS đã tiếp nhận thông tin của bạn và sẽ liên hệ theo số điện thoại đã cung cấp.',
+                action: TextButton(
+                  onPressed: () => context.go(RouteNames.publicHome),
+                  child: const Text('Về trang chủ'),
+                ),
+              )
+            : Form(
+                key: _key,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _PageHeading(
+                      'Đăng ký tư vấn',
+                      'Để lại thông tin, đội ngũ tuyển sinh sẽ liên hệ với bạn.',
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _name,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Họ và tên *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Vui lòng nhập họ tên'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Số điện thoại *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          RegExp(r'^[0-9+(). -]{9,18}$')
+                              .hasMatch(value?.trim() ?? '')
+                          ? null
+                          : 'Số điện thoại không hợp lệ',
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Email (tùy chọn)',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value == null ||
+                              value.trim().isEmpty ||
+                              RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                  .hasMatch(value.trim())
+                          ? null
+                          : 'Email không hợp lệ',
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _target,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Khóa học quan tâm',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _notes,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Nhu cầu học tập',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _error!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: _saving ? null : _submit,
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send_outlined),
+                      label: Text(
+                        _saving ? 'Đang gửi...' : 'Gửi yêu cầu tư vấn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    ),
+  );
+}

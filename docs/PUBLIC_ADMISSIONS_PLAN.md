@@ -59,7 +59,7 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
 | 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình/khóa: tạo, gắn khóa có sẵn, sửa trường công khai, duyệt/công bố; màn hình sửa cấp độ qua API hiện có. Còn thiếu UI sửa học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
 | 3 Class offering | Đang thực hiện | Đã bổ sung cửa sổ đăng ký và ràng buộc cơ bản khi tạo lớp; còn cần UI sửa lớp, kiểm tra phân công GV, công bố lớp và HTTP workflow. Catalog seed vẫn chờ duyệt. |
-| 4 Public website | Đang thực hiện | API công khai danh sách/chi tiết lớp đang nhận đăng ký đã có; Flutter website công khai chưa triển khai. |
+| 4 Public website | Đang thực hiện | Đã có Flutter landing/catalog/chi tiết khóa/lớp sắp khai giảng/form tư vấn trên route công khai; dùng API thật và trạng thái loading/empty/error. Chưa kiểm chứng luồng form với Backend đang chạy và dữ liệu lớp đã công bố. |
 | 5 Registration/CRM | Pending | Chờ lớp công bố và public API |
 | 6 Đồng bộ/kiểm thử | Pending | Chờ luồng đăng ký |
 
@@ -155,3 +155,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - `GET /public/classes` và `GET /public/classes/:id` không yêu cầu JWT, chỉ trả lớp `OPEN_FOR_ENROLLMENT` có ngày nhận đăng ký hiện hành, ngày khai giảng chưa qua, học phí dương, phòng/chi nhánh/giáo viên đang hoạt động và khóa thuộc chương trình đã công bố công khai. Danh sách có phân trang, lọc theo chi nhánh/khóa và số chỗ còn lại; projection không chọn học viên hay dữ liệu buổi học nội bộ.
 - Backend build/lint đạt (8 cảnh báo cũ), toàn bộ unit test **164/164 đạt**; E2E HTTP không JWT **4/4 đạt** trên app/DB cục bộ. Chưa có lớp mới đủ điều kiện trong catalog seed, nên E2E hiện chỉ xác nhận hợp đồng API và danh sách rỗng; chưa kiểm chứng lớp xuất hiện sau quy trình công bố thật.
 - **Tiếp theo:** xây trang chủ/khóa học/lớp sắp khai giảng Flutter công khai dùng các API `/public/*`, rồi form tư vấn và đăng ký mới/cũ đồng bộ CRM. Không giả lập kết quả thành công và không công bố seed chưa duyệt.
+
+## Checkpoint website công khai Flutter (2026-10-28)
+
+- Route `/gioi-thieu`, `/khoa-hoc-cong-khai`, `/khoa-hoc-cong-khai/:slug`, `/lop-sap-khai-giang`, `/tu-van` cho khách chưa đăng nhập. Trang đăng nhập có lối vào website; route `/` và luồng khôi phục phiên đăng nhập hiện tại được giữ nguyên để tránh hồi quy xác thực. Mobile có điều hướng dưới, Desktop có điều hướng đầu trang; danh sách dùng bố cục theo 1/2/3 cột.
+- `PublicCatalogRepository` dùng các API công khai hiện có và `POST /admissions/leads`. Form kiểm tra họ tên, điện thoại, email; vô hiệu nút lúc gửi; chỉ hiện xác nhận khi POST thành công và giữ dữ liệu khi lỗi. Khóa/lớp chưa công bố hiển thị trạng thái trống từ API, không tạo mock data trong sản phẩm.
+- Kiểm thử: `flutter analyze` phạm vi Public + route/login/test **0 issues**; widget tests **5/5 đạt** trên 320/375/393/430/800/1200 logical px, dữ liệu trống/thực từ fake API, gửi thành công/thất bại và bàn phím mở; `flutter build web --no-wasm-dry-run` **đạt**. HTTP thật cho public catalog đã kiểm tra ở checkpoint trước với database local nhưng hiện không có bản ghi được công bố. POST lead từ giao diện đến Backend thật, trình duyệt/thiết bị thật và visual QA Desktop/Mobile **chưa kiểm chứng**.
+- **Tiếp tục:** xây đăng ký lớp cho khách mới và học viên cũ dưới dạng entity riêng, xử lý chống trùng/giữ chỗ/chuyển CRM và duyệt nhập học trước khi tạo `ClassStudent`. Cần dữ liệu lớp thật được Admin/học vụ công bố để kiểm thử đầy đủ luồng public → enrollment; không tự công bố 47 khóa seed.

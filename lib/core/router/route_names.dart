@@ -5,6 +5,11 @@ class RouteNames {
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
   static const String firstLoginSetup = '/first-login-setup';
+  static const String publicHome = '/gioi-thieu';
+  static const String publicCourses = '/khoa-hoc-cong-khai';
+  static const String publicCourseDetail = '/khoa-hoc-cong-khai/:slug';
+  static const String publicClasses = '/lop-sap-khai-giang';
+  static const String publicConsultation = '/tu-van';
 
   // Role Dashboards
   static const String studentHome = '/student/home';

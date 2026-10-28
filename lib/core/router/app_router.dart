@@ -61,6 +61,8 @@ import '../../features/reports/presentation/screens/admin_dashboard_screen.dart'
 import '../../features/reports/presentation/screens/reports_overview_screen.dart';
 import '../../features/reports/presentation/screens/debts_report_screen.dart';
 import '../../features/reports/presentation/screens/teacher_dashboard_live_screen.dart';
+import '../../features/public/data/public_catalog_repository.dart';
+import '../../features/public/presentation/public_site_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -83,6 +85,43 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.firstLoginSetup,
       builder: (context, state) => const FirstLoginScreen(),
+    ),
+    GoRoute(
+      path: RouteNames.publicHome,
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.home,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicCourses,
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.courses,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicCourseDetail,
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.courseDetail,
+        slug: state.pathParameters['slug'],
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicClasses,
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.classes,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicConsultation,
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.consultation,
+        targetCourse: state.uri.queryParameters['khoa-hoc'],
+      ),
     ),
     GoRoute(
       path: RouteNames.studentHome,

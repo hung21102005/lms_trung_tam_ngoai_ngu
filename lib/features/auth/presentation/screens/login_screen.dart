@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/router/route_names.dart';
@@ -25,7 +26,9 @@ class LoginScreen extends StatelessWidget {
         } else if (state is AuthenticatedState) {
           if (state.requiresPasswordChange) {
             context.go(RouteNames.firstLoginSetup);
-          } else if (state.user.isSuperAdmin || state.user.isBranchAdmin || state.user.isAcademicStaff) {
+          } else if (state.user.isSuperAdmin ||
+              state.user.isBranchAdmin ||
+              state.user.isAcademicStaff) {
             context.go(RouteNames.adminHome);
           } else if (state.user.isTeacher) {
             context.go(RouteNames.teacherHome);
@@ -89,6 +92,12 @@ class LoginScreen extends StatelessWidget {
                   const AppCard(
                     padding: EdgeInsets.all(28),
                     child: LoginForm(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: () => context.go(RouteNames.publicHome),
+                    icon: const Icon(Icons.explore_outlined),
+                    label: const Text('Khám phá chương trình học'),
                   ),
 
                   const SizedBox(height: 28),
