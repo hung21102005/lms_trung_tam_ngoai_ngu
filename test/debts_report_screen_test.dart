@@ -13,17 +13,29 @@ class FakeDebtsReportsRepository implements ReportsRepository {
   }
 
   @override
-  Future<RevenueReportModel> getRevenueReport({int? year, String? branchId}) async {
+  Future<RevenueReportModel> getRevenueReport({
+    int? year,
+    String? branchId,
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<AttendanceReportModel> getAttendanceReport({String? classId, String? startDate, String? endDate}) async {
+  Future<AttendanceReportModel> getAttendanceReport({
+    String? classId,
+    String? startDate,
+    String? endDate,
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<DebtsReportModel> getDebtsReport({String? branchId, String? search, int page = 1, int limit = 20}) async {
+  Future<DebtsReportModel> getDebtsReport({
+    String? branchId,
+    String? search,
+    int page = 1,
+    int limit = 20,
+  }) async {
     return DebtsReportModel(
       items: [
         DebtInvoiceItem(
@@ -63,30 +75,54 @@ class FakeDebtsReportsRepository implements ReportsRepository {
 }
 
 void main() {
-  testWidgets('DebtsReportScreen renders summary cards and debt items correctly', (tester) async {
-    final fakeRepo = FakeDebtsReportsRepository();
+  testWidgets(
+    'DebtsReportScreen renders summary cards and debt items correctly',
+    (tester) async {
+      final fakeRepo = FakeDebtsReportsRepository();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<ReportsBloc>(
-          create: (_) => ReportsBloc(repository: fakeRepo),
-          child: const DebtsReportScreen(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<ReportsBloc>(
+            create: (_) => ReportsBloc(repository: fakeRepo),
+            child: const DebtsReportScreen(),
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    // Verify Title
-    expect(find.text('Báo Cáo Công Nợ Học Phí'), findsOneWidget);
+      // Verify Title
+      expect(find.text('Báo Cáo Công Nợ Học Phí'), findsOneWidget);
 
-    // Verify Summary
-    expect(find.text('Tổng công nợ'), findsOneWidget);
-    expect(find.text('Quá hạn'), findsWidgets);
-    expect(find.text('1 hóa đơn'), findsOneWidget);
+      // Verify Summary
+      expect(find.text('Tổng công nợ'), findsOneWidget);
+      expect(find.text('Quá hạn'), findsWidgets);
+      expect(find.text('1 hóa đơn'), findsOneWidget);
 
-    // Verify Debt Item
-    expect(find.text('Lê Hoàng Long'), findsOneWidget);
-    expect(find.text('SĐT: 0909123456'), findsOneWidget);
-  });
+      // Verify Debt Item
+      expect(find.text('Lê Hoàng Long'), findsOneWidget);
+      expect(find.text('SĐT: 0909123456'), findsOneWidget);
+    },
+  );
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('Báo cáo công nợ ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<ReportsBloc>(
+            create: (_) =>
+                ReportsBloc(repository: FakeDebtsReportsRepository()),
+            child: const DebtsReportScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Lê Hoàng Long'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

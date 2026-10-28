@@ -21,20 +21,20 @@ Updated: 2026-10-28. Baseline rollback commit: `f84c81c627e05711b367248911db2f16
 | Student home dashboard, navigation | B | P1 | Mobile dashboard implemented; device QA pending |
 | Student courses, lesson detail, class detail | B/C | P1 | Enrolled course list/curriculum, lesson detail and class detail Mobile implemented; device QA pending |
 | Student schedule, session/attendance | B/C | P1 | Shared Mobile agenda/session sheet and attendance history implemented; device QA pending |
-| Student assignments list (`StudentAssignmentsView`, `/assignments`) | C | P0 | Mobile view in progress |
-| Student assignment detail (`/assignments/:id`) | C | P0 | Mobile view pending |
-| Student work, voice/text/file, draft and submit (`/assignments/:id/submit`) | C | P0 | Mobile view pending |
-| Student submission review, score and feedback (assignment detail) | C | P0 | Mobile view pending |
+| Student assignments list (`StudentAssignmentsView`, `/assignments`) | C → B | P0 | Mobile view implemented; device/API QA pending |
+| Student assignment detail (`/assignments/:id`) | C → B | P0 | Mobile view implemented; device/API QA pending |
+| Student work, voice/text/file, draft and submit (`/assignments/:id/submit`) | C → B | P0 | Mobile view implemented; device/API QA pending |
+| Student submission review, score and feedback (assignment detail) | C → B | P0 | Mobile view implemented; publication/device QA pending |
 | Student exams, take exam, results | B/C | P2 | Mobile exam list/taking and personal results implemented; real API/device QA pending |
 | Student invoices/payment, notifications | B/C | P2 | Mobile invoice list/detail and payment control layout plus shared notification list implemented; live payment/device QA pending |
 | Teacher home/dashboard, reports | B/C | P1 | Mobile live dashboard and teaching reports implemented; device/API QA pending |
 | Teacher classes/list/detail/schedule | B/C | P1 | My classes list, shared class detail and schedule Mobile implemented; other class screens pending |
 | Teacher attendance and class workflow | B/C | P1 | Attendance roster/logbook Mobile implemented; other class workflows pending |
-| Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Assignment workflow list and submission review Mobile implemented; create/edit/gradebook pending |
+| Teacher assignments/create/edit/submission list/review/gradebook | B/C | P1 | Workflow, create/edit form and submission review Mobile implemented; secondary gradebook pending |
 | Teacher exams/question bank, notifications, profile | B/C | P2 | Audit only |
 | Parent home, child summary/schedule/grades/attendance/finance | B/C | P2 | Mobile child-first home implemented; shared schedule/attendance available; grades/finance lack parent-specific flow |
-| Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Mobile dashboard/shell implemented; existing user cards verified and overflow fixed; other management views pending |
-| Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Audit only |
+| Admin home/dashboard, users, branch/rooms, admissions, settings | C | P3 | Dashboard, users, branches/rooms and admissions Mobile checkpoints complete; settings pending |
+| Admin courses/classes/scheduling/attendance, reports/finance | C | P3 | Debts report Mobile checkpoint complete; other screens pending |
 | Shared dialogs, forms, filters and sheets across role flows | B/C | P1–P3 | Audit during each module |
 
 Route inventory source: `lib/core/router/route_names.dart`; screen inventory: `lib/features/**/presentation/screens/` and `lib/features/dashboard/presentation/views/`. Nested home tabs and dialogs are included in each module above, rather than counted as standalone routes. Reclassify after visual QA.
@@ -59,7 +59,7 @@ Each entry is a screen or embedded view found in Flutter source. Current classif
 | Exams | `exam_list_screen`, `create_exam_screen`, `take_exam_screen`, `exam_result_screen`, `question_bank_list_screen`, `my_exam_results_screen` | B/C | Student Mobile list/take/personal results implemented; teacher management/results pending |
 | Finance | `invoice_list_screen`, `invoice_detail_screen`, `my_invoices_screen`, `record_payment_screen`, `pay_online_screen` | C | Student invoice list/detail Mobile implemented; payment controls adjusted for Mobile; admin screens and live payment QA pending |
 | Reports | `admin_dashboard_screen`, `reports_overview_screen`, `debts_report_screen` | C | Admin dashboard Mobile implemented; other reports pending |
-| Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | B/C | User list Mobile cards verified; other management views pending |
+| Admin embedded views | `users_management_view`, `branches_rooms_view`, `admissions_crm_view`, `system_settings_view` | B/C | Users, branches/rooms and admissions Mobile checkpoints complete; settings pending |
 
 Also inspect private builders, dialogs, bottom sheets, and tab content in each listed file during that feature's phase; they are not separate Dart screen files. There is no separate reset-password route or standalone parent child screen in the current route table, so no new business module is assumed.
 
@@ -202,3 +202,10 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 - Replaced the Mobile admissions board/table presentation with a dedicated lead card list and horizontal stage chips. Search, branch/source filters, lead detail and status advancement reuse the existing API and handlers. The Desktop Kanban/table switch remains on its existing branch. Mobile dropdowns now fit narrow screens; existing Desktop Kanban card text wraps correctly, and the hardcoded counselor name was replaced with `assignedStaff` from the API or an unassigned state.
 - Widget tests with API fakes: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px, plus a 320 px stage/search interaction. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
 - Creating/converting a lead, server persistence, role enforcement, real device appearance and Desktop screenshot comparison remain **unverified** without a running Backend/device. The rest of Admin management screens, Parent grade/finance gaps, Teacher secondary screens and full cross-role regression remain pending.
+
+### Checkpoint 2026-10-28 — Admin debts report Mobile
+
+- Added a dedicated Mobile debt invoice card with the outstanding balance first, followed by total/paid amounts, due date and contact. The report still uses `ReportsBloc` and the existing report API; the Desktop debt card remains on its prior branch.
+- Replaced the export button's placeholder success notice with a download from the existing `/reports/export/debts` endpoint and a local save action. Download and file picker behavior against a running Backend/device remain **unverified**.
+- Existing report test plus six width tests: **7/7 pass** at 320, 375, 393, 430, 800 and 1200 px. Scoped `flutter analyze`: **0 issues**. `flutter build web --no-wasm-dry-run`: **pass**. `git diff --check`: **pass**.
+- Admin settings, courses/classes, finance forms and wider reports are still pending, as are Parent-specific grades/finance, Teacher secondary screens and live API/device/Desktop visual regression.

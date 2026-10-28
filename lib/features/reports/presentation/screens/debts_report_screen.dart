@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+
+import '../../../../core/di/injection.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
@@ -32,9 +36,37 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
   }
 
   void _loadDebts() {
-    context.read<ReportsBloc>().add(FetchDebtsReportEvent(
-          search: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
-        ));
+    context.read<ReportsBloc>().add(
+      FetchDebtsReportEvent(
+        search: _searchController.text.trim().isEmpty
+            ? null
+            : _searchController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> _exportDebts() async {
+    try {
+      final bytes = await getIt<ApiClient>().download('/reports/export/debts');
+      if (bytes.isEmpty) throw StateError('Máy chủ không trả về tệp Excel.');
+      final saved = await FilePicker.saveFile(
+        fileName: 'bao-cao-cong-no.xlsx',
+        bytes: bytes,
+        mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xuất báo cáo công nợ.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Xuất báo cáo thất bại: $error')),
+        );
+      }
+    }
   }
 
   @override
@@ -46,14 +78,7 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Xuất Excel',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đang xuất danh sách công nợ sang file Excel...'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
+            onPressed: _exportDebts,
           ),
         ],
       ),
@@ -76,10 +101,16 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
                 filled: true,
                 fillColor: AppColors.neutral100,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
               ),
               onSubmitted: (_) => _loadDebts(),
             ),
@@ -90,7 +121,9 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             child: BlocBuilder<ReportsBloc, ReportsState>(
               builder: (context, state) {
                 if (state is ReportsLoadingState) {
-                  return const LoadingWidget(message: 'Đang tải danh sách công nợ...');
+                  return const LoadingWidget(
+                    message: 'Đang tải danh sách công nợ...',
+                  );
                 }
 
                 if (state is ReportsErrorState) {
@@ -98,9 +131,16 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(height: 12),
-                        Text('Lỗi: ${state.message}', style: AppTextStyles.bodyMedium(context)),
+                        Text(
+                          'Lỗi: ${state.message}',
+                          style: AppTextStyles.bodyMedium(context),
+                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loadDebts,
@@ -117,7 +157,10 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                   return RefreshIndicator(
                     onRefresh: () async => _loadDebts(),
                     child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       children: [
                         // Summary Cards
                         _buildSummaryHeader(data.summary),
@@ -133,7 +176,11 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                             ),
                           )
                         else
-                          ...data.items.map((item) => _buildDebtItemCard(item)),
+                          ...data.items.map(
+                            (item) => MediaQuery.sizeOf(context).width < 600
+                                ? _buildMobileDebtItemCard(item)
+                                : _buildDebtItemCard(item),
+                          ),
                       ],
                     ),
                   );
@@ -162,13 +209,20 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Tổng công nợ', style: TextStyle(fontSize: 11, color: AppColors.error)),
+                const Text(
+                  'Tổng công nợ',
+                  style: TextStyle(fontSize: 11, color: AppColors.error),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   _currencyFormat.format(summary.totalOutstanding),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.error),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.error,
+                  ),
                 ),
               ],
             ),
@@ -181,16 +235,25 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.3),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Quá hạn', style: TextStyle(fontSize: 11, color: AppColors.warning)),
+                const Text(
+                  'Quá hạn',
+                  style: TextStyle(fontSize: 11, color: AppColors.warning),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '${summary.overdueCount} hóa đơn',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.warning),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.warning,
+                  ),
                 ),
               ],
             ),
@@ -212,11 +275,22 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(item.studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  item.studentName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: item.isOverdue ? AppColors.error.withValues(alpha: 0.1) : AppColors.warning.withValues(alpha: 0.1),
+                    color: item.isOverdue
+                        ? AppColors.error.withValues(alpha: 0.1)
+                        : AppColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -224,7 +298,9 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: item.isOverdue ? AppColors.error : AppColors.warning,
+                      color: item.isOverdue
+                          ? AppColors.error
+                          : AppColors.warning,
                     ),
                   ),
                 ),
@@ -233,7 +309,10 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             const SizedBox(height: 4),
             Text(
               '${item.studentCode} • ${item.className} • Mã HĐ: ${item.code}',
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondaryLight,
+              ),
             ),
             const SizedBox(height: 10),
             Row(
@@ -242,24 +321,60 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Tổng học phí', style: TextStyle(fontSize: 10, color: AppColors.textSecondaryLight)),
-                    Text(_currencyFormat.format(item.totalAmount), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    const Text(
+                      'Tổng học phí',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondaryLight,
+                      ),
+                    ),
+                    Text(
+                      _currencyFormat.format(item.totalAmount),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Đã nộp', style: TextStyle(fontSize: 10, color: AppColors.textSecondaryLight)),
-                    Text(_currencyFormat.format(item.paidAmount), style: const TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w500)),
+                    const Text(
+                      'Đã nộp',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondaryLight,
+                      ),
+                    ),
+                    Text(
+                      _currencyFormat.format(item.paidAmount),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Còn nợ', style: TextStyle(fontSize: 10, color: AppColors.error, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Còn nợ',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Text(
                       _currencyFormat.format(item.balance),
-                      style: const TextStyle(fontSize: 13, color: AppColors.error, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -274,12 +389,22 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                     'Hạn nộp: ${DateFormat('dd/MM/yyyy').format(item.dueDate!)}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: item.isOverdue ? AppColors.error : AppColors.textSecondaryLight,
-                      fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
+                      color: item.isOverdue
+                          ? AppColors.error
+                          : AppColors.textSecondaryLight,
+                      fontWeight: item.isOverdue
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   if (item.phone != null)
-                    Text('SĐT: ${item.phone}', style: const TextStyle(fontSize: 11, color: AppColors.primary)),
+                    Text(
+                      'SĐT: ${item.phone}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.primary,
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -288,4 +413,85 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
       ),
     );
   }
+
+  Widget _buildMobileDebtItemCard(DebtInvoiceItem item) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.studentName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Chip(
+                  visualDensity: VisualDensity.compact,
+                  label: Text(item.isOverdue ? 'Quá hạn' : 'Chờ nộp'),
+                  backgroundColor: item.isOverdue
+                      ? AppColors.error.withValues(alpha: 0.1)
+                      : AppColors.warning.withValues(alpha: 0.1),
+                ),
+              ],
+            ),
+            Text(
+              '${item.studentCode} • ${item.className}',
+              style: const TextStyle(color: AppColors.textSecondaryLight),
+            ),
+            Text(
+              'Mã HĐ: ${item.code}',
+              style: const TextStyle(color: AppColors.textSecondaryLight),
+            ),
+            const SizedBox(height: 14),
+            const Text('Còn nợ', style: TextStyle(color: AppColors.error)),
+            Text(
+              _currencyFormat.format(item.balance),
+              style: const TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.bold,
+                color: AppColors.error,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 24,
+              runSpacing: 8,
+              children: [
+                _mobileAmount('Tổng học phí', item.totalAmount),
+                _mobileAmount('Đã nộp', item.paidAmount),
+              ],
+            ),
+            if (item.dueDate != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Hạn nộp: ${DateFormat('dd/MM/yyyy').format(item.dueDate!)}',
+              ),
+            ],
+            if (item.phone != null) Text('SĐT: ${item.phone}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mobileAmount(String label, double amount) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: AppColors.textSecondaryLight)),
+      Text(
+        _currencyFormat.format(amount),
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ],
+  );
 }
