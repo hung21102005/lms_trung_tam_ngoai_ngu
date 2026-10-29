@@ -810,6 +810,80 @@ export class ClassesService {
     });
   }
 
+  async deleteClass(id: string, actor: ClassActor) {
+    const current = await this.findOne(id, actor);
+
+    if (current.status !== ClassStatus.PLANNING) {
+      throw new BadRequestException(
+        `Chỉ lớp đang lập kế hoạch mới có thể xóa vĩnh viễn. Lớp hiện ở trạng thái '${current.status}'.`,
+      );
+    }
+
+    const studentCount = await this.prisma.classStudent.count({
+      where: { classId: id },
+    });
+    if (studentCount > 0) {
+      throw new BadRequestException(
+        `Lớp học đã có ${studentCount} học viên được ghi danh. Để đảm bảo toàn vẹn dữ liệu, không thể xóa vĩnh viễn. Vui lòng chọn HỦY LỚP (CANCELLED).`,
+      );
+    }
+
+    const registrationCount = await this.prisma.classRegistration.count({
+      where: { classId: id },
+    });
+    if (registrationCount > 0) {
+      throw new BadRequestException(
+        `Lớp học đã có ${registrationCount} đơn đăng ký trực tuyến. Vui lòng chuyển trạng thái sang HỦY LỚP (CANCELLED) thay vì xóa vĩnh viễn.`,
+      );
+    }
+
+    const invoiceCount = await this.prisma.invoice.count({
+      where: { classId: id },
+    });
+    if (invoiceCount > 0) {
+      throw new BadRequestException(
+        `Lớp học đã phát sinh ${invoiceCount} chứng từ/hóa đơn tài chính. Không thể xóa vĩnh viễn dữ liệu tài chính.`,
+      );
+    }
+
+    const attendanceCount = await this.prisma.attendance.count({
+      where: { session: { classId: id } },
+    });
+    if (attendanceCount > 0) {
+      throw new BadRequestException(
+        `Lớp học đã có ${attendanceCount} bản ghi điểm danh học viên. Không thể xóa vĩnh viễn.`,
+      );
+    }
+
+    const [assignmentCount, examCount] = await Promise.all([
+      this.prisma.assignment.count({ where: { classId: id } }),
+      this.prisma.exam.count({ where: { classId: id } }),
+    ]);
+    if (assignmentCount > 0 || examCount > 0) {
+      throw new BadRequestException(
+        'Lớp học đã được giao bài tập hoặc đề thi. Không thể xóa vĩnh viễn.',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.classSession.deleteMany({
+        where: { classId: id },
+      });
+      const deleted = await tx.class.deleteMany({
+        where: { id, status: ClassStatus.PLANNING },
+      });
+      if (deleted.count !== 1) {
+        throw new ConflictException(
+          'Trạng thái lớp đã thay đổi. Vui lòng tải lại trước khi xóa.',
+        );
+      }
+      return {
+        success: true,
+        message: `Đã xóa vĩnh viễn lớp học '${current.code}' thành công.`,
+      };
+    });
+  }
+
   // --------------------------------------------------------------------------
   // QUẢN LÝ HỌC VIÊN TRONG LỚP (ENROLLMENT)
   // --------------------------------------------------------------------------

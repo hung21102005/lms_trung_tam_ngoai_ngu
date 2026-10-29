@@ -121,6 +121,21 @@ describe('ClassesService', () => {
     expect(service).toBeDefined();
   });
 
+  it.each([ClassStatus.CANCELLED, ClassStatus.OPEN_FOR_ENROLLMENT, ClassStatus.IN_PROGRESS, ClassStatus.COMPLETED])(
+    'does not permanently delete a class in %s state',
+    async (status) => {
+      vi.spyOn(service, 'findOne').mockResolvedValue({
+        ...mockClass,
+        status,
+      } as Awaited<ReturnType<ClassesService['findOne']>>);
+
+      await expect(service.deleteClass('class-1', adminActor)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
   describe('public class offerings', () => {
     it('filters by publication and enrollment window without exposing students', async () => {
       mockPrismaService.class.findMany.mockResolvedValueOnce([

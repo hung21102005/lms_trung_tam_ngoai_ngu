@@ -141,6 +141,22 @@ export class ClassesController {
     return this.classesService.update(id, dto, user);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Delete('classes/:id')
+  @ApiOperation({
+    summary:
+      'Xóa vĩnh viễn lớp học mới lập kế hoạch (chưa có học viên, đăng ký hay hóa đơn)',
+  })
+  @ApiResponse({ status: 200, description: 'Xóa lớp học thành công' })
+  @ApiResponse({
+    status: 400,
+    description: 'Không thể xóa lớp đã có học viên hoặc dữ liệu vận hành',
+  })
+  deleteClass(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.classesService.deleteClass(id, user);
+  }
+
   // --------------------------------------------------------------------------
   // HỌC VIÊN TRONG LỚP (ENROLLMENT)
   // --------------------------------------------------------------------------
