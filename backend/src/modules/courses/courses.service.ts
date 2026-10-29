@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ClassStatus, PublicationStatus } from '@prisma/client';
+import { createHash } from 'node:crypto';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   CreateCourseDto,
@@ -29,8 +30,10 @@ export class CoursesService {
     courseId: string,
     status?: PublicationStatus,
   ) {
-    if (status === PublicationStatus.PUBLISHED ||
-        status === PublicationStatus.ARCHIVED) {
+    if (
+      status === PublicationStatus.PUBLISHED ||
+      status === PublicationStatus.ARCHIVED
+    ) {
       throw new ConflictException(
         'Cần ngừng công bố khóa học trước khi sửa nội dung học thuật',
       );
@@ -361,6 +364,157 @@ export class CoursesService {
     return course;
   }
 
+  private reviewDigest(course: Awaited<ReturnType<CoursesService['findOne']>>) {
+    const content = {
+      code: course.code,
+      title: course.title,
+      slug: course.slug,
+      programId: course.programId,
+      description: course.description,
+      publicDescription: course.publicDescription,
+      targetAudience: course.targetAudience,
+      language: course.language,
+      curriculumVersion: course.curriculumVersion,
+      levels: course.levels.map((level) => ({
+        code: level.code,
+        name: level.name,
+        description: level.description,
+        order: level.order,
+        estimatedSessions: level.estimatedSessions,
+        tuitionFee: level.tuitionFee,
+        cefrLevel: level.cefrLevel,
+        ieltsTargetBand: level.ieltsTargetBand,
+        toeicTargetScore: level.toeicTargetScore,
+        cambridgeQualification: level.cambridgeQualification,
+        entryRequirements: level.entryRequirements,
+        expectedOutcomes: level.expectedOutcomes,
+        assessmentScheme: level.assessmentScheme,
+        completionCriteria: level.completionCriteria,
+        recommendedHours: level.recommendedHours,
+        curriculumVersion: level.curriculumVersion,
+        modules: level.modules.map((module) => ({
+          title: module.title,
+          description: module.description,
+          order: module.order,
+          lessons: module.lessons.map((lesson) => ({
+            title: lesson.title,
+            content: lesson.content,
+            order: lesson.order,
+            durationMinutes: lesson.durationMinutes,
+            materials: lesson.materials.map((material) => ({
+              title: material.title,
+              fileUrl: material.fileUrl,
+              fileType: material.fileType,
+              fileSizeBytes: material.fileSizeBytes,
+              order: material.order,
+            })),
+          })),
+        })),
+      })),
+    };
+    return createHash('sha256').update(JSON.stringify(content)).digest('hex');
+  }
+
+  async validateCoursePublication(id: string) {
+    const course = await this.findOne(id);
+    const blockers: string[] = [];
+    if (!course.programId) blockers.push('Chưa chọn chương trình đào tạo');
+    if (!course.isActive) blockers.push('Khóa học đang tạm ngưng');
+    if (!course.slug?.trim()) blockers.push('Chưa có đường dẫn công khai');
+    if (!course.description?.trim()) blockers.push('Chưa có mô tả khóa học');
+    if (!course.publicDescription?.trim())
+      blockers.push('Chưa có mô tả công khai');
+    if (!course.targetAudience?.trim()) blockers.push('Chưa có đối tượng học');
+    if (!course.levels.length) blockers.push('Chưa có cấp độ');
+    for (const level of course.levels) {
+      if (
+        !level.entryRequirements?.trim() ||
+        !level.expectedOutcomes ||
+        !level.assessmentScheme ||
+        !level.completionCriteria?.trim()
+      ) {
+        blockers.push(
+          `Cấp độ ${level.code} thiếu chuẩn đầu vào, đầu ra hoặc tiêu chí đánh giá`,
+        );
+      }
+      if (
+        !level.modules.length ||
+        level.modules.some((mod) => !mod.lessons.length)
+      ) {
+        blockers.push(`Cấp độ ${level.code} còn học phần chưa có bài học`);
+      }
+      if (
+        level.modules.some((mod) =>
+          mod.lessons.some((lesson) => !lesson.content?.trim()),
+        )
+      ) {
+        blockers.push(`Cấp độ ${level.code} còn bài học thiếu nội dung`);
+      }
+    }
+    const program = course.programId
+      ? await this.prisma.trainingProgram.findUnique({
+          where: { id: course.programId },
+        })
+      : null;
+    const programApproved =
+      program?.status === PublicationStatus.PUBLISHED && program.isPublic;
+    if (!programApproved)
+      blockers.push('Chương trình chưa được công bố công khai');
+    const profile = course.academicProfile;
+    const review =
+      profile && !Array.isArray(profile) && typeof profile === 'object'
+        ? (profile as Record<string, unknown>)
+        : {};
+    const academicReviewRequired =
+      review['reviewRequired'] !== false ||
+      review['reviewHash'] !== this.reviewDigest(course);
+    if (academicReviewRequired)
+      blockers.push('Cần rà soát và xác nhận nội dung học thuật hiện tại');
+    return {
+      courseId: id,
+      status: course.publicationStatus,
+      blockers,
+      academicReviewRequired,
+      canConfirmReview:
+        course.publicationStatus === PublicationStatus.IN_REVIEW &&
+        blockers.every(
+          (item) =>
+            item === 'Chương trình chưa được công bố công khai' ||
+            item === 'Cần rà soát và xác nhận nội dung học thuật hiện tại',
+        ),
+      canPublish:
+        course.publicationStatus === PublicationStatus.IN_REVIEW &&
+        blockers.length === 0,
+    };
+  }
+
+  async confirmCourseAcademicReview(id: string, reviewerId: string) {
+    const check = await this.validateCoursePublication(id);
+    if (!check.canConfirmReview) {
+      throw new BadRequestException(
+        'Cần hoàn thiện nội dung và gửi duyệt khóa trước khi xác nhận',
+      );
+    }
+    const course = await this.findOne(id);
+    const profile = course.academicProfile;
+    const existing =
+      profile && !Array.isArray(profile) && typeof profile === 'object'
+        ? (profile as Record<string, unknown>)
+        : {};
+    return this.prisma.course.update({
+      where: { id },
+      data: {
+        academicProfile: {
+          ...existing,
+          reviewRequired: false,
+          reviewHash: this.reviewDigest(course),
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: reviewerId,
+        },
+      },
+    });
+  }
+
   async create(dto: CreateCourseDto) {
     const existing = await this.prisma.course.findUnique({
       where: { code: dto.code },
@@ -406,9 +560,11 @@ export class CoursesService {
       'language',
       'publicDescription',
     ] as const;
-    if (academicFields.some((field) =>
-      dto[field] !== undefined && dto[field] !== course[field],
-    )) {
+    if (
+      academicFields.some(
+        (field) => dto[field] !== undefined && dto[field] !== course[field],
+      )
+    ) {
       await this.assertCurriculumEditable(id, course.publicationStatus);
     }
 
@@ -479,27 +635,9 @@ export class CoursesService {
       }
     }
     if (status === PublicationStatus.PUBLISHED) {
-      if (
-        !course.programId ||
-        !course.isActive ||
-        !course.description?.trim() ||
-        !course.publicDescription?.trim() ||
-        !course.levels.some((level) =>
-          level.modules.some((mod) => mod.lessons.length > 0),
-        )
-      ) {
-        throw new BadRequestException(
-          'Khóa học thiếu chương trình, trạng thái hoạt động hoặc nội dung học thuật để công bố',
-        );
-      }
-      const program = await this.prisma.trainingProgram.findUnique({
-        where: { id: course.programId },
-      });
-      if (program?.status !== PublicationStatus.PUBLISHED) {
-        throw new BadRequestException(
-          'Chương trình đào tạo chưa được duyệt công bố',
-        );
-      }
+      const check = await this.validateCoursePublication(id);
+      if (!check.canPublish)
+        throw new BadRequestException(check.blockers.join('; '));
     }
     if (
       status === PublicationStatus.ARCHIVED &&
@@ -574,7 +712,10 @@ export class CoursesService {
         'Khóa học đã lưu trữ, không thể chỉnh sửa cấp độ',
       );
     }
-    await this.assertCurriculumEditable(level.courseId, level.course.publicationStatus);
+    await this.assertCurriculumEditable(
+      level.courseId,
+      level.course.publicationStatus,
+    );
     if (dto.code && dto.code !== level.code) {
       const existing = await this.prisma.courseLevel.findUnique({
         where: { courseId_code: { courseId: level.courseId, code: dto.code } },
@@ -626,7 +767,10 @@ export class CoursesService {
         'Không thể thêm học phần vào khóa đã lưu trữ',
       );
     }
-    await this.assertCurriculumEditable(level.courseId, level.course.publicationStatus);
+    await this.assertCurriculumEditable(
+      level.courseId,
+      level.course.publicationStatus,
+    );
 
     return this.prisma.module.create({
       data: {
@@ -640,7 +784,12 @@ export class CoursesService {
     const module = await this.prisma.module.findUnique({
       where: { id },
       include: {
-        level: { select: { courseId: true, course: { select: { publicationStatus: true } } } },
+        level: {
+          select: {
+            courseId: true,
+            course: { select: { publicationStatus: true } },
+          },
+        },
       },
     });
     if (!module) {
@@ -651,7 +800,10 @@ export class CoursesService {
         'Không thể sửa học phần của khóa đã lưu trữ',
       );
     }
-    await this.assertCurriculumEditable(module.level.courseId, module.level.course.publicationStatus);
+    await this.assertCurriculumEditable(
+      module.level.courseId,
+      module.level.course.publicationStatus,
+    );
     return this.prisma.module.update({ where: { id }, data: dto });
   }
 
@@ -695,7 +847,10 @@ export class CoursesService {
         'Không thể thêm bài học vào khóa đã lưu trữ',
       );
     }
-    await this.assertCurriculumEditable(mod.level.courseId, mod.level.course.publicationStatus);
+    await this.assertCurriculumEditable(
+      mod.level.courseId,
+      mod.level.course.publicationStatus,
+    );
 
     return this.prisma.lesson.create({
       data: {
@@ -731,7 +886,10 @@ export class CoursesService {
         'Không thể sửa bài học của khóa đã lưu trữ',
       );
     }
-    await this.assertCurriculumEditable(lesson.module.level.courseId, lesson.module.level.course.publicationStatus);
+    await this.assertCurriculumEditable(
+      lesson.module.level.courseId,
+      lesson.module.level.course.publicationStatus,
+    );
     return this.prisma.lesson.update({ where: { id }, data: dto });
   }
 
@@ -764,7 +922,10 @@ export class CoursesService {
         'Không thể thêm tài liệu vào khóa đã lưu trữ',
       );
     }
-    await this.assertCurriculumEditable(lesson.module.level.courseId, lesson.module.level.course.publicationStatus);
+    await this.assertCurriculumEditable(
+      lesson.module.level.courseId,
+      lesson.module.level.course.publicationStatus,
+    );
 
     return this.prisma.lessonMaterial.create({
       data: {

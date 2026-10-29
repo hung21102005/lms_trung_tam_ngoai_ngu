@@ -187,6 +187,20 @@ class ProgramCatalogRepository {
     await apiClient.patch('/courses/$id/publication', data: {'status': status});
   }
 
+  Future<Map<String, dynamic>> validateCoursePublication(String id) async {
+    final result = _unwrap(
+      await apiClient.get('/courses/$id/publication-check'),
+    );
+    if (result is! Map) {
+      throw const FormatException('Kết quả kiểm tra công bố không hợp lệ');
+    }
+    return Map<String, dynamic>.from(result);
+  }
+
+  Future<void> confirmCourseAcademicReview(String id) async {
+    await apiClient.post('/courses/$id/academic-review');
+  }
+
   Future<List<ProgramCourseRecord>> searchUnassignedCourses(
     String search,
   ) async {

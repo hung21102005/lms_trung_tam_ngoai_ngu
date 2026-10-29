@@ -33,7 +33,13 @@ import {
   PublicationDto,
   ProgramVisibilityDto,
 } from './dto/index.js';
-import { JwtAuthGuard, RolesGuard, Roles, Public } from '../auth/index.js';
+import {
+  JwtAuthGuard,
+  RolesGuard,
+  Roles,
+  Public,
+  CurrentUser,
+} from '../auth/index.js';
 
 @ApiTags('Courses & Curriculum')
 @Controller()
@@ -156,7 +162,7 @@ export class CoursesController {
   @Post('courses')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Tạo khóa học mới (Super Admin, Branch Admin, Academic Staff)',
+    summary: 'Tạo khóa học mới (Super Admin, Academic Staff)',
   })
   @ApiResponse({ status: 201, description: 'Tạo khóa học thành công' })
   @ApiResponse({ status: 409, description: 'Mã khóa học đã tồn tại' })
@@ -182,6 +188,29 @@ export class CoursesController {
   @ApiOperation({ summary: 'Duyệt hoặc lưu trữ khóa học theo trạng thái' })
   changeCourseStatus(@Param('id') id: string, @Body() dto: PublicationDto) {
     return this.coursesService.changeCourseStatus(id, dto.status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Get('courses/:id/publication-check')
+  @ApiOperation({
+    summary: 'Kiểm tra điều kiện công bố khóa và nội dung học thuật',
+  })
+  validateCoursePublication(@Param('id') id: string) {
+    return this.coursesService.validateCoursePublication(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Post('courses/:id/academic-review')
+  @ApiOperation({ summary: 'Xác nhận đã rà soát nội dung học thuật hiện tại' })
+  confirmCourseAcademicReview(
+    @Param('id') id: string,
+    @CurrentUser('id') reviewerId: string,
+  ) {
+    return this.coursesService.confirmCourseAcademicReview(id, reviewerId);
   }
 
   // --------------------------------------------------------------------------

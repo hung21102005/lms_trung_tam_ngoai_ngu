@@ -72,7 +72,8 @@ describe('CoursesService', () => {
     }).compile();
 
     service = module.get<CoursesService>(CoursesService);
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockPrismaService.class.count.mockResolvedValue(0);
   });
 
   it('should be defined', () => {
@@ -288,7 +289,7 @@ describe('CoursesService', () => {
     });
 
     it('blocks draft course publication without an approved program', async () => {
-      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+      mockPrismaService.course.findUnique.mockResolvedValue({
         id: 'course-1',
         publicationStatus: PublicationStatus.IN_REVIEW,
         programId: 'program-1',
@@ -312,23 +313,59 @@ describe('CoursesService', () => {
     });
 
     it('publishes a reviewed course with approved program and lessons', async () => {
-      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+      const course = {
         id: 'course-1',
         publicationStatus: PublicationStatus.IN_REVIEW,
         programId: 'program-1',
         isActive: true,
+        slug: 'reviewed-course',
         description: 'Mô tả',
         publicDescription: 'Mô tả công khai',
+        targetAudience: 'Người học',
+        academicProfile: { reviewRequired: true },
         levels: [
           {
-            modules: [{ lessons: [{ id: 'lesson-1' }] }],
+            code: 'A1',
+            entryRequirements: 'Đầu vào',
+            expectedOutcomes: ['A1'],
+            assessmentScheme: { test: 100 },
+            completionCriteria: 'Đạt',
+            modules: [
+              {
+                lessons: [
+                  {
+                    id: 'lesson-1',
+                    title: 'Bài 1',
+                    content: 'Nội dung',
+                    materials: [],
+                  },
+                ],
+              },
+            ],
             _count: { classes: 0 },
           },
         ],
-      });
-      mockPrismaService.trainingProgram.findUnique.mockResolvedValueOnce({
+      };
+      mockPrismaService.course.findUnique.mockResolvedValue(course);
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValue({
         status: PublicationStatus.PUBLISHED,
+        isPublic: true,
       });
+      mockPrismaService.course.update.mockImplementation(async ({ data }) => {
+        Object.assign(course, data);
+        return course;
+      });
+      const beforeReview = await service.validateCoursePublication('course-1');
+      expect(beforeReview.canPublish).toBe(false);
+      expect(beforeReview.canConfirmReview).toBe(true);
+      await service.confirmCourseAcademicReview('course-1', 'academic-1');
+      const afterReview = await service.validateCoursePublication('course-1');
+      expect(afterReview.canPublish).toBe(true);
+      course.levels[0].modules[0].lessons[0].title = 'Bài đã sửa';
+      expect(
+        (await service.validateCoursePublication('course-1')).canPublish,
+      ).toBe(false);
+      course.levels[0].modules[0].lessons[0].title = 'Bài 1';
       mockPrismaService.course.update.mockResolvedValueOnce({
         publicationStatus: PublicationStatus.PUBLISHED,
       });
@@ -337,6 +374,37 @@ describe('CoursesService', () => {
         where: { id: 'course-1' },
         data: { publicationStatus: PublicationStatus.PUBLISHED },
       });
+    });
+
+    it('blocks publication when an academic review is missing', async () => {
+      mockPrismaService.course.findUnique.mockResolvedValue({
+        publicationStatus: PublicationStatus.IN_REVIEW,
+        programId: 'program-1',
+        isActive: true,
+        slug: 'a1',
+        description: 'Mô tả',
+        publicDescription: 'Mô tả công khai',
+        targetAudience: 'Người học',
+        academicProfile: { reviewRequired: true },
+        levels: [
+          {
+            code: 'A1',
+            entryRequirements: 'Đầu vào',
+            expectedOutcomes: ['A1'],
+            assessmentScheme: { test: 100 },
+            completionCriteria: 'Đạt',
+            modules: [{ lessons: [{ content: 'Nội dung', materials: [] }] }],
+          },
+        ],
+      });
+      mockPrismaService.trainingProgram.findUnique.mockResolvedValue({
+        status: PublicationStatus.PUBLISHED,
+        isPublic: true,
+      });
+      await expect(
+        service.changeCourseStatus('course-1', PublicationStatus.PUBLISHED),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.course.update).not.toHaveBeenCalled();
     });
 
     it('blocks unpublishing while a class is open', async () => {

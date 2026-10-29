@@ -62,6 +62,13 @@ class _Api extends Fake implements ApiClient {
         ],
       };
     }
+    if (path == '/courses/course-1/publication-check') {
+      return {
+        'canPublish': false,
+        'canConfirmReview': true,
+        'blockers': ['Cần rà soát và xác nhận nội dung học thuật hiện tại'],
+      };
+    }
     throw StateError(path);
   }
 
@@ -94,6 +101,7 @@ class _Api extends Fake implements ApiClient {
   }) async {
     calls.add('POST $path');
     if (path == '/courses') return {'id': 'course-new'};
+    if (path == '/courses/course-1/academic-review') return {};
     programs.add({
       'id': 'program-2',
       ...Map<String, dynamic>.from(data as Map),
@@ -138,6 +146,30 @@ void main() {
     await tester.tap(find.text('Gửi duyệt'));
     await tester.pumpAndSettle();
     expect(api.calls, contains('PATCH /programs/program-1/status IN_REVIEW'));
+  });
+
+  testWidgets('course validation shows blockers and confirms academic review', (
+    tester,
+  ) async {
+    final api = _Api();
+    api.course['publicationStatus'] = 'IN_REVIEW';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(repository: ProgramCatalogRepository(api)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác khóa học'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kiểm tra công bố'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Cần rà soát và xác nhận'), findsWidgets);
+    await tester.tap(find.text('Xác nhận đã rà soát'));
+    await tester.pumpAndSettle();
+    expect(api.calls, contains('GET /courses/course-1/publication-check'));
+    expect(api.calls, contains('POST /courses/course-1/academic-review'));
   });
 
   testWidgets('create form sends real API request', (tester) async {

@@ -80,6 +80,7 @@ Also inspect private builders, dialogs, bottom sheets, and tab content in each l
 - Nút tạo/sửa khóa tại danh sách và chi tiết dùng một biểu mẫu Adaptive, chọn chương trình và các trường khóa theo schema. Mobile dùng form cuộn một cột và nút hành động dễ chạm; Desktop giữ cấu trúc thẻ hiện có. Các thẻ khóa Mobile dùng Wrap cho hành động để tránh tràn ở 320 px.
 - Widget tests danh sách, chi tiết, chương trình ở 320, 375, 393, 430, 800 và 1200 logical pixels cùng tạo/sửa/lộ trình: **39/39 đạt**. Backend build/unit đã đạt; thao tác trên thiết bị, bàn phím thật, ảnh chụp đối chiếu Desktop và API sống vẫn **chưa kiểm chứng**.
 - Tiếp tục Visual Audit Course Management và Public Website sau luồng kiểm duyệt khóa; không đánh dấu toàn bộ Admin/Public Adaptive hoàn thành.
+- Màn hình kiểm tra công bố khóa dùng dialog cuộn có giới hạn chiều rộng, liệt kê điều kiện thiếu và nút xác nhận rà soát chỉ khi Backend cho phép. Widget tests mới xác nhận API thật được gọi qua Repository; kiểm thử 40/40, analyzer sạch. Chưa chụp ảnh so sánh trình duyệt/thiết bị.
 
 1. **Audit and foundation:** add width classification and reusable mobile surfaces/status tokens. Keep business logic shared. Do not silently switch existing desktop navigation.
 2. **P0 Student Assignments:** dedicated mobile list, search/filter/sort, detail/results, and work screen with existing recorder/upload/draft/submit/resubmit behavior. Test 320, 375, 393, 430; tablet and desktop regression.

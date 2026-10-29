@@ -362,6 +362,76 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
     }
   }
 
+  Future<void> _showCoursePublicationCheck(ProgramCourseRecord course) async {
+    try {
+      final result = await widget.repository.validateCoursePublication(
+        course.id,
+      );
+      if (!mounted) return;
+      final blockers = (result['blockers'] as List? ?? const [])
+          .map((item) => item.toString())
+          .toList();
+      final canConfirmReview = result['canConfirmReview'] == true;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('Kiểm tra công bố: ${course.title}'),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    result['canPublish'] == true
+                        ? 'Khóa học đã đủ điều kiện công bố.'
+                        : 'Cần xử lý các mục sau trước khi công bố:',
+                  ),
+                  for (final blocker in blockers)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text('• $blocker'),
+                    ),
+                  if (canConfirmReview) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Chỉ xác nhận sau khi đã đọc mô tả, cấp độ và toàn bộ lộ trình. Nội dung thay đổi sẽ yêu cầu rà soát lại.',
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Đóng'),
+            ),
+            if (canConfirmReview)
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _change(
+                    () => widget.repository.confirmCourseAcademicReview(
+                      course.id,
+                    ),
+                  );
+                },
+                child: const Text('Xác nhận đã rà soát'),
+              ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không kiểm tra được khóa học: $error')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => FractionallySizedBox(
     heightFactor: .9,
@@ -514,6 +584,8 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
                           onSelected: (action) {
                             if (action == 'edit') {
                               _openCourseEditor(program, course);
+                            } else if (action == 'validate') {
+                              _showCoursePublicationCheck(course);
                             } else {
                               _change(
                                 () => widget.repository.changeCourseStatus(
@@ -524,6 +596,10 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
                             }
                           },
                           itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'validate',
+                              child: Text('Kiểm tra công bố'),
+                            ),
                             const PopupMenuItem(
                               value: 'edit',
                               child: Text('Sửa khóa học'),
