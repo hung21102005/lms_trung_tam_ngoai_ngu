@@ -5,6 +5,8 @@ import 'package:lms_trung_tam_ngoai_ngu/features/dashboard/presentation/views/cl
 
 class _FakeApiClient implements ApiClient {
   String status = 'PENDING';
+  bool guest = false;
+  bool converted = false;
   String? lastPath;
   Map<String, dynamic>? lastBody;
 
@@ -20,7 +22,8 @@ class _FakeApiClient implements ApiClient {
       'phone': '0988776655',
       'email': 'an@example.com',
       'status': status,
-      'studentId': 'student-1',
+      'studentId': guest ? null : 'student-1',
+      'lead': guest ? {'convertedUserId': converted ? 'student-1' : null} : null,
       'class': {'name': 'English A1 K01', 'code': 'A1-K01'},
     },
   ];
@@ -83,4 +86,22 @@ void main() {
       }
     },
   );
+
+  testWidgets('guest request requires a converted student before approval', (
+    tester,
+  ) async {
+    final api = _FakeApiClient()..guest = true;
+    await tester.pumpWidget(
+      MaterialApp(home: ClassRegistrationsAdminScreen(apiClient: api)),
+    );
+    await tester.pumpAndSettle();
+    FilledButton approve() =>
+        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Xác nhận nhập học'));
+    expect(approve().onPressed, isNull);
+    expect(find.text('Tìm Lead trong CRM'), findsOneWidget);
+    api.converted = true;
+    await tester.tap(find.byTooltip('Làm mới'));
+    await tester.pumpAndSettle();
+    expect(approve().onPressed, isNotNull);
+  });
 }

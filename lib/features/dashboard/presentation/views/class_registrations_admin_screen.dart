@@ -240,6 +240,8 @@ class _ClassRegistrationsAdminScreenState
     final id = '${item['id']}';
     final pending = status == 'PENDING' || status == 'CONTACTED';
     final guest = item['studentId'] == null;
+    final lead = item['lead'] as Map?;
+    final hasVerifiedStudent = !guest || lead?['convertedUserId'] != null;
     return Card(
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -305,7 +307,9 @@ class _ClassRegistrationsAdminScreenState
                       child: const Text('Tìm Lead trong CRM'),
                     ),
                   FilledButton(
-                    onPressed: _busyId == null ? () => _act(item) : null,
+                    onPressed: _busyId == null && hasVerifiedStudent
+                        ? () => _act(item)
+                        : null,
                     child: Text(
                       _busyId == id ? 'Đang xử lý...' : 'Xác nhận nhập học',
                     ),

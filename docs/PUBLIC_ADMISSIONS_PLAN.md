@@ -177,3 +177,8 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Kiểm thử: Backend build đạt, lint đạt với 8 cảnh báo cũ, unit **173/173 đạt**, academic HTTP E2E **5/5 đạt** cho xác thực/validation và đơn không tồn tại. Flutter scoped analyzer **0 issues**; widget public + hàng chờ **9/9 đạt** trên 320/375/393/430/800/1200 logical px; Web build đạt. `git diff --check` không báo lỗi nội dung.
 - **Chưa kiểm chứng:** HTTP tạo đơn và duyệt thành công với lớp vận hành đã công bố, hành vi cạnh tranh sĩ số khi ghi danh đồng thời qua nhiều endpoint, trình duyệt/thiết bị thật, gửi tệp và giao diện CRM toàn luồng. Database hiện không có lớp công khai đủ điều kiện; không tự công bố 47 khóa seed nháp để tạo kết quả kiểm thử giả.
 - **Điểm tiếp tục:** kiểm thử end-to-end khi học vụ có lớp thật được duyệt; nối chuyển Lead → tài khoản học viên và xác nhận đơn trong cùng trải nghiệm CRM; rà soát tương tác với các đường ghi danh thủ công để bảo toàn sĩ số; tiếp tục đồng bộ tài chính/lịch học và Adaptive UI còn Pending.
+
+### Bổ sung hàng chờ sau checkpoint
+
+- `GET /admissions/registrations` trả trạng thái `lead.convertedUserId` cho học vụ. Nút xác nhận nhập học của đơn khách mới chỉ hoạt động sau khi Lead đã gắn với tài khoản học viên; học vụ dùng lối vào CRM để chuyển Lead rồi làm mới hàng chờ. Không yêu cầu nhập UUID thủ công trên giao diện.
+- Backend build và 9 kiểm thử service đạt; Flutter analyzer 0 lỗi và 2 kiểm thử widget hàng chờ đạt, gồm trạng thái khóa/mở nút duyệt. Chưa kiểm chứng HTTP tạo và duyệt đơn thật vì chưa có lớp công khai hợp lệ.

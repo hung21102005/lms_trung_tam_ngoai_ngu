@@ -210,6 +210,7 @@ export class ClassRegistrationsService {
         status: true,
         studentId: true,
         leadId: true,
+        lead: { select: { convertedUserId: true } },
         createdAt: true,
         class: { select: { name: true, code: true, branchId: true } },
       },
