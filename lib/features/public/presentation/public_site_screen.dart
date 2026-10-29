@@ -772,9 +772,9 @@ class _HeroCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: .15),
               borderRadius: BorderRadius.circular(100),
             ),
-            child: const Text(
-              'HỌC TIẾNG ANH CÙNG EDULMS',
-              style: TextStyle(
+            child: Text(
+              mobile ? 'EDULMS · TIẾNG ANH' : 'HỌC TIẾNG ANH CÙNG EDULMS',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -782,11 +782,11 @@ class _HeroCard extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: mobile ? 22 : 28),
+          SizedBox(height: mobile ? 18 : 28),
           Text(
             title,
             style: TextStyle(
-              fontSize: mobile ? 30 : 42,
+              fontSize: mobile ? (constraints.maxWidth < 360 ? 27 : 30) : 42,
               height: 1.14,
               fontWeight: FontWeight.w800,
               color: Colors.white,

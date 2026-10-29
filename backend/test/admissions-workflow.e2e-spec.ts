@@ -644,6 +644,12 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
       .set('Authorization', auth)
       .send({ status: 'PUBLISHED' });
     expect(published.status).toBe(200);
+    const publishedCatalog = await request(server).get('/public/courses');
+    expect(
+      publishedCatalog.body.some(
+        (item: { slug: string }) => item.slug === slug,
+      ),
+    ).toBe(true);
     const publicDetail = await request(server).get(`/public/courses/${slug}`);
     expect(publicDetail.status).toBe(200);
     expect(publicDetail.body.levels[0].modules[0].lessons[0].title).toBe(
