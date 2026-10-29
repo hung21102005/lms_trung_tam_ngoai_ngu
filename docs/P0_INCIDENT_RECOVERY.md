@@ -4,7 +4,7 @@
 
 Work started from `develop` at `bf7ffb3` with 42 already-modified tracked files and multiple untracked documents, images, tests and scratch files. No reset, clean, database migration, seed edit, or operational DELETE was performed. The pre-existing work remains in the working tree. This document records only the P0 recovery work; it does not certify unrelated modules.
 
-Isolated checkpoints created during recovery: `a60f3d4` (Profile), `8e368a3` (Course backend), `7494a5d` (Class backend), `4129ee5` (Course client/state), and `c3a8b5e` (Class client/actions). These checkpoints include relevant pre-existing uncommitted edits in the same Course/Class files; other pre-existing files remain unstaged and untouched. In particular, the large uncommitted `course_detail_screen.dart` change was not included in the Course client checkpoint.
+Isolated checkpoints created during recovery: `a60f3d4` (Mobile Profile), `8e368a3` (Course backend), `7494a5d` (Class backend), `4129ee5` (Course client/state), `c3a8b5e` (Class client/actions), and `6a550fe` (Desktop Profile width fixes). These checkpoints include relevant pre-existing uncommitted edits in the same Course/Class files; other pre-existing files remain unstaged and untouched. In particular, the large uncommitted `course_detail_screen.dart` change was not included in the Course client checkpoint.
 
 ## Confirmed causes and repairs
 
@@ -22,14 +22,15 @@ Isolated checkpoints created during recovery: `a60f3d4` (Profile), `8e368a3` (Co
 - Flutter Course Bloc focused tests: 10/10 passed, including 403/404/405/409/500 failure handling and duplicate submission.
 - Flutter Class deletion message tests: 3/3 passed. New Class list action-visibility tests: 2/2 passed.
 - Mobile Profile widget checks at 320, 375, 393, 430 and 800 logical pixels: passed. The 393 px edit-route interaction passed.
+- Desktop Profile overflows identified at 1200 and 1440 px were repaired in six constrained rows without changing the two-column layout. The complete seven-width Profile widget suite now passes 7/7.
 - Focused Course Bloc + Class deletion-message rerun after final formatting: 13/13 passed. Focused Flutter analysis of 12 P0 files: no issues found.
-- `flutter build web --debug`: passed. `flutter run -d chrome --web-port 58080` started and rendered the public home page in Chrome, including iPhone 16 emulation at 393 px.
+- `flutter build web --debug`: passed before and after the final Profile width repair (final build: 107.1 s). `flutter run -d chrome --web-port 58080` started and rendered the public home page in Chrome, including iPhone 16 emulation at 393 px. The debug browser window was closed after inspection.
 
 ## Unresolved verification and observed failures
 
 - The reported `dependents.isEmpty` assertion has **not** been reproduced and no project widget can yet be identified from a stack trace. A direct unauthenticated request to `/profile` redirected to the public home page; an authenticated Profile → edit → save → dashboard flow was not verified in the browser. Do not mark this assertion fixed without a trace and reproduction.
 - Chrome debug emulation produced a **different** Flutter engine assertion, `_viewInsets.isNonNegative`, during a direct URL reload. Its stack is in `lib/_engine/engine/window.dart` and contains no EduLMS widget. The same run reported an unrelated 38 px public AppBar overflow at `lib/features/public/presentation/public_site_screen.dart:133`. These observations must not be conflated with `dependents.isEmpty`.
-- The Profile regression test's 1200 and 1440 px cases still reveal multiple pre-existing desktop RenderFlex overflows. The restored mobile breakpoint did not change the desktop branch. Desktop needs a separate targeted layout repair; do not claim all seven widths clean.
+- The seven-width Profile widget suite is clean, but authenticated browser use of Profile, editing, save with keyboard open, and SafeArea interaction still require live verification.
 - Existing Admin Course adaptive tests still fail at 320 and 1200 px plus stale UI expectations. Existing Admin Class adaptive tests still fail at 1200 px plus a stale label expectation. New P0 behavior tests pass, but the broader adaptive suites do not.
 - No HTTP DELETE was sent to an operational database. Backend route integration with a running isolated test database, browser refresh after a real deletion, and the authenticated mutation/navigation flow remain unverified.
 - Full `flutter analyze --no-pub` after the final lint fixes reports 104 repository issues (0 errors, 15 warnings, 89 infos; exit code 1). It does not pass cleanly. The focused 12-file P0 analysis reports no issues.
@@ -37,7 +38,7 @@ Isolated checkpoints created during recovery: `a60f3d4` (Profile), `8e368a3` (Co
 ## Next safe steps
 
 1. Reproduce `dependents.isEmpty` with an authenticated test account and capture the complete debug stack, route and preceding action. Fix only the confirmed lifecycle cause.
-2. Address Profile desktop overflows at 1200/1440 while retaining its visual design; rerun the seven-width regression test and visually inspect Mobile/Profile edit with keyboard and SafeArea.
+2. Visually inspect authenticated Mobile/Profile edit with the keyboard and SafeArea; the seven-width widget suite is already green.
 3. Run Course/Class DELETE integration tests against an isolated test database created for the tests; verify list refresh and persisted results after browser reload.
 4. Resolve the existing Course/Class adaptive suite failures without weakening test assertions, then run full Flutter analysis and related suites again.
 5. Reconcile the remaining pre-existing working-tree edits with their owners before any broader checkpoint. Do not include diagrams, scratch assets or unrelated module edits in a P0 commit.
