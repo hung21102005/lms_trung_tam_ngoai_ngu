@@ -378,3 +378,8 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 
 - Public course catalog now searches API records by title, code and program, with alphabetical sorting. Mobile uses vertically stacked search/sort fields; Desktop uses a single control row. Search empty state is distinct from an unpublished catalog.
 - Public widget tests **11/11 passed** including search at 375 px; scoped analyzer **0 issues**, Web build **passed**. The cumulative focused set in this work session is **57/57**. Full-repo analyzer exits 1 with **121 existing info diagnostics** in untouched files. Live-browser validation remains pending.
+
+### Checkpoint 2026-10-29 — Admin course public preview
+
+- The Admin course detail has a public-content preview in a scrollable sheet using the already loaded Course/Level/Module/Lesson state. It shows the public description and learning path before publication and explains when a draft is not visible to guests. This does not publish or mutate a course.
+- Widget tests cover opening the preview at 320 and 1200 logical pixels and expanding the curriculum. Browser/physical-device typography and long-content visual review remain unverified; see `docs/PUBLIC_ADMISSIONS_PLAN.md`.

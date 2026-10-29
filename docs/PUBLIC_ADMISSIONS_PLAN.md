@@ -264,3 +264,8 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Kiểm tra thêm dialog Validate với 18 điều kiện dài ở 320×700: cuộn đến mục cuối và không tràn; test **1/1 đạt**. Tổng test tập trung Course/Public ở lượt này **55/55**.
 - Visual Audit qua ảnh render widget tại 320, 375, 1200 px phát hiện hero Mobile ở 320 quá cao; đã rút gọn nhãn và cỡ tiêu đề, render lại và kiểm tra không cắt nội dung. Ảnh nằm trong `build/public_home_audit_*.png` (không commit); font trong môi trường test không hiển thị đúng nên chưa kết luận về typography Browser/thiết bị. Public widget **12/12 đạt** lại sau chỉnh sửa.
 - HTTP E2E được tăng kiểm tra: sau Publish, khóa có mặt trong `GET /public/courses`, chi tiết có lộ trình; sau Unpublish, khóa biến mất khỏi catalog. Chạy lại database test cô lập **6/6 đạt**.
+
+## Checkpoint xem trước nội dung công khai của khóa (2026-10-29)
+
+- Chi tiết khóa Admin có nút **Xem trước nội dung công khai** dùng chính Course/Level/Module/Lesson đã tải qua Bloc, cho xem mô tả công khai, đối tượng học và lộ trình khi khóa còn nháp. Không gọi Public API vốn chỉ trả khóa đã công bố. Hiển thị rõ khóa chưa xuất hiện với khách.
+- Widget test Mobile 320 px và Desktop 1200 px mở bản xem trước và mở cấp độ để thấy học phần **2/2 đạt**; toàn bộ test chi tiết khóa **18/18 đạt**, analyzer phạm vi sạch. Trình duyệt thật vẫn chưa kiểm chứng.

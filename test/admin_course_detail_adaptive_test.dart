@@ -115,6 +115,7 @@ class _Repository extends Fake implements CoursesRepository {
       code: 'IELTS-F-01',
       title: 'IELTS Foundation: chương trình luyện thi với tên rất dài trên màn hình nhỏ',
       description: 'Mô tả chương trình đào tạo dài để kiểm tra xuống dòng trên thiết bị nhỏ.',
+      publicDescription: 'Mô tả công khai để kiểm tra trước khi duyệt khóa.',
       publicationStatus: archived
           ? 'ARCHIVED'
           : published
@@ -403,6 +404,41 @@ void main() {
     expect(find.text('Sửa cấp độ'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  for (final width in [320.0, 1200.0]) {
+    testWidgets('Xem trước khóa chưa công bố ở $width px', (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_app(_Repository()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Xem trước nội dung công khai'));
+      await tester.pumpAndSettle();
+      expect(find.text('Xem trước nội dung công khai'), findsOneWidget);
+      expect(
+        find.text('Mô tả công khai để kiểm tra trước khi duyệt khóa.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('chỉ hiển thị với khách'), findsOneWidget);
+      final preview = find.byType(BottomSheet);
+      final level = find.descendant(
+        of: preview,
+        matching: find.textContaining('Nền tảng nghe nói đọc viết'),
+      );
+      await tester.ensureVisible(level);
+      await tester.tap(level);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: preview,
+          matching: find.textContaining('Học phần phát triển toàn diện'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('Mobile tài liệu yêu cầu chọn tệp trước khi lưu', (tester) async {
     tester.view.physicalSize = const Size(375, 900);

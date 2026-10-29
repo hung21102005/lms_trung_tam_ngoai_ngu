@@ -40,6 +40,97 @@ class CourseDetailScreen extends StatefulWidget {
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
 }
 
+class _CoursePublicPreview extends StatelessWidget {
+  const _CoursePublicPreview({required this.course});
+
+  final CourseModel course;
+
+  @override
+  Widget build(BuildContext context) => FractionallySizedBox(
+    heightFactor: .9,
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          children: [
+            Text(
+              'Xem trước nội dung công khai',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            if (course.publicationStatus != 'PUBLISHED')
+              const Text(
+                'Khóa học chỉ hiển thị với khách sau khi được duyệt công bố.',
+              ),
+            const SizedBox(height: 16),
+            Text(
+              course.title,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              course.publicDescription?.trim().isNotEmpty == true
+                  ? course.publicDescription!
+                  : 'Chưa có mô tả công khai.',
+            ),
+            if (course.targetAudience?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              Text('Đối tượng học: ${course.targetAudience}'),
+            ],
+            const SizedBox(height: 20),
+            Text(
+              'Lộ trình học tập',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (course.levels.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text('Chưa có cấp độ và bài học.'),
+              ),
+            for (final level in course.levels)
+              Card(
+                child: ExpansionTile(
+                  title: Text(level.name),
+                  subtitle: Text(
+                    '${level.modules.length} học phần · '
+                    '${level.estimatedSessions} buổi dự kiến',
+                  ),
+                  children: [
+                    if (level.entryRequirements?.trim().isNotEmpty == true)
+                      ListTile(
+                        title: const Text('Yêu cầu đầu vào'),
+                        subtitle: Text(level.entryRequirements!),
+                      ),
+                    if (level.expectedOutcomes?['summary'] != null)
+                      ListTile(
+                        title: const Text('Kết quả học tập'),
+                        subtitle: Text('${level.expectedOutcomes!['summary']}'),
+                      ),
+                    for (final module in level.modules)
+                      ExpansionTile(
+                        title: Text(module.title),
+                        children: [
+                          for (final lesson in module.lessons)
+                            ListTile(
+                              title: Text(lesson.title),
+                              subtitle:
+                                  lesson.content?.trim().isNotEmpty == true
+                                  ? Text(lesson.content!)
+                                  : null,
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   bool _openingEditor = false;
 
@@ -67,6 +158,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     } finally {
       if (mounted) setState(() => _openingEditor = false);
     }
+  }
+
+  void _showPublicPreview() {
+    final state = context.read<CoursesBloc>().state;
+    if (state is! CourseDetailLoaded) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _CoursePublicPreview(course: state.course),
+    );
   }
 
   bool get _canEditCurriculum {
@@ -398,6 +501,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         actions: [
           if (widget.canEditAcademicLevel)
             IconButton(
+              onPressed: _showPublicPreview,
+              icon: const Icon(Icons.visibility_outlined),
+              tooltip: 'Xem trước nội dung công khai',
+            ),
+          if (widget.canEditAcademicLevel)
+            IconButton(
               onPressed: _openingEditor ? null : _editCourse,
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Chỉnh sửa khóa học',
@@ -612,11 +721,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 ?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          if (_canEditCurriculum) FilledButton.icon(
-            onPressed: _showAddLevelDialog,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Thêm cấp độ'),
-          ),
+          if (_canEditCurriculum)
+            FilledButton.icon(
+              onPressed: _showAddLevelDialog,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Thêm cấp độ'),
+            ),
           const SizedBox(height: 16),
           if (course.levels.isEmpty)
             const MobileSectionCard(child: Text('Chưa có cấp độ đào tạo nào'))

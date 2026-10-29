@@ -5,11 +5,13 @@ class CourseModel extends Equatable {
   final String code;
   final String title;
   final String? description;
+  final String? publicDescription;
   final String? targetAudience;
   final String language;
   final String? thumbnailUrl;
   final bool isActive;
   final String publicationStatus;
+  final String curriculumVersion;
   final int levelsCount;
   final int classesCount;
   final List<CourseLevelModel> levels;
@@ -21,11 +23,13 @@ class CourseModel extends Equatable {
     required this.code,
     required this.title,
     this.description,
+    this.publicDescription,
     this.targetAudience,
     this.language = 'English',
     this.thumbnailUrl,
     this.isActive = true,
     this.publicationStatus = 'DRAFT',
+    this.curriculumVersion = '1.0',
     this.levelsCount = 0,
     this.classesCount = 0,
     this.levels = const [],
@@ -53,11 +57,13 @@ class CourseModel extends Equatable {
       code: json['code'] as String? ?? '',
       title: json['title'] as String? ?? '',
       description: json['description'] as String?,
+      publicDescription: json['publicDescription'] as String?,
       targetAudience: json['targetAudience'] as String?,
       language: json['language'] as String? ?? 'English',
       thumbnailUrl: json['thumbnailUrl'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       publicationStatus: json['publicationStatus'] as String? ?? 'DRAFT',
+      curriculumVersion: json['curriculumVersion'] as String? ?? '1.0',
       levelsCount: lCount,
       classesCount: cCount,
       levels: parsedLevels,
@@ -76,11 +82,13 @@ class CourseModel extends Equatable {
       'code': code,
       'title': title,
       'description': description,
+      'publicDescription': publicDescription,
       'targetAudience': targetAudience,
       'language': language,
       'thumbnailUrl': thumbnailUrl,
       'isActive': isActive,
       'publicationStatus': publicationStatus,
+      'curriculumVersion': curriculumVersion,
     };
   }
 
@@ -90,11 +98,13 @@ class CourseModel extends Equatable {
     code,
     title,
     description,
+    publicDescription,
     targetAudience,
     language,
     thumbnailUrl,
     isActive,
     publicationStatus,
+    curriculumVersion,
     levelsCount,
     classesCount,
     levels,
