@@ -182,3 +182,9 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 
 - `GET /admissions/registrations` trả trạng thái `lead.convertedUserId` cho học vụ. Nút xác nhận nhập học của đơn khách mới chỉ hoạt động sau khi Lead đã gắn với tài khoản học viên; học vụ dùng lối vào CRM để chuyển Lead rồi làm mới hàng chờ. Không yêu cầu nhập UUID thủ công trên giao diện.
 - Backend build và 9 kiểm thử service đạt; Flutter analyzer 0 lỗi và 2 kiểm thử widget hàng chờ đạt, gồm trạng thái khóa/mở nút duyệt. Chưa kiểm chứng HTTP tạo và duyệt đơn thật vì chưa có lớp công khai hợp lệ.
+
+## Checkpoint đồng bộ ghi danh thủ công và duyệt đơn (2026-10-29)
+
+- `ClassesService.enrollStudent` nay kiểm tra sĩ số, ghi danh và tạo hóa đơn trong một Prisma transaction `Serializable`, cùng mức cách ly với duyệt đơn đăng ký. Lỗi tranh chấp `P2034` được thử lại tối đa 3 lần; mã hóa đơn dùng định danh ngẫu nhiên thay cho phép đếm dễ trùng. Nếu một bước thất bại, transaction không xác nhận ghi danh riêng lẻ.
+- Backend build đạt; lint đạt với 8 cảnh báo cũ; toàn bộ unit **175/175 đạt**, gồm 2 hồi quy mới cho transaction và retry; `git diff --check` đạt. Chưa kiểm chứng tải đồng thời thật với PostgreSQL, HTTP ghi danh thành công trên lớp đã công bố, hoặc luồng thiết bị thật.
+- **Điểm tiếp tục:** kết nối chuyển Lead thành học viên với xác nhận đơn trong CRM, rồi chạy HTTP E2E trên lớp đã được học vụ duyệt học thuật. Không tự công bố seed nháp. Đồng thời rà soát các luồng điều chỉnh sĩ số và hóa đơn khác trước khi đánh dấu toàn bộ tuyển sinh hoàn thành.

@@ -8,7 +8,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ClassStatus, EnrollmentStatus, UserStatus } from '@prisma/client';
+import {
+  ClassStatus,
+  EnrollmentStatus,
+  UserStatus,
+  Prisma,
+} from '@prisma/client';
 
 describe('ClassesService', () => {
   let service: ClassesService;
@@ -86,6 +91,7 @@ describe('ClassesService', () => {
       update: vi.fn(),
       delete: vi.fn(),
     },
+    invoice: { findFirst: vi.fn(), create: vi.fn() },
     parentStudent: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -105,6 +111,7 @@ describe('ClassesService', () => {
     vi.clearAllMocks();
     mockPrismaService.room.findUnique.mockResolvedValue(mockRoom);
     mockPrismaService.user.findFirst.mockResolvedValue(mockTeacher);
+    mockPrismaService.invoice.findFirst.mockResolvedValue(null);
   });
 
   it('should be defined', () => {
@@ -577,6 +584,80 @@ describe('ClassesService', () => {
   });
 
   describe('enrollStudent', () => {
+    it('checks capacity and creates enrollment plus invoice inside a serializable transaction', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce({
+        ...mockClass,
+        _count: { students: 19 },
+      });
+      mockPrismaService.user.findFirst.mockResolvedValueOnce({
+        id: 'student-1',
+        status: UserStatus.ACTIVE,
+        userRoles: [{ role: { code: 'student' } }],
+      });
+      mockPrismaService.classStudent.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.classStudent.create.mockResolvedValueOnce({
+        id: 'enroll-1',
+      });
+      mockPrismaService.invoice.create.mockResolvedValueOnce({
+        id: 'invoice-1',
+      });
+
+      await service.enrollStudent(
+        'class-1',
+        { studentId: 'student-1' },
+        adminActor,
+      );
+
+      expect(mockPrismaService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      expect(mockPrismaService.classStudent.create).toHaveBeenCalledTimes(1);
+      expect(mockPrismaService.invoice.create).toHaveBeenCalledTimes(1);
+      expect(mockPrismaService.invoice.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            classId: 'class-1',
+            studentId: 'student-1',
+            totalAmount: mockClass.tuitionFee,
+          }),
+        }),
+      );
+    });
+
+    it('retries a serialization conflict before returning a successful enrollment', async () => {
+      mockPrismaService.$transaction
+        .mockRejectedValueOnce(
+          new Prisma.PrismaClientKnownRequestError('serialization conflict', {
+            code: 'P2034',
+            clientVersion: 'test',
+          }),
+        )
+        .mockImplementationOnce((callback) => callback(mockPrismaService));
+      mockPrismaService.class.findUnique.mockResolvedValueOnce({
+        ...mockClass,
+        tuitionFee: 0,
+        _count: { students: 19 },
+      });
+      mockPrismaService.user.findFirst.mockResolvedValueOnce({
+        id: 'student-1',
+        status: UserStatus.ACTIVE,
+        userRoles: [{ role: { code: 'student' } }],
+      });
+      mockPrismaService.classStudent.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.classStudent.create.mockResolvedValueOnce({
+        id: 'enroll-1',
+      });
+
+      await expect(
+        service.enrollStudent(
+          'class-1',
+          { studentId: 'student-1' },
+          adminActor,
+        ),
+      ).resolves.toEqual({ id: 'enroll-1' });
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(2);
+    });
     it('should throw ConflictException if class reached max capacity', async () => {
       mockPrismaService.class.findUnique.mockResolvedValueOnce({
         id: 'class-1',

@@ -22,6 +22,7 @@ import {
   PublicationStatus,
   Prisma,
 } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { QueryPublicClassesDto } from './dto/query-public-classes.dto.js';
 
 const publicOfferingSelect = {
@@ -815,149 +816,193 @@ export class ClassesService {
     dto: EnrollStudentDto,
     actor: ClassActor,
   ) {
-    const classEntity = await this.prisma.class.findUnique({
-      where: { id: classId },
-      include: {
-        _count: {
-          select: {
-            students: {
-              where: { status: EnrollmentStatus.ENROLLED },
-            },
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await this.prisma.$transaction(
+          async (tx) => {
+            const classEntity = await tx.class.findUnique({
+              where: { id: classId },
+              include: {
+                _count: {
+                  select: {
+                    students: {
+                      where: { status: EnrollmentStatus.ENROLLED },
+                    },
+                  },
+                },
+              },
+            });
+
+            if (!classEntity) {
+              throw new NotFoundException(
+                `Không tìm thấy lớp học với ID: ${classId}`,
+              );
+            }
+            if (
+              !actor.roles.includes('super_admin') &&
+              (!actor.branchId || actor.branchId !== classEntity.branchId)
+            ) {
+              throw new ForbiddenException(
+                'Lớp học không thuộc chi nhánh của bạn',
+              );
+            }
+
+            // Kiểm tra học viên tồn tại
+            const identifier = dto.studentId.trim();
+            if (!identifier)
+              throw new BadRequestException('Vui lòng nhập mã học viên');
+            const studentUser = await tx.user.findFirst({
+              where: { OR: [{ id: identifier }, { userCode: identifier }] },
+              include: { userRoles: { include: { role: true } } },
+            });
+
+            if (!studentUser) {
+              throw new NotFoundException(
+                `Không tìm thấy người dùng với ID: ${dto.studentId}`,
+              );
+            }
+            if (
+              !studentUser.userRoles.some(
+                (item) => item.role.code === 'student',
+              )
+            ) {
+              throw new BadRequestException(
+                'Người dùng không có vai trò học viên',
+              );
+            }
+            if (
+              studentUser.status === UserStatus.LOCKED ||
+              studentUser.status === UserStatus.INACTIVE
+            ) {
+              throw new BadRequestException(
+                'Không thể ghi danh tài khoản học viên đang bị khóa hoặc ngừng hoạt động',
+              );
+            }
+            const studentId = studentUser.id;
+
+            // Kiểm tra đã có trong lớp chưa
+            const existingEnrollment = await tx.classStudent.findUnique({
+              where: {
+                classId_studentId: {
+                  classId,
+                  studentId,
+                },
+              },
+            });
+
+            if (existingEnrollment) {
+              if (existingEnrollment.status === EnrollmentStatus.ENROLLED) {
+                throw new ConflictException(
+                  'Học viên đã được ghi danh vào lớp học này rồi',
+                );
+              }
+            }
+
+            const targetStatus = dto.status || EnrollmentStatus.ENROLLED;
+            if (
+              targetStatus === EnrollmentStatus.ENROLLED &&
+              classEntity._count.students >= classEntity.maxCapacity
+            ) {
+              throw new ConflictException(
+                `Lớp học đã đạt sĩ số tối đa (${classEntity._count.students}/${classEntity.maxCapacity} học viên)`,
+              );
+            }
+
+            if (existingEnrollment) {
+              // Re-enroll nếu từng hủy/bảo lưu
+              return tx.classStudent.update({
+                where: { id: existingEnrollment.id },
+                data: {
+                  status: targetStatus,
+                  tuitionPaid:
+                    dto.tuitionPaid ?? existingEnrollment.tuitionPaid,
+                  notes: dto.notes,
+                },
+              });
+            }
+
+            const studentEnrollment = await tx.classStudent.create({
+              data: {
+                classId,
+                studentId,
+                status: targetStatus,
+                tuitionPaid: dto.tuitionPaid || 0,
+                notes: dto.notes,
+              },
+              include: {
+                student: {
+                  select: {
+                    id: true,
+                    userCode: true,
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            });
+
+            // Tự động tạo hóa đơn học phí cho học viên nếu lớp có học phí
+            const tuitionFee = Number(classEntity.tuitionFee) || 0;
+            if (tuitionFee > 0) {
+              const year = new Date().getFullYear();
+              const code = `HD-${year}-${randomUUID().slice(0, 8).toUpperCase()}`;
+              const paid = dto.tuitionPaid ? Number(dto.tuitionPaid) : 0;
+              const balance = Math.max(0, tuitionFee - paid);
+              const invoiceStatus =
+                balance === 0
+                  ? InvoiceStatus.PAID
+                  : paid > 0
+                    ? InvoiceStatus.PARTIALLY_PAID
+                    : InvoiceStatus.PENDING;
+
+              const existingInvoice = await tx.invoice.findFirst({
+                where: {
+                  classId,
+                  studentId,
+                  status: { not: InvoiceStatus.CANCELLED },
+                },
+              });
+              if (!existingInvoice)
+                await tx.invoice.create({
+                  data: {
+                    code,
+                    title: `Học phí lớp ${classEntity.name}`,
+                    studentId,
+                    classId: classEntity.id,
+                    subtotal: tuitionFee,
+                    discount: 0,
+                    totalAmount: tuitionFee,
+                    paidAmount: paid,
+                    balance,
+                    status: invoiceStatus,
+                    dueDate: classEntity.startDate,
+                  },
+                });
+            }
+
+            return studentEnrollment;
           },
-        },
-      },
-    });
-
-    if (!classEntity) {
-      throw new NotFoundException(`Không tìm thấy lớp học với ID: ${classId}`);
-    }
-    if (
-      !actor.roles.includes('super_admin') &&
-      (!actor.branchId || actor.branchId !== classEntity.branchId)
-    ) {
-      throw new ForbiddenException('Lớp học không thuộc chi nhánh của bạn');
-    }
-
-    // Kiểm tra học viên tồn tại
-    const identifier = dto.studentId.trim();
-    if (!identifier) throw new BadRequestException('Vui lòng nhập mã học viên');
-    const studentUser = await this.prisma.user.findFirst({
-      where: { OR: [{ id: identifier }, { userCode: identifier }] },
-      include: { userRoles: { include: { role: true } } },
-    });
-
-    if (!studentUser) {
-      throw new NotFoundException(
-        `Không tìm thấy người dùng với ID: ${dto.studentId}`,
-      );
-    }
-    if (!studentUser.userRoles.some((item) => item.role.code === 'student')) {
-      throw new BadRequestException('Người dùng không có vai trò học viên');
-    }
-    if (
-      studentUser.status === UserStatus.LOCKED ||
-      studentUser.status === UserStatus.INACTIVE
-    ) {
-      throw new BadRequestException(
-        'Không thể ghi danh tài khoản học viên đang bị khóa hoặc ngừng hoạt động',
-      );
-    }
-    const studentId = studentUser.id;
-
-    // Kiểm tra đã có trong lớp chưa
-    const existingEnrollment = await this.prisma.classStudent.findUnique({
-      where: {
-        classId_studentId: {
-          classId,
-          studentId,
-        },
-      },
-    });
-
-    if (existingEnrollment) {
-      if (existingEnrollment.status === EnrollmentStatus.ENROLLED) {
-        throw new ConflictException(
-          'Học viên đã được ghi danh vào lớp học này rồi',
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
         );
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034' &&
+          attempt < 2
+        )
+          continue;
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        )
+          throw new ConflictException(
+            'Học viên đã được ghi danh hoặc mã hóa đơn bị trùng',
+          );
+        throw error;
       }
     }
-
-    const targetStatus = dto.status || EnrollmentStatus.ENROLLED;
-    if (
-      targetStatus === EnrollmentStatus.ENROLLED &&
-      classEntity._count.students >= classEntity.maxCapacity
-    ) {
-      throw new ConflictException(
-        `Lớp học đã đạt sĩ số tối đa (${classEntity._count.students}/${classEntity.maxCapacity} học viên)`,
-      );
-    }
-
-    if (existingEnrollment) {
-      // Re-enroll nếu từng hủy/bảo lưu
-      return this.prisma.classStudent.update({
-        where: { id: existingEnrollment.id },
-        data: {
-          status: targetStatus,
-          tuitionPaid: dto.tuitionPaid ?? existingEnrollment.tuitionPaid,
-          notes: dto.notes,
-        },
-      });
-    }
-
-    const studentEnrollment = await this.prisma.classStudent.create({
-      data: {
-        classId,
-        studentId,
-        status: targetStatus,
-        tuitionPaid: dto.tuitionPaid || 0,
-        notes: dto.notes,
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            userCode: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    // Tự động tạo hóa đơn học phí cho học viên nếu lớp có học phí
-    const tuitionFee = Number(classEntity.tuitionFee) || 0;
-    if (tuitionFee > 0) {
-      const year = new Date().getFullYear();
-      const count = await this.prisma.invoice.count();
-      const code = `HD-${year}-${String(count + 1).padStart(4, '0')}`;
-      const paid = dto.tuitionPaid ? Number(dto.tuitionPaid) : 0;
-      const balance = Math.max(0, tuitionFee - paid);
-      const invoiceStatus =
-        balance === 0
-          ? InvoiceStatus.PAID
-          : paid > 0
-            ? InvoiceStatus.PARTIALLY_PAID
-            : InvoiceStatus.PENDING;
-
-      await this.prisma.invoice.create({
-        data: {
-          code,
-          title: `Học phí lớp ${classEntity.name}`,
-          studentId,
-          classId: classEntity.id,
-          subtotal: tuitionFee,
-          discount: 0,
-          totalAmount: tuitionFee,
-          paidAmount: paid,
-          balance,
-          status: invoiceStatus,
-          dueDate: classEntity.startDate,
-        },
-      });
-    }
-
-    return studentEnrollment;
+    throw new ConflictException('Không thể ghi danh, vui lòng thử lại');
   }
 
   async removeStudent(classId: string, studentId: string, actor: ClassActor) {
