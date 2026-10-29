@@ -10,6 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import { randomInt } from 'node:crypto';
 import * as XLSX from 'xlsx';
 import { PrismaService } from '../../database/index.js';
+import { isRetryableTransactionConflict } from '../../common/prisma-transaction.js';
 import { MailService } from '../mail/index.js';
 import { LeadStatus, UserStatus, Prisma } from '@prisma/client';
 import {
@@ -256,18 +257,15 @@ export class AdmissionsService {
         break;
       } catch (error) {
         if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          (error.code === 'P2034' || error.code === 'P2002') &&
-          attempt < 2
-        )
-          continue;
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          (error.code === 'P2034' || error.code === 'P2002')
-        )
+          isRetryableTransactionConflict(error) ||
+          (error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002')
+        ) {
+          if (attempt < 2) continue;
           throw new ConflictException(
             'Không thể cấp mã học viên, vui lòng thử lại',
           );
+        }
         throw error;
       }
     }

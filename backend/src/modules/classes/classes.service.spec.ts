@@ -92,6 +92,8 @@ describe('ClassesService', () => {
       delete: vi.fn(),
     },
     invoice: { findFirst: vi.fn(), create: vi.fn() },
+    classRegistration: { findMany: vi.fn(), updateMany: vi.fn() },
+    admissionLead: { updateMany: vi.fn() },
     parentStudent: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -112,6 +114,7 @@ describe('ClassesService', () => {
     mockPrismaService.room.findUnique.mockResolvedValue(mockRoom);
     mockPrismaService.user.findFirst.mockResolvedValue(mockTeacher);
     mockPrismaService.invoice.findFirst.mockResolvedValue(null);
+    mockPrismaService.classRegistration.findMany.mockResolvedValue([]);
   });
 
   it('should be defined', () => {
@@ -623,6 +626,43 @@ describe('ClassesService', () => {
           }),
         }),
       );
+    });
+
+    it('closes a matching pending registration when staff enrolls the student manually', async () => {
+      mockPrismaService.class.findUnique.mockResolvedValueOnce({
+        ...mockClass,
+        tuitionFee: 0,
+        _count: { students: 0 },
+      });
+      mockPrismaService.user.findFirst.mockResolvedValueOnce({
+        id: 'student-1',
+        status: UserStatus.ACTIVE,
+        userRoles: [{ role: { code: 'student' } }],
+      });
+      mockPrismaService.classStudent.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.classStudent.create.mockResolvedValueOnce({
+        id: 'enroll-1',
+      });
+      mockPrismaService.classRegistration.findMany.mockResolvedValueOnce([
+        { id: 'request-1', leadId: 'lead-1' },
+      ]);
+
+      await service.enrollStudent(
+        'class-1',
+        { studentId: 'student-1' },
+        adminActor,
+      );
+
+      expect(
+        mockPrismaService.classRegistration.updateMany,
+      ).toHaveBeenCalledWith({
+        where: { id: { in: ['request-1'] } },
+        data: { status: 'APPROVED', studentId: 'student-1' },
+      });
+      expect(mockPrismaService.admissionLead.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['lead-1'] } },
+        data: { status: 'ENROLLED' },
+      });
     });
 
     it('retries a serialization conflict before returning a successful enrollment', async () => {

@@ -20,10 +20,13 @@ import {
   SessionStatus,
   UserStatus,
   PublicationStatus,
+  RegistrationStatus,
+  LeadStatus,
   Prisma,
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { QueryPublicClassesDto } from './dto/query-public-classes.dto.js';
+import { isRetryableTransactionConflict } from '../../common/prisma-transaction.js';
 
 const publicOfferingSelect = {
   id: true,
@@ -908,43 +911,40 @@ export class ClassesService {
               );
             }
 
-            if (existingEnrollment) {
-              // Re-enroll nếu từng hủy/bảo lưu
-              return tx.classStudent.update({
-                where: { id: existingEnrollment.id },
-                data: {
-                  status: targetStatus,
-                  tuitionPaid:
-                    dto.tuitionPaid ?? existingEnrollment.tuitionPaid,
-                  notes: dto.notes,
-                },
-              });
-            }
-
-            const studentEnrollment = await tx.classStudent.create({
-              data: {
-                classId,
-                studentId,
-                status: targetStatus,
-                tuitionPaid: dto.tuitionPaid || 0,
-                notes: dto.notes,
-              },
-              include: {
-                student: {
-                  select: {
-                    id: true,
-                    userCode: true,
-                    fullName: true,
-                    email: true,
-                    phone: true,
+            const studentEnrollment = existingEnrollment
+              ? await tx.classStudent.update({
+                  where: { id: existingEnrollment.id },
+                  data: {
+                    status: targetStatus,
+                    tuitionPaid:
+                      dto.tuitionPaid ?? existingEnrollment.tuitionPaid,
+                    notes: dto.notes,
                   },
-                },
-              },
-            });
+                })
+              : await tx.classStudent.create({
+                  data: {
+                    classId,
+                    studentId,
+                    status: targetStatus,
+                    tuitionPaid: dto.tuitionPaid || 0,
+                    notes: dto.notes,
+                  },
+                  include: {
+                    student: {
+                      select: {
+                        id: true,
+                        userCode: true,
+                        fullName: true,
+                        email: true,
+                        phone: true,
+                      },
+                    },
+                  },
+                });
 
             // Tự động tạo hóa đơn học phí cho học viên nếu lớp có học phí
             const tuitionFee = Number(classEntity.tuitionFee) || 0;
-            if (tuitionFee > 0) {
+            if (targetStatus === EnrollmentStatus.ENROLLED && tuitionFee > 0) {
               const year = new Date().getFullYear();
               const code = `HD-${year}-${randomUUID().slice(0, 8).toUpperCase()}`;
               const paid = dto.tuitionPaid ? Number(dto.tuitionPaid) : 0;
@@ -981,17 +981,49 @@ export class ClassesService {
                 });
             }
 
+            if (targetStatus === EnrollmentStatus.ENROLLED) {
+              const pendingRequests = await tx.classRegistration.findMany({
+                where: {
+                  classId,
+                  status: {
+                    in: [
+                      RegistrationStatus.PENDING,
+                      RegistrationStatus.CONTACTED,
+                    ],
+                  },
+                  OR: [
+                    { studentId },
+                    { lead: { is: { convertedUserId: studentId } } },
+                  ],
+                },
+                select: { id: true, leadId: true },
+              });
+              if (pendingRequests.length) {
+                await tx.classRegistration.updateMany({
+                  where: { id: { in: pendingRequests.map((item) => item.id) } },
+                  data: { status: RegistrationStatus.APPROVED, studentId },
+                });
+                const leadIds = pendingRequests
+                  .map((item) => item.leadId)
+                  .filter((id): id is string => id !== null);
+                if (leadIds.length) {
+                  await tx.admissionLead.updateMany({
+                    where: { id: { in: leadIds } },
+                    data: { status: LeadStatus.ENROLLED },
+                  });
+                }
+              }
+            }
+
             return studentEnrollment;
           },
           { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
         );
       } catch (error) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2034' &&
-          attempt < 2
-        )
-          continue;
+        if (isRetryableTransactionConflict(error)) {
+          if (attempt < 2) continue;
+          throw new ConflictException('Không thể ghi danh, vui lòng thử lại');
+        }
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2002'

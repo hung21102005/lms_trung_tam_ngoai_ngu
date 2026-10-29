@@ -17,6 +17,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
+import { isRetryableTransactionConflict } from '../../common/prisma-transaction.js';
 import { ClassesService } from '../classes/classes.service.js';
 import {
   CreateGuestRegistrationDto,
@@ -485,12 +486,9 @@ export class ClassRegistrationsService {
           { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
         );
       } catch (error) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2034' &&
-          attempt < 2
-        ) {
-          continue;
+        if (isRetryableTransactionConflict(error)) {
+          if (attempt < 2) continue;
+          throw new ConflictException('Không thể duyệt đơn, vui lòng thử lại');
         }
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&

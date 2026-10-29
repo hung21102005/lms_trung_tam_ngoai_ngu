@@ -31,6 +31,7 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
   let classId: string;
   let secondClassId: string;
   let failureClassId: string;
+  let manualClassId: string;
   let teacherId: string;
   let courseId: string;
   let levelId: string;
@@ -187,6 +188,15 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
       },
     });
     failureClassId = failureClass.id;
+    const manualClass = await db.class.create({
+      data: {
+        ...base,
+        code: `CLASS-${suffix}-4`,
+        name: 'Lớp ghi danh đồng thời',
+        maxCapacity: 1,
+      },
+    });
+    manualClassId = manualClass.id;
     await db.classSession.create({
       data: {
         classId,
@@ -445,6 +455,57 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
         where: { code: `CONFLICT-${suffix.toUpperCase()}` },
       }),
     ).toBe(0);
+  });
+
+  it('keeps registration and invoice consistent when manual enrollment races approval', async () => {
+    const server = app.getHttpServer();
+    expect(
+      (
+        await request(server).post('/public/registrations').send({
+          classId: manualClassId,
+          fullName: 'Học viên ghi danh đồng thời',
+          phone: '0901234572',
+        })
+      ).status,
+    ).toBe(201);
+    const registration = await db.classRegistration.findFirstOrThrow({
+      where: { classId: manualClassId },
+    });
+    const converted = await request(server)
+      .post(`/admissions/leads/${registration.leadId}/convert`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+    expect(converted.status).toBe(200);
+    const studentId = converted.body.student.id as string;
+    const responses = await Promise.all([
+      request(server)
+        .post(`/admissions/registrations/${registration.id}/approve`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({}),
+      request(server)
+        .post(`/classes/${manualClassId}/students`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ studentId }),
+    ]);
+    expect(
+      responses
+        .map((item) => item.status)
+        .every((status) => [201, 409].includes(status)),
+    ).toBe(true);
+    expect(responses.some((item) => item.status === 201)).toBe(true);
+    expect(
+      await db.classStudent.count({
+        where: { classId: manualClassId, studentId },
+      }),
+    ).toBe(1);
+    expect(
+      await db.invoice.count({ where: { classId: manualClassId, studentId } }),
+    ).toBe(1);
+    expect(
+      await db.classRegistration.findUniqueOrThrow({
+        where: { id: registration.id },
+      }),
+    ).toMatchObject({ status: 'APPROVED', studentId });
   });
 
   it('rolls back enrollment when invoice creation fails inside the transaction', async () => {
