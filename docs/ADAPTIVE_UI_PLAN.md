@@ -332,3 +332,8 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 
 - Added public Flutter landing, course catalog/detail, upcoming classes, and consultation routes with a separate mobile bottom navigation and desktop header navigation. All content comes from existing public APIs; empty/loading/error states are explicit.
 - Scoped analyzer: 0 issues; public widget tests: 5/5 across 320/375/393/430/800/1200 logical pixels plus keyboard inset; web build passed. Browser screenshots, physical-device testing, and live Backend consultation submission remain unverified. See `docs/PUBLIC_ADMISSIONS_PLAN.md` for the registration follow-up.
+
+### Checkpoint 2026-10-29 — Public class registration form
+
+- Added a mobile-friendly registration detail/form reached from an eligible class card. Guests enter contact details; signed-in students submit with their existing account identity. Both paths use the same public layout and API client; confirmation means only that a pending request was accepted.
+- Public widget tests: 7/7, scoped analyzer: 0 issues, web build passed. Backend unit: 169/169, academic HTTP E2E: 5/5 for validation/access failures, local additive migration applied. Successful real enrollment request, staff approval, screenshots and physical-device behavior remain unverified; see `docs/PUBLIC_ADMISSIONS_PLAN.md`.

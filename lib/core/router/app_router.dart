@@ -124,6 +124,21 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: RouteNames.publicRegistration,
+      builder: (context, state) {
+        final auth = context.read<AuthBloc>().state;
+        return PublicSiteScreen(
+          repository: PublicCatalogRepository(getIt<ApiClient>()),
+          page: PublicPage.registration,
+          classId: state.pathParameters['id'],
+          isStudent: auth is AuthenticatedState && auth.user.isStudent,
+          studentName: auth is AuthenticatedState && auth.user.isStudent
+              ? auth.user.fullName
+              : null,
+        );
+      },
+    ),
+    GoRoute(
       path: RouteNames.studentHome,
       builder: (context, state) => const StudentHomeScreen(),
     ),

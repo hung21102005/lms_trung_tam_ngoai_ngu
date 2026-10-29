@@ -18,6 +18,7 @@ class _FakeApiClient implements ApiClient {
   };
   bool failLead = false;
   int leadCalls = 0;
+  String? lastPostPath;
   Map<String, dynamic>? leadData;
 
   @override
@@ -35,6 +36,7 @@ class _FakeApiClient implements ApiClient {
     dynamic options,
   }) async {
     leadCalls++;
+    lastPostPath = path;
     leadData = Map<String, dynamic>.from(data as Map);
     if (failLead) throw Exception('Mất kết nối');
     return {'id': 'lead-1'};
@@ -46,8 +48,9 @@ class _FakeApiClient implements ApiClient {
 
 GoRouter _router(
   PublicCatalogRepository repository,
-  String initialLocation,
-) => GoRouter(
+  String initialLocation, {
+  bool student = false,
+}) => GoRouter(
   initialLocation: initialLocation,
   routes: [
     GoRoute(
@@ -70,6 +73,16 @@ GoRouter _router(
       builder: (_, _) => PublicSiteScreen(
         repository: repository,
         page: PublicPage.consultation,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicRegistration,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.registration,
+        classId: state.pathParameters['id'],
+        isStudent: student,
+        studentName: student ? 'Học viên An' : null,
       ),
     ),
     GoRoute(
@@ -201,4 +214,68 @@ void main() {
       router.dispose();
     },
   );
+
+  testWidgets('guest registration uses the selected class', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/public/classes/class-1'] = {
+      'id': 'class-1',
+      'name': 'English A1 K01',
+      'remainingSeats': 3,
+      'course': {'title': 'English A1'},
+      'branch': {'name': 'Quận 1'},
+    };
+    final router = _router(
+      PublicCatalogRepository(api),
+      '/dang-ky-lop/class-1',
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('English A1 K01'), findsOneWidget);
+    await tester.ensureVisible(find.text('Gửi đăng ký lớp'));
+    await tester.tap(find.text('Gửi đăng ký lớp'));
+    await tester.pump();
+    expect(api.leadCalls, 0);
+    await tester.enterText(find.byType(TextFormField).at(0), 'Nguyễn Văn An');
+    await tester.enterText(find.byType(TextFormField).at(1), '0988776655');
+    tester.testTextInput.hide();
+    await tester.ensureVisible(find.text('Gửi đăng ký lớp'));
+    await tester.tap(find.text('Gửi đăng ký lớp'));
+    await tester.pumpAndSettle();
+    expect(api.lastPostPath, '/public/registrations');
+    expect(api.leadData?['classId'], 'class-1');
+    expect(find.text('Đã tiếp nhận đăng ký'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('existing student registration sends only class and note', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/classes/class-1'] = {
+      'id': 'class-1',
+      'name': 'English A1 K01',
+      'remainingSeats': 3,
+      'course': {'title': 'English A1'},
+      'branch': {'name': 'Quận 1'},
+    };
+    final router = _router(
+      PublicCatalogRepository(api),
+      '/dang-ky-lop/class-1',
+      student: true,
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Học viên An'), findsOneWidget);
+    expect(find.byType(TextFormField), findsOneWidget);
+    await tester.ensureVisible(find.text('Gửi đăng ký lớp'));
+    await tester.tap(find.text('Gửi đăng ký lớp'));
+    await tester.pumpAndSettle();
+    expect(api.lastPostPath, '/my/registrations');
+    expect(api.leadData, {'classId': 'class-1'});
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
 }

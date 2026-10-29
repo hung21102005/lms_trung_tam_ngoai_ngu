@@ -5,7 +5,14 @@ import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/public_catalog_repository.dart';
 
-enum PublicPage { home, courses, courseDetail, classes, consultation }
+enum PublicPage {
+  home,
+  courses,
+  courseDetail,
+  classes,
+  consultation,
+  registration,
+}
 
 class PublicSiteScreen extends StatefulWidget {
   const PublicSiteScreen({
@@ -14,12 +21,18 @@ class PublicSiteScreen extends StatefulWidget {
     required this.page,
     this.slug,
     this.targetCourse,
+    this.classId,
+    this.isStudent = false,
+    this.studentName,
   });
 
   final PublicCatalogRepository repository;
   final PublicPage page;
   final String? slug;
   final String? targetCourse;
+  final String? classId;
+  final bool isStudent;
+  final String? studentName;
 
   @override
   State<PublicSiteScreen> createState() => _PublicSiteScreenState();
@@ -45,6 +58,9 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       PublicPage.courseDetail => widget.repository.course(widget.slug ?? ''),
       PublicPage.classes => widget.repository.classes(page: _classPage),
       PublicPage.consultation => Future.value(null),
+      PublicPage.registration => widget.repository.classDetail(
+        widget.classId ?? '',
+      ),
     };
   }
 
@@ -60,7 +76,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
         final current = switch (widget.page) {
           PublicPage.home => 0,
           PublicPage.courses || PublicPage.courseDetail => 1,
-          PublicPage.classes => 2,
+          PublicPage.classes || PublicPage.registration => 2,
           PublicPage.consultation => 3,
         };
         const routes = [
@@ -166,6 +182,12 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                           snapshot.data as Map<String, dynamic>,
                         ),
                         PublicPage.consultation => const SizedBox.shrink(),
+                        PublicPage.registration => _RegistrationForm(
+                          repository: widget.repository,
+                          offering: snapshot.data as Map<String, dynamic>,
+                          isStudent: widget.isStudent,
+                          studentName: widget.studentName,
+                        ),
                       };
                     },
                   ),
@@ -374,10 +396,9 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
           '${_string(course?['title'])}\n${_string(branch?['name'])} · ${_string(item['startTime'])}–${_string(item['endTime'])}',
       footnote:
           '${start == null ? '' : '${start.day}/${start.month}/${start.year} · '}${item['remainingSeats']} chỗ còn · ${price == null ? 'Liên hệ học phí' : '${price.toStringAsFixed(0)} đ'}',
-      onTap: () => _navigate(
-        '${RouteNames.publicConsultation}?khoa-hoc=${Uri.encodeQueryComponent(_string(course?['title']))}',
-      ),
-      actionLabel: 'Nhận tư vấn',
+      onTap: () =>
+          _navigate('/dang-ky-lop/${Uri.encodeComponent(_string(item['id']))}'),
+      actionLabel: 'Đăng ký lớp',
     );
   }
 
@@ -816,4 +837,224 @@ class _ConsultationFormState extends State<_ConsultationForm> {
       ),
     ),
   );
+}
+
+class _RegistrationForm extends StatefulWidget {
+  const _RegistrationForm({
+    required this.repository,
+    required this.offering,
+    required this.isStudent,
+    this.studentName,
+  });
+  final PublicCatalogRepository repository;
+  final Map<String, dynamic> offering;
+  final bool isStudent;
+  final String? studentName;
+
+  @override
+  State<_RegistrationForm> createState() => _RegistrationFormState();
+}
+
+class _RegistrationFormState extends State<_RegistrationForm> {
+  final _key = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  final _email = TextEditingController();
+  final _notes = TextEditingController();
+  bool _saving = false;
+  bool _sent = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _email.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if ((!widget.isStudent && !_key.currentState!.validate()) || _saving) {
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      if (widget.isStudent) {
+        await widget.repository.registerStudent(
+          classId: _string(widget.offering['id']),
+          notes: _notes.text.trim(),
+        );
+      } else {
+        await widget.repository.registerGuest(
+          classId: _string(widget.offering['id']),
+          fullName: _name.text.trim(),
+          phone: _phone.text.trim(),
+          email: _email.text.trim(),
+          notes: _notes.text.trim(),
+        );
+      }
+      if (mounted) setState(() => _sent = true);
+    } catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final course = widget.offering['course'] as Map?;
+    final branch = widget.offering['branch'] as Map?;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: _sent
+              ? _MessageState(
+                  icon: Icons.mark_email_read_outlined,
+                  title: 'Đã tiếp nhận đăng ký',
+                  detail: 'Yêu cầu của bạn đang chờ học vụ xác nhận. Việc gửi yêu cầu chưa phải là ghi danh chính thức.',
+                  action: TextButton(
+                    onPressed: () => context.go(RouteNames.publicClasses),
+                    child: const Text('Xem các lớp khác'),
+                  ),
+                )
+              : Form(
+                  key: _key,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _PageHeading(
+                        'Đăng ký lớp học',
+                        'Điền thông tin để học vụ liên hệ và xác nhận nhập học.',
+                      ),
+                      const SizedBox(height: 20),
+                      Card(
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _string(widget.offering['name']),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(_string(course?['title'])),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_string(branch?['name'])} · ${widget.offering['remainingSeats']} chỗ còn',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      if (widget.isStudent)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            'Đăng ký bằng tài khoản học viên: ${widget.studentName ?? ''}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        )
+                      else ...[
+                        TextFormField(
+                          controller: _name,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Họ và tên *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Vui lòng nhập họ tên'
+                              : null,
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _phone,
+                          keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Số điện thoại *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) =>
+                              RegExp(r'^(?:\+?84|0)[0-9 .()-]{8,15}$')
+                                  .hasMatch(value?.trim() ?? '')
+                              ? null
+                              : 'Số điện thoại không hợp lệ',
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _email,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Email (tùy chọn)',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) =>
+                              value == null ||
+                                  value.trim().isEmpty ||
+                                  RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                      .hasMatch(value.trim())
+                              ? null
+                              : 'Email không hợp lệ',
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      TextFormField(
+                        controller: _notes,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Nhu cầu hoặc câu hỏi thêm',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      FilledButton.icon(
+                        onPressed: _saving ? null : _submit,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.send_outlined),
+                        label: Text(
+                          _saving ? 'Đang gửi...' : 'Gửi đăng ký lớp',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Học vụ sẽ kiểm tra chỗ trống và liên hệ xác nhận. Chưa phát sinh học phí khi gửi yêu cầu.',
+                        style: TextStyle(color: AppColors.textSecondaryLight),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
 }

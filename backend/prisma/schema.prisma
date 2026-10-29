@@ -45,6 +45,14 @@ enum LeadSource {
   OTHER
 }
 
+enum RegistrationStatus {
+  PENDING
+  CONTACTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum ClassStatus {
   PLANNING // Đang lập kế hoạch
   OPEN_FOR_ENROLLMENT // Đang mở đăng ký tuyển sinh
@@ -258,7 +266,8 @@ model User {
   children ParentStudent[] @relation("ParentRelation")
 
   // Quan hệ quản lý tư vấn tuyển sinh
-  managedLeads AdmissionLead[] @relation("StaffLeadRelation")
+  managedLeads       AdmissionLead[]     @relation("StaffLeadRelation")
+  classRegistrations ClassRegistration[] @relation("RegistrationStudentRelation")
 
   // Lớp học & Giảng dạy
   taughtClasses    Class[]        @relation("MainTeacherRelation")
@@ -420,6 +429,8 @@ model AdmissionLead {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  classRegistrations ClassRegistration[]
+
   @@map("admission_leads")
 }
 
@@ -557,43 +568,67 @@ model LessonMaterial {
 // ------------------------------------------------------------------------------
 
 model Class {
-  id                 String      @id @default(uuid())
-  code               String      @unique // Mã lớp học: IELTS-F-2026-01, COMM-A1-02...
-  name               String // Tên hiển thị của lớp: IELTS Foundation T2-T4-T6
-  courseId           String
-  course             Course      @relation(fields: [courseId], references: [id], onDelete: Restrict)
-  levelId            String
-  level              CourseLevel @relation(fields: [levelId], references: [id], onDelete: Restrict)
-  branchId           String
-  branch             Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  roomId             String?
-  room               Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
-  mainTeacherId      String?
-  mainTeacher        User?       @relation("MainTeacherRelation", fields: [mainTeacherId], references: [id], onDelete: SetNull)
-  assistantTeacherId String?
-  assistantTeacher   User?       @relation("AssistantTeacherRelation", fields: [assistantTeacherId], references: [id], onDelete: SetNull)
-  status             ClassStatus @default(PLANNING)
-  startDate          DateTime    @db.Date
-  endDate            DateTime?   @db.Date
-  scheduleDays       String[]    @default([]) // Các ngày học trong tuần: ["MONDAY", "WEDNESDAY", "FRIDAY"]
-  startTime          String // Giờ bắt đầu: "18:00"
-  endTime            String // Giờ kết thúc: "19:30"
-  totalSessions      Int         @default(24) // Tổng số buổi học
-  maxCapacity        Int         @default(20) // Sĩ số tối đa
-  tuitionFee         Decimal     @default(0) @db.Decimal(12, 2) // Học phí thực tế áp dụng cho lớp này
+  id                  String      @id @default(uuid())
+  code                String      @unique // Mã lớp học: IELTS-F-2026-01, COMM-A1-02...
+  name                String // Tên hiển thị của lớp: IELTS Foundation T2-T4-T6
+  courseId            String
+  course              Course      @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  levelId             String
+  level               CourseLevel @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  branchId            String
+  branch              Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  roomId              String?
+  room                Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  mainTeacherId       String?
+  mainTeacher         User?       @relation("MainTeacherRelation", fields: [mainTeacherId], references: [id], onDelete: SetNull)
+  assistantTeacherId  String?
+  assistantTeacher    User?       @relation("AssistantTeacherRelation", fields: [assistantTeacherId], references: [id], onDelete: SetNull)
+  status              ClassStatus @default(PLANNING)
+  startDate           DateTime    @db.Date
+  endDate             DateTime?   @db.Date
+  scheduleDays        String[]    @default([]) // Các ngày học trong tuần: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+  startTime           String // Giờ bắt đầu: "18:00"
+  endTime             String // Giờ kết thúc: "19:30"
+  totalSessions       Int         @default(24) // Tổng số buổi học
+  maxCapacity         Int         @default(20) // Sĩ số tối đa
+  tuitionFee          Decimal     @default(0) @db.Decimal(12, 2) // Học phí thực tế áp dụng cho lớp này
   registrationOpenAt  DateTime?   @db.Date
   registrationCloseAt DateTime?   @db.Date
-  notes              String?
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  notes               String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
-  students    ClassStudent[]
-  sessions    ClassSession[]
-  assignments Assignment[]
-  exams       Exam[]
-  invoices    Invoice[]
+  students      ClassStudent[]
+  registrations ClassRegistration[]
+  sessions      ClassSession[]
+  assignments   Assignment[]
+  exams         Exam[]
+  invoices      Invoice[]
 
   @@map("classes")
+}
+
+model ClassRegistration {
+  id           String             @id @default(uuid())
+  classId      String
+  class        Class              @relation(fields: [classId], references: [id], onDelete: Restrict)
+  applicantKey String
+  fullName     String
+  phone        String
+  email        String?
+  status       RegistrationStatus @default(PENDING)
+  studentId    String?
+  student      User?              @relation("RegistrationStudentRelation", fields: [studentId], references: [id], onDelete: SetNull)
+  leadId       String?
+  lead         AdmissionLead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([classId, applicantKey])
+  @@index([classId, status, createdAt])
+  @@index([studentId, createdAt])
+  @@map("class_registrations")
 }
 
 model ClassStudent {

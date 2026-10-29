@@ -45,6 +45,43 @@ class PublicCatalogRepository {
     return Map<String, dynamic>.from(data);
   }
 
+  Future<Map<String, dynamic>> classDetail(String id) async {
+    final data = _data(
+      await apiClient.get('/public/classes/${Uri.encodeComponent(id)}'),
+    );
+    if (data is! Map) throw const FormatException('Thông tin lớp không hợp lệ');
+    return Map<String, dynamic>.from(data);
+  }
+
+  Future<void> registerGuest({
+    required String classId,
+    required String fullName,
+    required String phone,
+    String? email,
+    String? notes,
+  }) async {
+    await apiClient.post(
+      '/public/registrations',
+      data: {
+        'classId': classId,
+        'fullName': fullName,
+        'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+  }
+
+  Future<void> registerStudent({required String classId, String? notes}) async {
+    await apiClient.post(
+      '/my/registrations',
+      data: {
+        'classId': classId,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+  }
+
   Future<void> sendConsultation({
     required String fullName,
     required String phone,
