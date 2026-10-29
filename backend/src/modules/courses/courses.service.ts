@@ -609,10 +609,14 @@ export class CoursesService {
   async changeCourseStatus(id: string, status: PublicationStatus) {
     const course = await this.findOne(id);
     const allowed: Record<PublicationStatus, PublicationStatus[]> = {
-      DRAFT: [PublicationStatus.IN_REVIEW],
-      IN_REVIEW: [PublicationStatus.DRAFT, PublicationStatus.PUBLISHED],
+      DRAFT: [PublicationStatus.IN_REVIEW, PublicationStatus.ARCHIVED],
+      IN_REVIEW: [
+        PublicationStatus.DRAFT,
+        PublicationStatus.PUBLISHED,
+        PublicationStatus.ARCHIVED,
+      ],
       PUBLISHED: [PublicationStatus.DRAFT, PublicationStatus.ARCHIVED],
-      ARCHIVED: [],
+      ARCHIVED: [PublicationStatus.DRAFT],
     };
     if (!allowed[course.publicationStatus].includes(status)) {
       throw new BadRequestException('Chuyển trạng thái khóa học không hợp lệ');
@@ -640,17 +644,90 @@ export class CoursesService {
       if (!check.canPublish)
         throw new BadRequestException(check.blockers.join('; '));
     }
-    if (
-      status === PublicationStatus.ARCHIVED &&
-      course.levels.some((level) => level._count.classes > 0)
-    ) {
-      throw new BadRequestException(
-        'Khóa học đang có lớp; cần kết thúc các lớp trước khi lưu trữ',
-      );
+    if (status === PublicationStatus.ARCHIVED) {
+      const activeClasses = await this.prisma.class.count({
+        where: {
+          courseId: id,
+          status: {
+            in: [ClassStatus.OPEN_FOR_ENROLLMENT, ClassStatus.IN_PROGRESS],
+          },
+        },
+      });
+      if (activeClasses > 0) {
+        throw new BadRequestException(
+          'Khóa học đang có lớp đang tuyển sinh hoặc diễn ra; cần kết thúc các lớp trước khi lưu trữ',
+        );
+      }
     }
     return this.prisma.course.update({
       where: { id },
       data: { publicationStatus: status },
+    });
+  }
+
+  async deleteCourse(id: string) {
+    const course = await this.findOne(id);
+
+    if (course.publicationStatus !== PublicationStatus.DRAFT) {
+      throw new BadRequestException(
+        `Chỉ có thể xóa vĩnh viễn khóa học đang ở trạng thái Bản nháp (DRAFT). Khóa học hiện tại đang ở trạng thái ${course.publicationStatus}. Vui lòng chọn Lưu trữ (ARCHIVE) nếu không còn sử dụng.`,
+      );
+    }
+
+    const classCount = await this.prisma.class.count({
+      where: { courseId: id },
+    });
+
+    if (classCount > 0) {
+      throw new BadRequestException(
+        `Khóa học đã có ${classCount} lớp học liên kết. Không thể xóa vĩnh viễn khóa học đã phát sinh lớp học. Vui lòng chuyển sang Lưu trữ (ARCHIVE) để bảo toàn dữ liệu.`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const levels = await tx.courseLevel.findMany({
+        where: { courseId: id },
+        select: { id: true },
+      });
+      const levelIds = levels.map((l) => l.id);
+
+      const modules = await tx.module.findMany({
+        where: { levelId: { in: levelIds } },
+        select: { id: true },
+      });
+      const moduleIds = modules.map((m) => m.id);
+
+      const lessons = await tx.lesson.findMany({
+        where: { moduleId: { in: moduleIds } },
+        select: { id: true },
+      });
+      const lessonIds = lessons.map((l) => l.id);
+
+      await tx.lessonMaterial.deleteMany({
+        where: { lessonId: { in: lessonIds } },
+      });
+      await tx.lesson.deleteMany({
+        where: { id: { in: lessonIds } },
+      });
+      await tx.module.deleteMany({
+        where: { id: { in: moduleIds } },
+      });
+      await tx.courseLevel.deleteMany({
+        where: { id: { in: levelIds } },
+      });
+      const deleted = await tx.course.deleteMany({
+        where: { id, publicationStatus: PublicationStatus.DRAFT },
+      });
+      if (deleted.count !== 1) {
+        throw new ConflictException(
+          'Trạng thái khóa học đã thay đổi. Vui lòng tải lại trước khi xóa.',
+        );
+      }
+
+      return {
+        success: true,
+        message: `Đã xóa vĩnh viễn khóa học '${course.code}' thành công.`,
+      };
     });
   }
 

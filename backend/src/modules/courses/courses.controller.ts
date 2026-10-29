@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -211,6 +212,23 @@ export class CoursesController {
     @CurrentUser('id') reviewerId: string,
   ) {
     return this.coursesService.confirmCourseAcademicReview(id, reviewerId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Delete('courses/:id')
+  @ApiOperation({
+    summary:
+      'Xóa vĩnh viễn khóa học (chỉ áp dụng với khóa Bản nháp và chưa có lớp liên kết)',
+  })
+  @ApiResponse({ status: 200, description: 'Xóa khóa học thành công' })
+  @ApiResponse({
+    status: 400,
+    description: 'Không thể xóa khóa học có lớp liên kết hoặc không ở trạng thái DRAFT',
+  })
+  deleteCourse(@Param('id') id: string) {
+    return this.coursesService.deleteCourse(id);
   }
 
   // --------------------------------------------------------------------------

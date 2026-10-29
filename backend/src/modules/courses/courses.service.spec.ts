@@ -80,6 +80,34 @@ describe('CoursesService', () => {
     expect(service).toBeDefined();
   });
 
+  it.each([
+    PublicationStatus.IN_REVIEW,
+    PublicationStatus.PUBLISHED,
+    PublicationStatus.ARCHIVED,
+  ])('does not permanently delete a %s course', async (status) => {
+    vi.spyOn(service, 'findOne').mockResolvedValue({
+      ...mockCourse,
+      publicationStatus: status,
+    } as Awaited<ReturnType<CoursesService['findOne']>>);
+
+    await expect(service.deleteCourse(mockCourse.id)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(mockPrismaService.class.count).not.toHaveBeenCalled();
+  });
+
+  it('does not permanently delete a draft course with a class', async () => {
+    vi.spyOn(service, 'findOne').mockResolvedValue({
+      ...mockCourse,
+      publicationStatus: PublicationStatus.DRAFT,
+    } as Awaited<ReturnType<CoursesService['findOne']>>);
+    mockPrismaService.class.count.mockResolvedValueOnce(1);
+
+    await expect(service.deleteCourse(mockCourse.id)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
   describe('curriculum editing', () => {
     it('rejects changing a lesson used by an active class', async () => {
       mockPrismaService.lesson.findUnique.mockResolvedValueOnce({
