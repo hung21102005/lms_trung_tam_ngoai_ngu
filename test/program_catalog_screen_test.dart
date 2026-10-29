@@ -6,6 +6,9 @@ import 'package:lms_trung_tam_ngoai_ngu/features/courses/data/repositories/progr
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/screens/program_catalog_screen.dart';
 
 class _Api extends Fake implements ApiClient {
+  List<String> publicationBlockers = [
+    'Cần rà soát và xác nhận nội dung học thuật hiện tại',
+  ];
   final List<Map<String, dynamic>> programs = [
     {
       'id': 'program-1',
@@ -66,7 +69,7 @@ class _Api extends Fake implements ApiClient {
       return {
         'canPublish': false,
         'canConfirmReview': true,
-        'blockers': ['Cần rà soát và xác nhận nội dung học thuật hiện tại'],
+        'blockers': publicationBlockers,
       };
     }
     throw StateError(path);
@@ -170,6 +173,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.calls, contains('GET /courses/course-1/publication-check'));
     expect(api.calls, contains('POST /courses/course-1/academic-review'));
+  });
+
+  testWidgets('long publication checklist remains scrollable at 320 px', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final api = _Api();
+    api.publicationBlockers = List.generate(
+      18,
+      (index) =>
+          'Điều kiện học thuật rất dài của cấp độ và học phần số $index cần hoàn thiện trước khi công bố',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(repository: ProgramCatalogRepository(api)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác khóa học'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kiểm tra công bố'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Điều kiện học thuật rất dài'), findsWidgets);
+    await tester.ensureVisible(find.textContaining('số 17'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('số 17').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('create form sends real API request', (tester) async {

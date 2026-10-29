@@ -85,6 +85,7 @@ Also inspect private builders, dialogs, bottom sheets, and tab content in each l
 - Chạy toàn bộ `flutter test` phát hiện 48 lỗi trong 5 file `challenger_m*` và `parent_children_attendance_test.dart`, sau đó tiến trình đứng ở test cuối; test các màn hình vừa sửa vẫn đạt. Analyzer toàn repo có 121 info cũ; không coi kiểm thử hồi quy toàn hệ thống đã hoàn tất.
 - Course Detail Desktop/Mobile hiển thị trạng thái công bố và ẩn thao tác sửa lộ trình khi khóa Published; khoảng cuộn Mobile cho form cấp độ được nới để nút thao tác không bị sát mép. Bộ test tập trung Course/Public 54/54 đạt, analyzer phạm vi sạch. Chưa có ảnh chụp so sánh thật ở sáu breakpoint.
 - Admin Dashboard widget tests ở 320, 375, 393, 430, 800, 1200 và biểu đồ 50 khóa: 8/8 đạt. Web build đạt sau các thay đổi Course/Public. Visual Audit bằng ảnh Browser, dialog dài và thiết bị thật vẫn Pending.
+- Dialog Validate khóa với 18 điều kiện văn bản dài được kiểm thử cuộn đến mục cuối tại 320×700; không có overflow. Visual Audit bằng ảnh Browser/thiết bị và các dialog Admin khác vẫn Pending.
 
 1. **Audit and foundation:** add width classification and reusable mobile surfaces/status tokens. Keep business logic shared. Do not silently switch existing desktop navigation.
 2. **P0 Student Assignments:** dedicated mobile list, search/filter/sort, detail/results, and work screen with existing recorder/upload/draft/submit/resubmit behavior. Test 320, 375, 393, 430; tablet and desktop regression.
