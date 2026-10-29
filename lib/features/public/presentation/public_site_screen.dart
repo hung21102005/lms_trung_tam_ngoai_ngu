@@ -51,11 +51,21 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
   int _classPage = 1;
   final TextEditingController _courseSearch = TextEditingController();
   String _courseSort = 'name';
+  String? _programFilter;
 
   @override
   void initState() {
     super.initState();
+    _programFilter = widget.programSlug;
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant PublicSiteScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.programSlug != widget.programSlug) {
+      _programFilter = widget.programSlug;
+    }
   }
 
   @override
@@ -364,11 +374,21 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
   ]);
 
   Widget _courses(List<Map<String, dynamic>> courses) {
+    final programsBySlug = <String, String>{};
+    for (final course in courses) {
+      final program = course['program'] as Map?;
+      final slug = _string(program?['slug']);
+      if (slug.isNotEmpty) {
+        programsBySlug[slug] = _string(program?['nameVi']);
+      }
+    }
+    final programSlugs = programsBySlug.keys.toList()
+      ..sort((a, b) => programsBySlug[a]!.compareTo(programsBySlug[b]!));
     final inProgram = courses
         .where(
           (course) =>
-              widget.programSlug == null ||
-              (course['program'] as Map?)?['slug'] == widget.programSlug,
+              _programFilter == null ||
+              (course['program'] as Map?)?['slug'] == _programFilter,
         )
         .toList();
     final query = _courseSearch.text.trim().toLowerCase();
@@ -419,14 +439,49 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
               onChanged: (value) =>
                   setState(() => _courseSort = value ?? 'name'),
             );
+            final programFilter = DropdownButtonFormField<String>(
+              key: ValueKey(_programFilter),
+              isExpanded: true,
+              initialValue: programsBySlug.containsKey(_programFilter)
+                  ? _programFilter
+                  : null,
+              decoration: const InputDecoration(
+                labelText: 'Chương trình',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: '',
+                  child: Text('Tất cả chương trình'),
+                ),
+                for (final slug in programSlugs)
+                  DropdownMenuItem<String>(
+                    value: slug,
+                    child: Text(programsBySlug[slug]!),
+                  ),
+              ],
+              onChanged: (value) => setState(
+                () => _programFilter = value == null || value.isEmpty
+                    ? null
+                    : value,
+              ),
+            );
             if (constraints.maxWidth < 600) {
               return Column(
-                children: [search, const SizedBox(height: 12), sort],
+                children: [
+                  search,
+                  const SizedBox(height: 12),
+                  programFilter,
+                  const SizedBox(height: 12),
+                  sort,
+                ],
               );
             }
             return Row(
               children: [
                 Expanded(child: search),
+                const SizedBox(width: 12),
+                SizedBox(width: 240, child: programFilter),
                 const SizedBox(width: 12),
                 SizedBox(width: 180, child: sort),
               ],

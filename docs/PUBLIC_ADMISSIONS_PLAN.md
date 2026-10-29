@@ -269,3 +269,8 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 
 - Chi tiết khóa Admin có nút **Xem trước nội dung công khai** dùng chính Course/Level/Module/Lesson đã tải qua Bloc, cho xem mô tả công khai, đối tượng học và lộ trình khi khóa còn nháp. Không gọi Public API vốn chỉ trả khóa đã công bố. Hiển thị rõ khóa chưa xuất hiện với khách.
 - Widget test Mobile 320 px và Desktop 1200 px mở bản xem trước và mở cấp độ để thấy học phần **2/2 đạt**; toàn bộ test chi tiết khóa **18/18 đạt**, analyzer phạm vi sạch. Trình duyệt thật vẫn chưa kiểm chứng.
+
+## Checkpoint lọc chương trình trên catalog công khai (2026-10-29)
+
+- Danh sách khóa học công khai có bộ lọc chương trình lấy từ chính các khóa API đã công bố. Có thể đổi chương trình ngay trên catalog, kết hợp tìm kiếm và sắp xếp; liên kết từ trang Chương trình vẫn áp dụng bộ lọc ban đầu. Mobile xếp các trường theo cột, Desktop đặt cùng hàng.
+- Widget tests catalog tại 320/800/1200 px và toàn bộ test Public **15/15 đạt**. Backend vẫn quyết định khóa nào được công bố; bộ lọc không tạo nội dung giả. Trình duyệt/thiết bị thật và catalog vận hành với khóa đã được học vụ duyệt vẫn chưa kiểm chứng.

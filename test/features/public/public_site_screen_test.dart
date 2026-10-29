@@ -127,6 +127,47 @@ GoRouter _router(
 );
 
 void main() {
+  for (final width in [320.0, 800.0, 1200.0]) {
+    testWidgets('public catalog filters real programs at $width px', (
+      tester,
+    ) async {
+      final api = _FakeApiClient();
+      api.responses['/public/courses'] = [
+        {
+          'slug': 'ielts-a',
+          'title': 'IELTS A',
+          'program': {'slug': 'ielts', 'nameVi': 'Luyện thi IELTS chuyên sâu'},
+          'levels': <Map<String, dynamic>>[],
+        },
+        {
+          'slug': 'general-a',
+          'title': 'General A',
+          'program': {'slug': 'general', 'nameVi': 'Tiếng Anh tổng quát'},
+          'levels': <Map<String, dynamic>>[],
+        },
+      ];
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicCourses,
+      );
+      await tester.binding.setSurfaceSize(Size(width, 850));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+      expect(find.text('IELTS A'), findsOneWidget);
+      expect(find.text('General A'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(DropdownButtonFormField<String>, 'Chương trình'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Luyện thi IELTS chuyên sâu').last);
+      await tester.pumpAndSettle();
+      expect(find.text('IELTS A'), findsOneWidget);
+      expect(find.text('General A'), findsNothing);
+      expect(tester.takeException(), isNull, reason: 'width $width');
+      router.dispose();
+    });
+  }
+
   testWidgets('public catalog searches published API records on mobile', (
     tester,
   ) async {

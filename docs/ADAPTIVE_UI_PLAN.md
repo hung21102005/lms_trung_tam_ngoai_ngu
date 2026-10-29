@@ -383,3 +383,8 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 
 - The Admin course detail has a public-content preview in a scrollable sheet using the already loaded Course/Level/Module/Lesson state. It shows the public description and learning path before publication and explains when a draft is not visible to guests. This does not publish or mutate a course.
 - Widget tests cover opening the preview at 320 and 1200 logical pixels and expanding the curriculum. Browser/physical-device typography and long-content visual review remain unverified; see `docs/PUBLIC_ADMISSIONS_PLAN.md`.
+
+### Checkpoint 2026-10-29 — Public catalog program filter
+
+- The course catalog now offers a program selector populated from published API courses. Mobile stacks search, program and sort controls; wide layouts keep a horizontal toolbar. Existing links from the program list still select that program.
+- Public widget tests **15/15 pass**, including filter interactions at 320/800/1200 px. Real-browser layout and operational published-course data remain unverified.
