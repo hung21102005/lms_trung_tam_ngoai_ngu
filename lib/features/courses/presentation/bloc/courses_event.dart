@@ -178,3 +178,56 @@ class UploadLessonMaterialEvent extends CoursesEvent {
   @override
   List<Object?> get props => [courseId, lessonId, title, fileName, bytes];
 }
+
+class ChangeCoursePublicationStatusEvent extends CoursesEvent {
+  final String courseId;
+  final String status;
+
+  const ChangeCoursePublicationStatusEvent({
+    required this.courseId,
+    required this.status,
+  });
+
+  @override
+  List<Object?> get props => [courseId, status];
+}
+
+class ConfirmCourseAcademicReviewEvent extends CoursesEvent {
+  final String courseId;
+
+  const ConfirmCourseAcademicReviewEvent(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+class ToggleCourseActiveEvent extends CoursesEvent {
+  final String courseId;
+  final bool isActive;
+
+  const ToggleCourseActiveEvent({
+    required this.courseId,
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [courseId, isActive];
+}
+
+class CheckCoursePublicationEvent extends CoursesEvent {
+  final String courseId;
+
+  const CheckCoursePublicationEvent(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+class DeleteCourseEvent extends CoursesEvent {
+  final String courseId;
+
+  const DeleteCourseEvent(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}

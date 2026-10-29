@@ -85,6 +85,14 @@ abstract class CoursesRemoteDataSource {
     required String fileName,
     required Uint8List bytes,
   });
+
+  Future<Map<String, dynamic>> validateCoursePublication(String id);
+
+  Future<void> changeCourseStatus(String id, String status);
+
+  Future<void> confirmCourseAcademicReview(String id);
+
+  Future<void> deleteCourse(String id);
 }
 
 class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
@@ -408,5 +416,32 @@ class CoursesRemoteDataSourceImpl implements CoursesRemoteDataSource {
       fileType: fileType,
       fileSizeBytes: bytes.length,
     );
+  }
+
+  @override
+  Future<Map<String, dynamic>> validateCoursePublication(String id) async {
+    final response = await apiClient.get('/courses/$id/publication-check');
+    final data = response is Map<String, dynamic>
+        ? response['data'] ?? response
+        : response;
+    if (data is! Map) {
+      throw const FormatException('Kết quả kiểm tra công bố không hợp lệ');
+    }
+    return Map<String, dynamic>.from(data);
+  }
+
+  @override
+  Future<void> changeCourseStatus(String id, String status) async {
+    await apiClient.patch('/courses/$id/publication', data: {'status': status});
+  }
+
+  @override
+  Future<void> confirmCourseAcademicReview(String id) async {
+    await apiClient.post('/courses/$id/academic-review');
+  }
+
+  @override
+  Future<void> deleteCourse(String id) async {
+    await apiClient.delete('/courses/$id');
   }
 }

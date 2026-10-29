@@ -169,4 +169,19 @@ class CoursesRepositoryImpl implements CoursesRepository {
     fileName: fileName,
     bytes: bytes,
   );
+
+  @override
+  Future<Map<String, dynamic>> validateCoursePublication(String id) =>
+      remoteDataSource.validateCoursePublication(id);
+
+  @override
+  Future<void> changeCourseStatus(String id, String status) =>
+      remoteDataSource.changeCourseStatus(id, status);
+
+  @override
+  Future<void> confirmCourseAcademicReview(String id) =>
+      remoteDataSource.confirmCourseAcademicReview(id);
+
+  @override
+  Future<void> deleteCourse(String id) => remoteDataSource.deleteCourse(id);
 }

@@ -27,6 +27,20 @@ class CoursesLoaded extends CoursesState {
   List<Object?> get props => [courses, selectedLanguage, searchQuery];
 }
 
+class CourseMutationFailure extends CoursesLoaded {
+  final String message;
+
+  const CourseMutationFailure({
+    required this.message,
+    required super.courses,
+    required super.selectedLanguage,
+    required super.searchQuery,
+  });
+
+  @override
+  List<Object?> get props => [...super.props, message];
+}
+
 class CourseDetailLoading extends CoursesState {}
 
 class CourseDetailLoaded extends CoursesState {
@@ -38,14 +52,28 @@ class CourseDetailLoaded extends CoursesState {
   List<Object?> get props => [course];
 }
 
+class CoursePublicationCheckLoaded extends CoursesState {
+  final String courseId;
+  final Map<String, dynamic> checkResult;
+
+  const CoursePublicationCheckLoaded({
+    required this.courseId,
+    required this.checkResult,
+  });
+
+  @override
+  List<Object?> get props => [courseId, checkResult];
+}
+
 class CourseOperationSuccess extends CoursesState {
   final String message;
   final dynamic data;
+  final CourseModel? course;
 
-  const CourseOperationSuccess(this.message, {this.data});
+  const CourseOperationSuccess(this.message, {this.data, this.course});
 
   @override
-  List<Object?> get props => [message, data];
+  List<Object?> get props => [message, data, course];
 }
 
 class CoursesError extends CoursesState {

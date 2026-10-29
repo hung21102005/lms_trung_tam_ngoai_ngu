@@ -1,11 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/models/course_model.dart';
 import '../../domain/repositories/courses_repository.dart';
+import '../course_deletion_message.dart';
 import 'courses_event.dart';
 import 'courses_state.dart';
 
 class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
   final CoursesRepository repository;
+
+  List<CourseModel> _cachedCourses = [];
+  String _selectedLanguage = 'All';
+  String _searchQuery = '';
+  final Set<String> _deletingCourseIds = {};
 
   CoursesBloc({required this.repository}) : super(CoursesInitial()) {
     on<FetchCourses>(_onFetchCourses);
@@ -18,6 +25,22 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<CreateModuleEvent>(_onCreateModule);
     on<CreateLessonEvent>(_onCreateLesson);
     on<UploadLessonMaterialEvent>(_onUploadLessonMaterial);
+    on<ChangeCoursePublicationStatusEvent>(_onChangeCoursePublicationStatus);
+    on<ConfirmCourseAcademicReviewEvent>(_onConfirmCourseAcademicReview);
+    on<ToggleCourseActiveEvent>(_onToggleCourseActive);
+    on<CheckCoursePublicationEvent>(_onCheckCoursePublication);
+    on<DeleteCourseEvent>(_onDeleteCourse);
+  }
+
+  void _updateCachedCourse(CourseModel updated) {
+    final idx = _cachedCourses.indexWhere((c) => c.id == updated.id);
+    if (idx != -1) {
+      _cachedCourses[idx] = updated;
+    }
+  }
+
+  void _removeCachedCourse(String courseId) {
+    _cachedCourses.removeWhere((c) => c.id == courseId);
   }
 
   Future<void> _onFetchCourses(
@@ -35,11 +58,14 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         search: event.search,
         language: language,
       );
+      _cachedCourses = List.from(courses);
+      _selectedLanguage = event.language ?? 'All';
+      _searchQuery = event.search ?? '';
       emit(
         CoursesLoaded(
-          courses: courses,
-          selectedLanguage: event.language ?? 'All',
-          searchQuery: event.search ?? '',
+          courses: _cachedCourses,
+          selectedLanguage: _selectedLanguage,
+          searchQuery: _searchQuery,
         ),
       );
     } catch (e) {
@@ -54,6 +80,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     emit(CourseDetailLoading());
     try {
       final course = await repository.getCourseDetail(event.id);
+      _updateCachedCourse(course);
       emit(CourseDetailLoaded(course));
     } catch (e) {
       emit(CoursesError(e.toString().replaceAll('Exception: ', '')));
@@ -94,8 +121,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         estimatedSessions: event.estimatedSessions,
         tuitionFee: event.tuitionFee,
       );
-      emit(const CourseOperationSuccess('Đã thêm cấp độ đào tạo thành công'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã thêm cấp độ đào tạo thành công', course: updatedCourse));
     } catch (e) {
       emit(CoursesError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -107,8 +136,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
   ) async {
     try {
       await repository.updateLevel(event.levelId, event.changes);
-      emit(const CourseOperationSuccess('Đã cập nhật cấp độ đào tạo'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã cập nhật cấp độ đào tạo', course: updatedCourse));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
     }
@@ -120,8 +151,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
   ) async {
     try {
       await repository.updateModule(event.moduleId, event.changes);
-      emit(const CourseOperationSuccess('Đã cập nhật học phần'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã cập nhật học phần', course: updatedCourse));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
     }
@@ -133,8 +166,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
   ) async {
     try {
       await repository.updateLesson(event.lessonId, event.changes);
-      emit(const CourseOperationSuccess('Đã cập nhật bài học'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã cập nhật bài học', course: updatedCourse));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
     }
@@ -151,8 +186,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         order: event.values['order'] as int,
         description: event.values['description'] as String?,
       );
-      emit(const CourseOperationSuccess('Đã thêm học phần'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã thêm học phần', course: updatedCourse));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
     }
@@ -170,8 +207,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         content: event.values['content'] as String?,
         durationMinutes: event.values['durationMinutes'] as int,
       );
-      emit(const CourseOperationSuccess('Đã thêm bài học'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã thêm bài học', course: updatedCourse));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
     }
@@ -188,10 +227,112 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         fileName: event.fileName,
         bytes: event.bytes,
       );
-      emit(const CourseOperationSuccess('Đã thêm tài liệu bài học'));
-      add(FetchCourseDetail(event.courseId));
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess('Đã thêm tài liệu bài học', course: updatedCourse));
     } catch (error) {
       emit(CoursesError(error.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onChangeCoursePublicationStatus(
+    ChangeCoursePublicationStatusEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.changeCourseStatus(event.courseId, event.status);
+      final label = switch (event.status) {
+        'PUBLISHED' => 'Đã phê duyệt và công bố khóa học lên website',
+        'IN_REVIEW' => 'Đã gửi duyệt khóa học thành công',
+        'DRAFT' => 'Đã chuyển khóa học về bản nháp',
+        'ARCHIVED' => 'Đã lưu trữ khóa học',
+        _ => 'Đã cập nhật trạng thái khóa học',
+      };
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess(label, data: updatedCourse, course: updatedCourse));
+    } catch (e) {
+      emit(CoursesError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onConfirmCourseAcademicReview(
+    ConfirmCourseAcademicReviewEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.confirmCourseAcademicReview(event.courseId);
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess(
+        'Đã xác nhận rà soát học thuật thành công',
+        data: updatedCourse,
+        course: updatedCourse,
+      ));
+    } catch (e) {
+      emit(CoursesError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onToggleCourseActive(
+    ToggleCourseActiveEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      await repository.updateCourse(event.courseId, isActive: event.isActive);
+      final label = event.isActive
+          ? 'Đã kích hoạt khóa học để đào tạo & mở lớp'
+          : 'Đã tạm ngưng khóa học';
+      final updatedCourse = await repository.getCourseDetail(event.courseId);
+      _updateCachedCourse(updatedCourse);
+      emit(CourseDetailLoaded(updatedCourse));
+      emit(CourseOperationSuccess(label, data: updatedCourse, course: updatedCourse));
+    } catch (e) {
+      emit(CoursesError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onDeleteCourse(
+    DeleteCourseEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    if (!_deletingCourseIds.add(event.courseId)) return;
+    try {
+      await repository.deleteCourse(event.courseId);
+      _removeCachedCourse(event.courseId);
+      emit(const CourseOperationSuccess('Đã xóa vĩnh viễn khóa học thành công'));
+      emit(CoursesLoaded(
+        courses: List.from(_cachedCourses),
+        selectedLanguage: _selectedLanguage,
+        searchQuery: _searchQuery,
+      ));
+    } catch (e) {
+      emit(CourseMutationFailure(
+        message: courseDeletionMessage(e),
+        courses: List.from(_cachedCourses),
+        selectedLanguage: _selectedLanguage,
+        searchQuery: _searchQuery,
+      ));
+    } finally {
+      _deletingCourseIds.remove(event.courseId);
+    }
+  }
+
+  Future<void> _onCheckCoursePublication(
+    CheckCoursePublicationEvent event,
+    Emitter<CoursesState> emit,
+  ) async {
+    try {
+      final result = await repository.validateCoursePublication(event.courseId);
+      emit(CoursePublicationCheckLoaded(
+        courseId: event.courseId,
+        checkResult: result,
+      ));
+    } catch (e) {
+      emit(CoursesError(e.toString().replaceAll('Exception: ', '')));
     }
   }
 }

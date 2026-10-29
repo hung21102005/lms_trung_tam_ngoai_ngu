@@ -81,4 +81,12 @@ abstract class CoursesRepository {
     required String fileName,
     required Uint8List bytes,
   });
+
+  Future<Map<String, dynamic>> validateCoursePublication(String id);
+
+  Future<void> changeCourseStatus(String id, String status);
+
+  Future<void> confirmCourseAcademicReview(String id);
+
+  Future<void> deleteCourse(String id);
 }
