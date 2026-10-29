@@ -79,6 +79,23 @@ describe('Academic Core Flow (e2e)', () => {
       '/admissions/registrations',
     );
     expect(staffList.status).toBe(401);
+    const approve = await request(app.getHttpServer())
+      .post('/admissions/registrations/00000000-0000-4000-8000-000000000001/approve')
+      .send({});
+    expect(approve.status).toBe(401);
+
+    if (adminToken) {
+      const staffListAuthorized = await request(app.getHttpServer())
+        .get('/admissions/registrations')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(staffListAuthorized.status).toBe(200);
+      expect(Array.isArray(staffListAuthorized.body)).toBe(true);
+      const missingReview = await request(app.getHttpServer())
+        .patch('/admissions/registrations/00000000-0000-4000-8000-000000000001/review')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'CONTACTED' });
+      expect(missingReview.status).toBe(404);
+    }
   });
 
   it('should fetch classes list with auth (GET /classes)', async () => {

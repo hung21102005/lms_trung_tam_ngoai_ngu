@@ -11,6 +11,7 @@ class RouteNames {
   static const String publicClasses = '/lop-sap-khai-giang';
   static const String publicConsultation = '/tu-van';
   static const String publicRegistration = '/dang-ky-lop/:id';
+  static const String myRegistrations = '/student/don-dang-ky';
 
   // Role Dashboards
   static const String studentHome = '/student/home';

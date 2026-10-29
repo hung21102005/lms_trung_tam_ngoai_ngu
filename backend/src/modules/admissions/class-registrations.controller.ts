@@ -3,6 +3,8 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -20,6 +22,10 @@ import {
   CreateGuestRegistrationDto,
   CreateStudentRegistrationDto,
 } from './dto/create-class-registration.dto.js';
+import {
+  ApproveClassRegistrationDto,
+  ReviewClassRegistrationDto,
+} from './dto/review-class-registration.dto.js';
 
 @ApiTags('Class registrations')
 @Controller()
@@ -61,5 +67,32 @@ export class ClassRegistrationsController {
     @Query('classId') classId?: string,
   ) {
     return this.service.listForStaff(user, classId);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Patch('admissions/registrations/:id/review')
+  @ApiOperation({ summary: 'Học vụ đánh dấu đã liên hệ hoặc từ chối đơn' })
+  review(
+    @Param('id') id: string,
+    @Body() dto: ReviewClassRegistrationDto,
+    @CurrentUser() user: { roles: string[]; branchId?: string | null },
+  ) {
+    return this.service.review(id, dto, user);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Post('admissions/registrations/:id/approve')
+  @ApiOperation({
+    summary: 'Xác nhận nhập học và tạo ghi danh/hóa đơn trong transaction',
+  })
+  approve(
+    @Param('id') id: string,
+    @Body() dto: ApproveClassRegistrationDto,
+    @CurrentUser()
+    user: { id: string; roles: string[]; branchId?: string | null },
+  ) {
+    return this.service.approve(id, dto, user);
   }
 }

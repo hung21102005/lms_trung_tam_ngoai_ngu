@@ -337,3 +337,9 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 
 - Added a mobile-friendly registration detail/form reached from an eligible class card. Guests enter contact details; signed-in students submit with their existing account identity. Both paths use the same public layout and API client; confirmation means only that a pending request was accepted.
 - Public widget tests: 7/7, scoped analyzer: 0 issues, web build passed. Backend unit: 169/169, academic HTTP E2E: 5/5 for validation/access failures, local additive migration applied. Successful real enrollment request, staff approval, screenshots and physical-device behavior remain unverified; see `docs/PUBLIC_ADMISSIONS_PLAN.md`.
+
+### Checkpoint 2026-10-29 — Admissions queue and student request status
+
+- Added an adaptive staff queue for class registration requests, linked from existing CRM. Mobile uses compact request cards and status chips; wide screens use a two-column card layout. Review and approval actions call the protected API and refresh server state. Students can open a dedicated status page after submitting a request. Business state remains in the existing API/repository layers.
+- Scoped Flutter analyzer: **0 issues**; public and staff widget tests: **9/9 pass** at 320/375/393/430/800/1200 px; web build passed. Backend build, lint (8 existing warnings), **173/173 unit tests**, and **5/5 academic HTTP E2E** passed.
+- Actual approved enrollment on a published class, browser screenshots, physical-device behavior, full Flutter regression, and simultaneous enrollment through different endpoints remain **unverified**. See `docs/PUBLIC_ADMISSIONS_PLAN.md` for the precise next steps; do not mark the full Adaptive UI project complete.

@@ -17,9 +17,34 @@ const offering = {
 
 function setup() {
   const tx = {
-    admissionLead: { create: vi.fn().mockResolvedValue({ id: 'lead-1' }) },
+    admissionLead: {
+      create: vi.fn().mockResolvedValue({ id: 'lead-1' }),
+      update: vi.fn().mockResolvedValue({ id: 'lead-1' }),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
     classRegistration: {
       create: vi.fn().mockResolvedValue({ id: 'request-1' }),
+      findUnique: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
+    classStudent: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      count: vi.fn().mockResolvedValue(0),
+      create: vi.fn().mockResolvedValue({ id: 'enroll-1' }),
+      update: vi.fn().mockResolvedValue({ id: 'enroll-1' }),
+    },
+    invoice: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'invoice-1' }),
+    },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'student-1',
+        phone: '0988776655',
+        status: 'ACTIVE',
+        studentProfile: { id: 'profile-1' },
+        userRoles: [{ role: { code: 'student' } }],
+      }),
     },
   };
   const prisma = {
@@ -142,5 +167,128 @@ describe('ClassRegistrationsService', () => {
         { id: 'student-1', roles: ['student'] },
       ),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('reviews a branch request and synchronizes its CRM lead', async () => {
+    const { service, tx } = setup();
+    tx.classRegistration.findUnique.mockResolvedValueOnce({
+      id: 'request-1',
+      status: 'PENDING',
+      notes: null,
+      leadId: 'lead-1',
+      class: { branchId: 'branch-1' },
+    });
+    const result = await service.review(
+      'request-1',
+      { status: 'CONTACTED' as any },
+      { roles: ['academic_staff'], branchId: 'branch-1' },
+    );
+    expect(result.status).toBe('CONTACTED');
+    expect(tx.admissionLead.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'lead-1',
+        convertedUserId: null,
+        status: { not: 'ENROLLED' },
+      },
+      data: { status: 'CONTACTED' },
+    });
+  });
+
+  it('rejects staff review outside their branch', async () => {
+    const { service, tx } = setup();
+    tx.classRegistration.findUnique.mockResolvedValueOnce({
+      id: 'request-1',
+      status: 'PENDING',
+      notes: null,
+      leadId: null,
+      class: { branchId: 'branch-2' },
+    });
+    await expect(
+      service.review(
+        'request-1',
+        { status: 'REJECTED' as any },
+        { roles: ['academic_staff'], branchId: 'branch-1' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(tx.classRegistration.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('approves enrollment and invoice in one serializable transaction', async () => {
+    const { service, tx, prisma } = setup();
+    tx.classRegistration.findUnique.mockResolvedValueOnce({
+      id: 'request-1',
+      classId: 'class-1',
+      status: 'PENDING',
+      studentId: 'student-1',
+      phone: '0988776655',
+      leadId: null,
+      lead: null,
+      class: {
+        id: 'class-1',
+        branchId: 'branch-1',
+        status: 'OPEN_FOR_ENROLLMENT',
+        maxCapacity: 20,
+        tuitionFee: 100,
+        name: 'English A1',
+        startDate: new Date('2026-11-01'),
+      },
+    });
+    const result = await service.approve(
+      'request-1',
+      {},
+      { id: 'staff-1', roles: ['academic_staff'], branchId: 'branch-1' },
+    );
+    expect(result.status).toBe('APPROVED');
+    expect(tx.classStudent.create).toHaveBeenCalledOnce();
+    expect(tx.invoice.create).toHaveBeenCalledOnce();
+    expect(tx.classRegistration.updateMany).toHaveBeenCalledOnce();
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+  });
+
+  it('never approves a full class or an unverified guest', async () => {
+    const { service, tx } = setup();
+    const request = {
+      id: 'request-1',
+      classId: 'class-1',
+      status: 'PENDING',
+      studentId: 'student-1',
+      phone: '0988776655',
+      leadId: null,
+      lead: null,
+      class: {
+        id: 'class-1',
+        branchId: 'branch-1',
+        status: 'OPEN_FOR_ENROLLMENT',
+        maxCapacity: 20,
+        tuitionFee: 100,
+        name: 'English A1',
+        startDate: new Date('2026-11-01'),
+      },
+    };
+    tx.classRegistration.findUnique.mockResolvedValue(request);
+    tx.classStudent.count.mockResolvedValueOnce(20);
+    await expect(
+      service.approve(
+        'request-1',
+        {},
+        { id: 'staff-1', roles: ['academic_staff'], branchId: 'branch-1' },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.classStudent.create).not.toHaveBeenCalled();
+    tx.classRegistration.findUnique.mockResolvedValueOnce({
+      ...request,
+      studentId: null,
+      leadId: 'lead-1',
+      lead: { convertedUserId: null },
+    });
+    await expect(
+      service.approve(
+        'request-1',
+        {},
+        { id: 'staff-1', roles: ['academic_staff'], branchId: 'branch-1' },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

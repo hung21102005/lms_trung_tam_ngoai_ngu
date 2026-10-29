@@ -139,6 +139,23 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: RouteNames.myRegistrations,
+      builder: (context, state) {
+        final auth = context.read<AuthBloc>().state;
+        if (auth is! AuthenticatedState || !auth.user.isStudent) {
+          return const Scaffold(
+            body: Center(child: Text('Không có quyền truy cập')),
+          );
+        }
+        return PublicSiteScreen(
+          repository: PublicCatalogRepository(getIt<ApiClient>()),
+          page: PublicPage.myRegistrations,
+          isStudent: true,
+          studentName: auth.user.fullName,
+        );
+      },
+    ),
+    GoRoute(
       path: RouteNames.studentHome,
       builder: (context, state) => const StudentHomeScreen(),
     ),

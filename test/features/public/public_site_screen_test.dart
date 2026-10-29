@@ -15,6 +15,7 @@ class _FakeApiClient implements ApiClient {
       'total': 0,
       'totalPages': 0,
     },
+    '/my/registrations': <Map<String, dynamic>>[],
   };
   bool failLead = false;
   int leadCalls = 0;
@@ -83,6 +84,14 @@ GoRouter _router(
         classId: state.pathParameters['id'],
         isStudent: student,
         studentName: student ? 'Học viên An' : null,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.myRegistrations,
+      builder: (_, _) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.myRegistrations,
+        isStudent: true,
       ),
     ),
     GoRoute(
@@ -275,6 +284,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.lastPostPath, '/my/registrations');
     expect(api.leadData, {'classId': 'class-1'});
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('student sees registration status from API', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/my/registrations'] = [
+      {
+        'id': 'request-1',
+        'status': 'CONTACTED',
+        'class': {
+          'name': 'English A1 K01',
+          'course': {'title': 'English A1'},
+        },
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.myRegistrations,
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('English A1 K01'), findsOneWidget);
+    expect(find.text('Học vụ đã liên hệ'), findsOneWidget);
     expect(tester.takeException(), isNull);
     router.dispose();
   });

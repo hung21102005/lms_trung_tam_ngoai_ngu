@@ -3,14 +3,30 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
-import { LeadSource, Prisma, UserStatus } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import {
+  ClassStatus,
+  EnrollmentStatus,
+  InvoiceStatus,
+  LeadSource,
+  LeadStatus,
+  Prisma,
+  RegistrationStatus,
+  UserStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ClassesService } from '../classes/classes.service.js';
 import {
   CreateGuestRegistrationDto,
   CreateStudentRegistrationDto,
 } from './dto/create-class-registration.dto.js';
+import {
+  ApproveClassRegistrationDto,
+  RegistrationReviewAction,
+  ReviewClassRegistrationDto,
+} from './dto/review-class-registration.dto.js';
 
 const accepted = {
   message: 'Đã tiếp nhận yêu cầu đăng ký lớp. Học vụ sẽ liên hệ để xác nhận.',
@@ -198,5 +214,279 @@ export class ClassRegistrationsService {
         class: { select: { name: true, code: true, branchId: true } },
       },
     });
+  }
+
+  private assertStaffBranch(
+    actor: { roles: string[]; branchId?: string | null },
+    branchId: string,
+  ) {
+    if (
+      !actor.roles.some((role) =>
+        ['super_admin', 'branch_admin', 'academic_staff'].includes(role),
+      )
+    ) {
+      throw new ForbiddenException('Không có quyền xử lý đơn đăng ký');
+    }
+    if (!actor.roles.includes('super_admin') && actor.branchId !== branchId) {
+      throw new ForbiddenException('Đơn không thuộc chi nhánh của bạn');
+    }
+  }
+
+  async review(
+    id: string,
+    dto: ReviewClassRegistrationDto,
+    actor: { roles: string[]; branchId?: string | null },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.classRegistration.findUnique({
+        where: { id },
+        include: { class: { select: { branchId: true } } },
+      });
+      if (!request) throw new NotFoundException('Không tìm thấy đơn đăng ký');
+      this.assertStaffBranch(actor, request.class.branchId);
+      if (
+        request.status !== RegistrationStatus.PENDING &&
+        request.status !== RegistrationStatus.CONTACTED
+      ) {
+        throw new ConflictException(
+          'Đơn đã được xử lý và không thể đổi trạng thái',
+        );
+      }
+      const next =
+        dto.status === RegistrationReviewAction.CONTACTED
+          ? RegistrationStatus.CONTACTED
+          : RegistrationStatus.REJECTED;
+      const updated = await tx.classRegistration.updateMany({
+        where: {
+          id,
+          status: {
+            in: [RegistrationStatus.PENDING, RegistrationStatus.CONTACTED],
+          },
+        },
+        data: { status: next, notes: dto.notes?.trim() ?? request.notes },
+      });
+      if (updated.count !== 1)
+        throw new ConflictException('Đơn đã được xử lý bởi người khác');
+      if (request.leadId) {
+        await tx.admissionLead.updateMany({
+          where: {
+            id: request.leadId,
+            convertedUserId: null,
+            status: { not: LeadStatus.ENROLLED },
+          },
+          data: {
+            status:
+              next === RegistrationStatus.CONTACTED
+                ? LeadStatus.CONTACTED
+                : LeadStatus.CANCELLED,
+          },
+        });
+      }
+      return { id, status: next };
+    });
+  }
+
+  async approve(
+    id: string,
+    dto: ApproveClassRegistrationDto,
+    actor: { id: string; roles: string[]; branchId?: string | null },
+  ) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await this.prisma.$transaction(
+          async (tx) => {
+            const request = await tx.classRegistration.findUnique({
+              where: { id },
+              include: { class: true, lead: true },
+            });
+            if (!request)
+              throw new NotFoundException('Không tìm thấy đơn đăng ký');
+            this.assertStaffBranch(actor, request.class.branchId);
+            if (request.status === RegistrationStatus.APPROVED) {
+              return {
+                id,
+                status: RegistrationStatus.APPROVED,
+                studentId: request.studentId,
+              };
+            }
+            if (
+              request.status !== RegistrationStatus.PENDING &&
+              request.status !== RegistrationStatus.CONTACTED
+            ) {
+              throw new ConflictException('Đơn không còn chờ duyệt');
+            }
+            if (request.class.status !== ClassStatus.OPEN_FOR_ENROLLMENT) {
+              throw new ConflictException('Lớp không còn mở đăng ký');
+            }
+            const studentId =
+              request.studentId ??
+              request.lead?.convertedUserId ??
+              dto.studentId;
+            if (!studentId) {
+              throw new BadRequestException(
+                'Cần chuyển Lead thành tài khoản học viên hoặc chọn học viên đã xác minh',
+              );
+            }
+            if (
+              request.studentId &&
+              dto.studentId &&
+              dto.studentId !== request.studentId
+            ) {
+              throw new BadRequestException(
+                'Không thể thay học viên của đơn đã đăng nhập',
+              );
+            }
+            if (
+              request.lead?.convertedUserId &&
+              dto.studentId &&
+              dto.studentId !== request.lead.convertedUserId
+            ) {
+              throw new BadRequestException(
+                'Học viên không khớp tài khoản đã chuyển từ Lead',
+              );
+            }
+            const student = await tx.user.findUnique({
+              where: { id: studentId },
+              select: {
+                id: true,
+                phone: true,
+                status: true,
+                studentProfile: { select: { id: true } },
+                userRoles: { select: { role: { select: { code: true } } } },
+              },
+            });
+            if (
+              !student ||
+              student.status !== UserStatus.ACTIVE ||
+              !student.studentProfile ||
+              !student.userRoles.some((entry) => entry.role.code === 'student')
+            ) {
+              throw new BadRequestException(
+                'Tài khoản được chọn không phải học viên đang hoạt động',
+              );
+            }
+            if (
+              request.leadId &&
+              this.normalizePhone(student.phone ?? '') !==
+                this.normalizePhone(request.phone)
+            ) {
+              throw new BadRequestException(
+                'Số điện thoại học viên không khớp đơn khách mới',
+              );
+            }
+            const existing = await tx.classStudent.findUnique({
+              where: {
+                classId_studentId: { classId: request.classId, studentId },
+              },
+            });
+            if (existing?.status === EnrollmentStatus.ENROLLED) {
+              throw new ConflictException(
+                'Học viên đã được ghi danh vào lớp này',
+              );
+            }
+            const enrolledCount = await tx.classStudent.count({
+              where: {
+                classId: request.classId,
+                status: EnrollmentStatus.ENROLLED,
+              },
+            });
+            if (enrolledCount >= request.class.maxCapacity) {
+              throw new ConflictException(
+                'Lớp đã đủ sĩ số tại thời điểm duyệt',
+              );
+            }
+            const changed = await tx.classRegistration.updateMany({
+              where: {
+                id,
+                status: {
+                  in: [
+                    RegistrationStatus.PENDING,
+                    RegistrationStatus.CONTACTED,
+                  ],
+                },
+              },
+              data: { status: RegistrationStatus.APPROVED, studentId },
+            });
+            if (changed.count !== 1)
+              throw new ConflictException('Đơn đã được xử lý bởi người khác');
+            if (existing) {
+              await tx.classStudent.update({
+                where: { id: existing.id },
+                data: {
+                  status: EnrollmentStatus.ENROLLED,
+                  joinedAt: new Date(),
+                },
+              });
+            } else {
+              await tx.classStudent.create({
+                data: {
+                  classId: request.classId,
+                  studentId,
+                  status: EnrollmentStatus.ENROLLED,
+                  tuitionPaid: 0,
+                },
+              });
+            }
+            if (Number(request.class.tuitionFee) > 0) {
+              const invoice = await tx.invoice.findFirst({
+                where: {
+                  classId: request.classId,
+                  studentId,
+                  status: { not: InvoiceStatus.CANCELLED },
+                },
+              });
+              if (!invoice) {
+                await tx.invoice.create({
+                  data: {
+                    code: `HD-${new Date().getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+                    title: `Học phí lớp ${request.class.name}`,
+                    classId: request.classId,
+                    studentId,
+                    subtotal: request.class.tuitionFee,
+                    discount: 0,
+                    totalAmount: request.class.tuitionFee,
+                    paidAmount: 0,
+                    balance: request.class.tuitionFee,
+                    status: InvoiceStatus.PENDING,
+                    dueDate: request.class.startDate,
+                    createdById: actor.id,
+                  },
+                });
+              }
+            }
+            if (request.leadId) {
+              await tx.admissionLead.update({
+                where: { id: request.leadId },
+                data: {
+                  status: LeadStatus.ENROLLED,
+                  convertedUserId: studentId,
+                  convertedAt: new Date(),
+                },
+              });
+            }
+            return { id, status: RegistrationStatus.APPROVED, studentId };
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034' &&
+          attempt < 2
+        ) {
+          continue;
+        }
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'Học viên hoặc hóa đơn đã tồn tại, vui lòng tải lại đơn',
+          );
+        }
+        throw error;
+      }
+    }
+    throw new ConflictException('Không thể duyệt đơn, vui lòng thử lại');
   }
 }

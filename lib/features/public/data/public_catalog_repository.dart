@@ -82,6 +82,9 @@ class PublicCatalogRepository {
     );
   }
 
+  Future<List<Map<String, dynamic>>> myRegistrations() async =>
+      _records(await apiClient.get('/my/registrations'));
+
   Future<void> sendConsultation({
     required String fullName,
     required String phone,

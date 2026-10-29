@@ -12,6 +12,7 @@ enum PublicPage {
   classes,
   consultation,
   registration,
+  myRegistrations,
 }
 
 class PublicSiteScreen extends StatefulWidget {
@@ -61,6 +62,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       PublicPage.registration => widget.repository.classDetail(
         widget.classId ?? '',
       ),
+      PublicPage.myRegistrations => widget.repository.myRegistrations(),
     };
   }
 
@@ -76,7 +78,9 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
         final current = switch (widget.page) {
           PublicPage.home => 0,
           PublicPage.courses || PublicPage.courseDetail => 1,
-          PublicPage.classes || PublicPage.registration => 2,
+          PublicPage.classes ||
+          PublicPage.registration ||
+          PublicPage.myRegistrations => 2,
           PublicPage.consultation => 3,
         };
         const routes = [
@@ -187,6 +191,9 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                           offering: snapshot.data as Map<String, dynamic>,
                           isStudent: widget.isStudent,
                           studentName: widget.studentName,
+                        ),
+                        PublicPage.myRegistrations => _myRegistrations(
+                          snapshot.data as List<Map<String, dynamic>>,
                         ),
                       };
                     },
@@ -383,6 +390,35 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       ],
     ]);
   }
+
+  Widget _myRegistrations(List<Map<String, dynamic>> requests) => _pageScroll([
+    const _PageHeading(
+      'Đơn đăng ký của tôi',
+      'Theo dõi trạng thái yêu cầu nhập học của bạn.',
+    ),
+    const SizedBox(height: 20),
+    if (requests.isEmpty)
+      const _EmptyCard('Bạn chưa gửi yêu cầu đăng ký lớp nào.')
+    else
+      for (final item in requests)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _InfoCard(
+            icon: Icons.assignment_turned_in_outlined,
+            title: _string((item['class'] as Map?)?['name']),
+            subtitle: _string(
+              ((item['class'] as Map?)?['course'] as Map?)?['title'],
+            ),
+            footnote: switch (_string(item['status'])) {
+              'PENDING' => 'Chờ học vụ xử lý',
+              'CONTACTED' => 'Học vụ đã liên hệ',
+              'APPROVED' => 'Đã xác nhận nhập học',
+              'REJECTED' => 'Đã từ chối',
+              _ => _string(item['status']),
+            },
+          ),
+        ),
+  ]);
 
   Widget _offeringCard(Map<String, dynamic> item) {
     final course = item['course'] as Map?;
@@ -920,8 +956,16 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                   title: 'Đã tiếp nhận đăng ký',
                   detail: 'Yêu cầu của bạn đang chờ học vụ xác nhận. Việc gửi yêu cầu chưa phải là ghi danh chính thức.',
                   action: TextButton(
-                    onPressed: () => context.go(RouteNames.publicClasses),
-                    child: const Text('Xem các lớp khác'),
+                    onPressed: () => context.go(
+                      widget.isStudent
+                          ? RouteNames.myRegistrations
+                          : RouteNames.publicClasses,
+                    ),
+                    child: Text(
+                      widget.isStudent
+                          ? 'Theo dõi đơn của tôi'
+                          : 'Xem các lớp khác',
+                    ),
                   ),
                 )
               : Form(

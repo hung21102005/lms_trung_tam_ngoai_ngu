@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
+import 'class_registrations_admin_screen.dart';
 
 class AdmissionsCrmView extends StatefulWidget {
   const AdmissionsCrmView({super.key});
@@ -80,6 +81,18 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           SnackBar(content: Text('Xuất dữ liệu Leads thất bại: $error')),
         );
       }
+    }
+  }
+
+  Future<void> _openRegistrations() async {
+    final phone = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const ClassRegistrationsAdminScreen()),
+    );
+    if (!mounted) return;
+    if (phone != null) {
+      _searchController.text = phone;
+      setState(() {});
+      await _fetchLeads();
     }
   }
 
@@ -447,6 +460,15 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: _openRegistrations,
+                icon: const Icon(Icons.how_to_reg_outlined),
+                label: const Text('Đơn đăng ký lớp'),
+              ),
+            ),
+            const SizedBox(height: 12),
             // 1. PAGE HEADER / HEADING LAYOUT (Stitch style)
             Container(
               padding: const EdgeInsets.only(bottom: 16),
