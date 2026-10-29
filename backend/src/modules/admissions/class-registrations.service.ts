@@ -53,7 +53,6 @@ export class ClassRegistrationsService {
   }
 
   async createGuest(dto: CreateGuestRegistrationDto) {
-    const offering = await this.assertOffering(dto.classId);
     const phone = this.normalizePhone(dto.phone);
     if (!/^0\d{9,10}$/.test(phone)) {
       throw new BadRequestException('Số điện thoại không hợp lệ');
@@ -63,6 +62,7 @@ export class ClassRegistrationsService {
       where: { classId_applicantKey: { classId: dto.classId, applicantKey } },
     });
     if (existing) return accepted;
+    const offering = await this.assertOffering(dto.classId);
     try {
       await this.prisma.$transaction(async (tx) => {
         const lead = await tx.admissionLead.create({
@@ -109,7 +109,6 @@ export class ClassRegistrationsService {
         'Chỉ học viên được đăng ký bằng tài khoản này',
       );
     }
-    await this.assertOffering(dto.classId);
     const user = await this.prisma.user.findUnique({
       where: { id: actor.id },
       select: {
@@ -145,6 +144,12 @@ export class ClassRegistrationsService {
     });
     if (guestRequest) return guestRequest;
     const applicantKey = `user:${actor.id}`;
+    const existingRequest = await this.prisma.classRegistration.findUnique({
+      where: { classId_applicantKey: { classId: dto.classId, applicantKey } },
+      select: { id: true, classId: true, status: true, createdAt: true },
+    });
+    if (existingRequest) return existingRequest;
+    await this.assertOffering(dto.classId);
     try {
       return await this.prisma.classRegistration.upsert({
         where: { classId_applicantKey: { classId: dto.classId, applicantKey } },

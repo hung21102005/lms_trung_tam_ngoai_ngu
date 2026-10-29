@@ -1,6 +1,6 @@
 # EduLMS — chương trình, mở lớp và tuyển sinh công khai
 
-Updated: 2026-10-28. Baseline: `aa0e376`. Tiến độ thực tế được ghi sau từng checkpoint; tài liệu này không thay thế [ADAPTIVE_UI_PLAN.md](ADAPTIVE_UI_PLAN.md).
+Updated: 2026-10-29. Baseline: `aa0e376`. Tiến độ thực tế được ghi sau từng checkpoint; tài liệu này không thay thế [ADAPTIVE_UI_PLAN.md](ADAPTIVE_UI_PLAN.md).
 
 ## Thứ tự bắt buộc
 
@@ -58,10 +58,10 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
 | 2 Curriculum foundation | Đang thực hiện | Migration/seed nháp 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần, 188 bài học; chạy lại không tạo trùng. Admin đã có tạo/sửa/duyệt chương trình, khóa, cấp độ, học phần, bài học và gắn tài liệu. Cần biên tập học thuật sâu, duyệt nội dung thực tế, kiểm chứng upload/HTTP; seed vẫn DRAFT. |
-| 3 Class offering | Đang thực hiện | Có form tạo/sửa lớp, thời gian đăng ký, phân công giáo viên/phòng, lịch, học phí, kiểm tra điều kiện mở tuyển sinh và API lớp công khai. Ghi danh thủ công/duyệt đơn dùng transaction Serializable. Cần HTTP workflow với lớp vận hành thật, tải đồng thời PostgreSQL và kiểm chứng thiết bị. |
-| 4 Public website | Đang thực hiện | Đã có Flutter landing/catalog/chi tiết khóa/lớp sắp khai giảng/form tư vấn trên route công khai; dùng API thật và trạng thái loading/empty/error. Chưa kiểm chứng luồng form với Backend đang chạy và dữ liệu lớp đã công bố. |
-| 5 Registration/CRM | Đang thực hiện | Có đơn khách mới/học viên cũ, hàng chờ học vụ, liên hệ/từ chối/duyệt, chuyển Lead thành tài khoản và quay lại đơn, trạng thái học viên. Cần HTTP thành công trên lớp thật, SMTP và kiểm tra tải đồng thời. |
-| 6 Đồng bộ/kiểm thử | Đang thực hiện | Duyệt ghi `ClassStudent` và hóa đơn trong transaction; học viên từ Lead thấy đơn của mình, không tạo đơn trùng. Backend 180 unit tests và 18 widget tests tuyển sinh đạt. PostgreSQL cục bộ hiện không chạy; HTTP success path, lịch học/học phí sau duyệt và thiết bị thật chưa kiểm chứng. |
+| 3 Class offering | Đang thực hiện | Có form tạo/sửa lớp, thời gian đăng ký, phân công giáo viên/phòng, lịch, học phí, kiểm tra điều kiện mở tuyển sinh và API lớp công khai. Ghi danh thủ công/duyệt đơn dùng transaction Serializable. HTTP E2E trên database test xác nhận chặn lịch trùng; lớp vận hành thật và thiết bị chưa kiểm chứng. |
+| 4 Public website | Đang thực hiện | Flutter landing/catalog/chi tiết khóa/lớp sắp khai giảng/form tư vấn dùng API thật. HTTP E2E đọc catalog có dữ liệu test công bố riêng; browser gọi Backend thực và nội dung vận hành chưa kiểm chứng. |
+| 5 Registration/CRM | Đang thực hiện | Đơn khách mới/học viên cũ, hàng chờ học vụ, liên hệ/từ chối/duyệt, chuyển Lead thành tài khoản và quay lại đơn đã có. HTTP E2E trên PostgreSQL test xác nhận luồng thành công và tranh chấp chỗ; SMTP thật và lớp vận hành chưa kiểm chứng. |
+| 6 Đồng bộ/kiểm thử | Đang thực hiện | HTTP E2E riêng xác nhận `ClassStudent`, hóa đơn, lớp/lịch học viên, danh sách giảng viên và rollback khi hóa đơn lỗi. Backend 180 unit tests đạt; thiết bị thật, trình duyệt thực, thanh toán và dữ liệu vận hành chưa kiểm chứng. |
 
 ## Rủi ro và điều chưa kiểm chứng
 
@@ -207,4 +207,13 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - `GET /my/registrations` nay trả cả đơn đăng ký bằng tài khoản và đơn khách mới có Lead đã liên kết với tài khoản học viên hiện tại. Khi học viên đăng ký lại cùng lớp sau khi được tạo tài khoản, `POST /my/registrations` trả đơn khách cũ thay vì tạo bản sao mới. Trạng thái vẫn là `PENDING` hoặc `CONTACTED` cho đến khi học vụ duyệt và ghi danh thật.
 - Backend build đạt, lint đạt với 8 cảnh báo cũ, unit **180/180 đạt**, gồm 2 hồi quy mới cho truy vấn và chống trùng. Chưa kiểm chứng HTTP thực tế với lớp hợp lệ và tài khoản chuyển đổi thật; không công bố seed nháp để ép dữ liệu thử.
 - **Điểm tiếp tục:** HTTP end-to-end trên lớp thật do học vụ mở; kiểm tra tải đồng thời PostgreSQL, hóa đơn/lịch học sau duyệt, gửi email thật và thiết bị Mobile. Tiếp tục các mục Adaptive UI Pending trong `docs/ADAPTIVE_UI_PLAN.md`.
-- Kiểm tra chỉ đọc ngày 2026-10-29: PostgreSQL cấu hình tại `localhost:5433` hiện không phản hồi (`Please make sure your database server is running`), nên không thể xác nhận số lớp công khai hiện tại hoặc chạy HTTP ghi đơn/duyệt thành công. Không reset database hay tự công bố khóa seed để vượt qua giới hạn này.
+- Kiểm tra lại ngày 2026-10-29: Docker báo `lms_postgres` healthy và Prisma kết nối `localhost:5433` thành công khi chạy ngoài sandbox; lỗi không phản hồi trước đó xuất phát từ giới hạn truy cập của môi trường chạy lệnh. Database vận hành `lms_db` có **0 khóa công khai và 0 lớp đủ điều kiện nhận đăng ký** tại thời điểm kiểm tra chỉ đọc. Không thay đổi bản ghi vận hành hay công bố seed nháp.
+
+## Checkpoint HTTP tuyển sinh trên PostgreSQL test tách biệt (2026-10-29)
+
+- Tạo database test tạm theo mẫu `lms_codex_e2e_*`, áp dụng đúng 9 migration hiện có, chỉ tạo chương trình/khóa/lớp/tài khoản tổng hợp trong database này. `backend/test/admissions-workflow.e2e-spec.ts` tự bỏ qua nếu `DATABASE_URL` không trỏ tới database test đúng mẫu; không ghi vào `lms_db`.
+- **4/4 HTTP E2E đạt:** khách đọc catalog và lớp công khai → gửi đơn → CRM nhận/đánh dấu đã liên hệ → chuyển Lead thành học viên → học viên đăng nhập/xem đơn → Admin duyệt → có đúng một thành viên lớp và hóa đơn chưa thanh toán → học viên thấy lớp/lịch, giảng viên thấy học viên. Ca đồng thời tranh một chỗ cho một kết quả duyệt và một kết quả xung đột; đơn thua vẫn chờ và không có hóa đơn. Tạo lớp trùng phòng/giáo viên cùng giờ trả 409. Cố ý làm bước tạo hóa đơn thất bại trong database test xác nhận toàn bộ ghi danh và trạng thái duyệt được rollback.
+- Sửa hai đường đăng ký khách và học viên: nếu đã có đơn của chính mình, gửi lại vẫn nhận đơn cũ khi lớp vừa đầy chỗ; người mới vẫn nhận lỗi hết chỗ. Không tạo thêm Lead hoặc đơn trùng.
+- Backend build đạt, unit **180/180 đạt**, lint không có lỗi (8 cảnh báo cũ). Flutter widget Public + hàng chờ + CRM **18/18 đạt**. Kiểm thử chỉ xác nhận Backend HTTP trên PostgreSQL test và UI với API giả trong widget tests; chưa xác nhận thao tác Flutter trong trình duyệt/thiết bị với Backend thật, SMTP, dữ liệu học thuật thật hay lớp vận hành. `lms_db` không có offering nên luồng vận hành chưa thể chạy mà không có phê duyệt nội dung/chương trình và mở lớp hợp lệ.
+- **Tiếp theo:** rà soát và duyệt nội dung học thuật của catalog seed theo quy trình Admin, mở lớp vận hành với phòng/giảng viên/học phí/lịch và cửa sổ đăng ký được xác nhận; chạy browser E2E và kiểm tra thủ công các màn hình. Tiếp tục kiểm thử cạnh tranh giữa duyệt đơn và ghi danh thủ công, email thực và thanh toán trước khi đóng giai đoạn 5–6.
+- Hai database test tạm đã được xóa sau khi chạy và đã xác nhận không còn trong PostgreSQL; database vận hành `lms_db` không bị xóa/reset.
