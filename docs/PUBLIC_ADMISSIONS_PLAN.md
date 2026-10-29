@@ -274,3 +274,4 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 
 - Danh sách khóa học công khai có bộ lọc chương trình lấy từ chính các khóa API đã công bố. Có thể đổi chương trình ngay trên catalog, kết hợp tìm kiếm và sắp xếp; liên kết từ trang Chương trình vẫn áp dụng bộ lọc ban đầu. Mobile xếp các trường theo cột, Desktop đặt cùng hàng.
 - Widget tests catalog tại 320/800/1200 px và toàn bộ test Public **15/15 đạt**. Backend vẫn quyết định khóa nào được công bố; bộ lọc không tạo nội dung giả. Trình duyệt/thiết bị thật và catalog vận hành với khóa đã được học vụ duyệt vẫn chưa kiểm chứng.
+- Sửa trường hợp mở liên kết tới chương trình chưa có khóa đã công bố: catalog vẫn hiển thị bộ lọc và cho chọn **Tất cả chương trình** để quay về danh sách; widget test hồi quy đạt, tổng Public **16/16 đạt**.

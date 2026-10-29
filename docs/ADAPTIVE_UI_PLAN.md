@@ -388,3 +388,4 @@ Next work order: finish P0 end-to-end device/API checks, then student dashboard/
 
 - The course catalog now offers a program selector populated from published API courses. Mobile stacks search, program and sort controls; wide layouts keep a horizontal toolbar. Existing links from the program list still select that program.
 - Public widget tests **15/15 pass**, including filter interactions at 320/800/1200 px. Real-browser layout and operational published-course data remain unverified.
+- A deep link to a program without published courses still keeps the filter visible, so users can return to all published courses. Public widget tests **16/16 pass** after this follow-up.

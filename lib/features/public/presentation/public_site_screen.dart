@@ -413,7 +413,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
         'Chọn lộ trình phù hợp với mục tiêu học tập của bạn.',
       ),
       const SizedBox(height: 24),
-      if (inProgram.isNotEmpty) ...[
+      if (courses.isNotEmpty) ...[
         LayoutBuilder(
           builder: (context, constraints) {
             final search = TextField(
@@ -442,9 +442,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
             final programFilter = DropdownButtonFormField<String>(
               key: ValueKey(_programFilter),
               isExpanded: true,
-              initialValue: programsBySlug.containsKey(_programFilter)
-                  ? _programFilter
-                  : null,
+              initialValue: _programFilter,
               decoration: const InputDecoration(
                 labelText: 'Chương trình',
                 border: OutlineInputBorder(),
@@ -454,6 +452,12 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                   value: '',
                   child: Text('Tất cả chương trình'),
                 ),
+                if (_programFilter != null &&
+                    !programsBySlug.containsKey(_programFilter))
+                  DropdownMenuItem<String>(
+                    value: _programFilter,
+                    child: Text('Chương trình: $_programFilter'),
+                  ),
                 for (final slug in programSlugs)
                   DropdownMenuItem<String>(
                     value: slug,

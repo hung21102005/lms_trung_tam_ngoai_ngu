@@ -127,6 +127,40 @@ GoRouter _router(
 );
 
 void main() {
+  testWidgets('catalog can clear a program with no published courses', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-a',
+        'title': 'IELTS A',
+        'program': {'slug': 'ielts', 'nameVi': 'Luyện thi IELTS'},
+        'levels': <Map<String, dynamic>>[],
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      '${RouteNames.publicCourses}?chuong-trinh=general',
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Chương trình này chưa có khóa học được công bố.'),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.widgetWithText(DropdownButtonFormField<String>, 'Chương trình'),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tất cả chương trình').last);
+    await tester.pumpAndSettle();
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
   for (final width in [320.0, 800.0, 1200.0]) {
     testWidgets('public catalog filters real programs at $width px', (
       tester,
