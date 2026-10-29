@@ -1255,6 +1255,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
                       ? 'Đã công bố'
                       : course.publicationStatus == 'IN_REVIEW'
                       ? 'Chờ duyệt'
+                      : course.publicationStatus == 'ARCHIVED'
+                      ? 'Đã lưu trữ'
                       : 'Bản nháp',
                 ),
               ),

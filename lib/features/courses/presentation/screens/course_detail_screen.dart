@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -72,7 +73,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final state = context.read<CoursesBloc>().state;
     return widget.canEditAcademicLevel &&
         state is CourseDetailLoaded &&
-        state.course.publicationStatus != 'ARCHIVED';
+        state.course.publicationStatus != 'ARCHIVED' &&
+        state.course.publicationStatus != 'PUBLISHED';
   }
 
   final NumberFormat _currencyFormat = NumberFormat.currency(
@@ -498,22 +500,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       'Khung Cấp Độ & Giáo Trình (${course.levels.length})',
                       style: AppTextStyles.h4(context).copyWith(fontSize: 18),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: _showAddLevelDialog,
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Thêm Level'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    if (_canEditCurriculum)
+                      ElevatedButton.icon(
+                        onPressed: _showAddLevelDialog,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Thêm Level'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -542,7 +545,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     return SafeArea(
       top: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           MobileSectionCard(
             child: Column(
@@ -561,6 +564,17 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       color: course.isActive
                           ? AppColors.success
                           : AppColors.error,
+                    ),
+                    MobileStatusPill(
+                      label: switch (course.publicationStatus) {
+                        'PUBLISHED' => 'Đã công bố',
+                        'IN_REVIEW' => 'Chờ duyệt',
+                        'ARCHIVED' => 'Đã lưu trữ',
+                        _ => 'Bản nháp',
+                      },
+                      color: course.publicationStatus == 'PUBLISHED'
+                          ? AppColors.success
+                          : AppColors.primary,
                     ),
                   ],
                 ),
@@ -598,7 +612,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 ?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          FilledButton.icon(
+          if (_canEditCurriculum) FilledButton.icon(
             onPressed: _showAddLevelDialog,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Thêm cấp độ'),
@@ -631,6 +645,14 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           if (level.description?.trim().isNotEmpty == true) ...[
             const SizedBox(height: 6),
             Text(level.description!),
+          ],
+          if (level.expectedOutcomes?['summary'] != null) ...[
+            const SizedBox(height: 8),
+            Text('Đầu ra: ${level.expectedOutcomes!['summary']}'),
+          ],
+          if (level.assessmentScheme?['components'] != null) ...[
+            const SizedBox(height: 6),
+            Text('Đánh giá: ${level.assessmentScheme!['components']}'),
           ],
           const SizedBox(height: 10),
           Wrap(
@@ -831,6 +853,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             course.title,
             style: AppTextStyles.h4(context).copyWith(fontSize: 20),
           ),
+          const SizedBox(height: 4),
+          Text(switch (course.publicationStatus) {
+            'PUBLISHED' => 'Trạng thái công bố: Đã công bố',
+            'IN_REVIEW' => 'Trạng thái công bố: Chờ duyệt',
+            'ARCHIVED' => 'Trạng thái công bố: Đã lưu trữ',
+            _ => 'Trạng thái công bố: Bản nháp',
+          }, style: AppTextStyles.caption(context)),
           if (course.targetAudience != null &&
               course.targetAudience!.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -965,6 +994,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ),
             ),
             children: [
+              if (level.expectedOutcomes?['summary'] != null)
+                ListTile(
+                  title: const Text('Kết quả học tập mong đợi'),
+                  subtitle: Text('${level.expectedOutcomes!['summary']}'),
+                ),
+              if (level.assessmentScheme?['components'] != null)
+                ListTile(
+                  title: const Text('Phương án đánh giá'),
+                  subtitle: Text('${level.assessmentScheme!['components']}'),
+                ),
               if (_canEditCurriculum)
                 Align(
                   alignment: Alignment.centerRight,
@@ -1341,6 +1380,12 @@ class _EditLevelFormState extends State<_EditLevelForm> {
   late final Map<String, TextEditingController> _fields;
   bool _saving = false;
 
+  String _academicText(Map<String, dynamic>? value, String key) {
+    if (value == null) return '';
+    final field = value[key];
+    return field is String ? field : jsonEncode(value);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1361,6 +1406,12 @@ class _EditLevelFormState extends State<_EditLevelForm> {
       ),
       'entryRequirements': TextEditingController(
         text: level.entryRequirements ?? '',
+      ),
+      'expectedOutcomes': TextEditingController(
+        text: _academicText(level.expectedOutcomes, 'summary'),
+      ),
+      'assessmentScheme': TextEditingController(
+        text: _academicText(level.assessmentScheme, 'components'),
       ),
       'completionCriteria': TextEditingController(
         text: level.completionCriteria ?? '',
@@ -1403,6 +1454,18 @@ class _EditLevelFormState extends State<_EditLevelForm> {
           : int.parse(text('toeicTargetScore')!),
       'cambridgeQualification': text('cambridgeQualification'),
       'entryRequirements': text('entryRequirements'),
+      'expectedOutcomes': text('expectedOutcomes') == null
+          ? null
+          : text('expectedOutcomes') ==
+                _academicText(widget.level.expectedOutcomes, 'summary')
+          ? widget.level.expectedOutcomes
+          : {'summary': text('expectedOutcomes')},
+      'assessmentScheme': text('assessmentScheme') == null
+          ? null
+          : text('assessmentScheme') ==
+                _academicText(widget.level.assessmentScheme, 'components')
+          ? widget.level.assessmentScheme
+          : {'components': text('assessmentScheme')},
       'completionCriteria': text('completionCriteria'),
       'recommendedHours': text('recommendedHours') == null
           ? null
@@ -1463,6 +1526,12 @@ class _EditLevelFormState extends State<_EditLevelForm> {
                   'Cambridge qualification (nếu áp dụng)',
                 ),
                 _field('entryRequirements', 'Yêu cầu đầu vào', lines: 2),
+                _field(
+                  'expectedOutcomes',
+                  'Kết quả học tập mong đợi',
+                  lines: 3,
+                ),
+                _field('assessmentScheme', 'Phương án đánh giá', lines: 3),
                 _field('completionCriteria', 'Tiêu chí hoàn thành', lines: 2),
                 _field('recommendedHours', 'Giờ học tham khảo', number: true),
                 _field(

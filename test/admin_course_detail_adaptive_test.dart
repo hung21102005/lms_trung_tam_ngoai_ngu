@@ -7,11 +7,17 @@ import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/bloc/cours
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/screens/course_detail_screen.dart';
 
 class _Repository extends Fake implements CoursesRepository {
-  _Repository({this.empty = false, this.fail = false, this.archived = false});
+  _Repository({
+    this.empty = false,
+    this.fail = false,
+    this.archived = false,
+    this.published = false,
+  });
 
   final bool empty;
   final bool fail;
   final bool archived;
+  final bool published;
   String? createdLevelCode;
   Map<String, dynamic>? updatedLevelChanges;
   Map<String, dynamic>? updatedModuleChanges;
@@ -109,7 +115,11 @@ class _Repository extends Fake implements CoursesRepository {
       code: 'IELTS-F-01',
       title: 'IELTS Foundation: chương trình luyện thi với tên rất dài trên màn hình nhỏ',
       description: 'Mô tả chương trình đào tạo dài để kiểm tra xuống dòng trên thiết bị nhỏ.',
-      publicationStatus: archived ? 'ARCHIVED' : 'DRAFT',
+      publicationStatus: archived
+          ? 'ARCHIVED'
+          : published
+          ? 'PUBLISHED'
+          : 'DRAFT',
       levelsCount: empty ? 0 : 1,
       levels: empty
           ? const []
@@ -171,7 +181,7 @@ void main() {
     await tester.pumpWidget(_app(_Repository()));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.textContaining('Học phần phát triển'));
-    await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -320));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Học phần phát triển'));
     await tester.pumpAndSettle();
@@ -197,7 +207,7 @@ void main() {
   });
 
   testWidgets('Mobile thêm cấp độ qua bottom sheet và Bloc', (tester) async {
-    tester.view.physicalSize = const Size(320, 600);
+    tester.view.physicalSize = const Size(320, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -207,6 +217,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView).first, const Offset(0, -180));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Thêm cấp độ'));
     await tester.tap(find.text('Thêm cấp độ'));
     await tester.pumpAndSettle();
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
@@ -253,11 +264,25 @@ void main() {
       find.widgetWithText(TextFormField, 'CEFR (nếu áp dụng)'),
       'B1',
     );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Kết quả học tập mong đợi'),
+      'Giao tiếp ở mức B1',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Phương án đánh giá'),
+      'Bài kiểm tra cuối khóa',
+    );
     await tester.ensureVisible(find.text('Lưu cấp độ'));
     await tester.tap(find.text('Lưu cấp độ'));
     await tester.pumpAndSettle();
     expect(repository.updatedLevelChanges?['cefrLevel'], 'B1');
     expect(repository.updatedLevelChanges?['code'], 'FOUNDATION-01');
+    expect(repository.updatedLevelChanges?['expectedOutcomes'], {
+      'summary': 'Giao tiếp ở mức B1',
+    });
+    expect(repository.updatedLevelChanges?['assessmentScheme'], {
+      'components': 'Bài kiểm tra cuối khóa',
+    });
     expect(tester.takeException(), isNull);
   });
 
@@ -348,6 +373,35 @@ void main() {
     expect(find.text('Sửa cấp độ'), findsNothing);
     expect(find.text('Thêm học phần'), findsNothing);
     expect(find.byTooltip('Sửa bài học'), findsNothing);
+  });
+
+  testWidgets('Khóa đã công bố chỉ cho xem lộ trình trên Mobile', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_app(_Repository(published: true)));
+    await tester.pumpAndSettle();
+    expect(find.text('Đã công bố'), findsOneWidget);
+    expect(find.text('Sửa cấp độ'), findsNothing);
+    expect(find.text('Thêm học phần'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Khóa đã công bố ẩn nút thêm cấp độ trên Desktop', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_app(_Repository(published: true)));
+    await tester.pumpAndSettle();
+    expect(find.text('Thêm Level'), findsNothing);
+    expect(find.text('Sửa cấp độ'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Mobile tài liệu yêu cầu chọn tệp trước khi lưu', (tester) async {

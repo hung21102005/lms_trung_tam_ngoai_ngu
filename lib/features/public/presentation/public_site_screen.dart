@@ -759,50 +759,173 @@ class _HeroCard extends StatelessWidget {
   final VoidCallback onExplore;
   final VoidCallback onConsult;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [AppColors.primaryDark, AppColors.primaryLight],
-      ),
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final mobile = constraints.maxWidth < 600;
+      final introduction = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .15),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const Text(
+              'HỌC TIẾNG ANH CÙNG EDULMS',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          SizedBox(height: mobile ? 22 : 28),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: mobile ? 30 : 42,
+              height: 1.14,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.5,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (mobile)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton.icon(
+                  onPressed: onExplore,
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const Text('Khám phá khóa học'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primaryDark,
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: onConsult,
+                  icon: const Icon(Icons.support_agent_rounded),
+                  label: const Text('Nhận tư vấn chọn lộ trình'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                ),
+              ],
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.icon(
+                  onPressed: onExplore,
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const Text('Khám phá khóa học'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primaryDark,
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onConsult,
+                  icon: const Icon(Icons.support_agent_rounded),
+                  label: const Text('Nhận tư vấn'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      );
+      return Container(
+        padding: EdgeInsets.all(mobile ? 24 : 40),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primaryDark, AppColors.primaryLight],
+          ),
+          borderRadius: BorderRadius.circular(mobile ? 28 : 32),
+        ),
+        child: mobile
+            ? introduction
+            : Row(
+                children: [
+                  Expanded(flex: 3, child: introduction),
+                  const SizedBox(width: 40),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .12),
+                        border: Border.all(color: Colors.white24),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.auto_stories_rounded,
+                            size: 38,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 24),
+                          _HeroStep('01', 'Khám phá chương trình'),
+                          _HeroStep('02', 'Chọn khóa và lớp phù hợp'),
+                          _HeroStep('03', 'Đăng ký hoặc nhận tư vấn'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      );
+    },
+  );
+}
+
+class _HeroStep extends StatelessWidget {
+  const _HeroStep(this.number, this.label);
+  final String number;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
       children: [
-        const Icon(Icons.auto_stories_rounded, size: 36, color: Colors.white),
-        const SizedBox(height: 20),
         Text(
-          title,
+          number,
           style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: Colors.white70,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          subtitle,
-          style: const TextStyle(fontSize: 16, color: Colors.white),
-        ),
-        const SizedBox(height: 24),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            FilledButton.tonal(
-              onPressed: onExplore,
-              child: const Text('Xem khóa học'),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
             ),
-            OutlinedButton(
-              onPressed: onConsult,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white),
-              ),
-              child: const Text('Nhận tư vấn'),
-            ),
-          ],
+          ),
         ),
       ],
     ),

@@ -300,6 +300,7 @@ void main() {
     expect(api.savedPath, '/courses/course-1');
     expect(api.saved?['targetAudience'], 'Người bắt đầu');
     expect(api.saved?['thumbnailUrl'], 'https://example.com/course.png');
+    expect(api.saved?['curriculumVersion'], '1.0');
     expect(tester.takeException(), isNull);
   });
 }

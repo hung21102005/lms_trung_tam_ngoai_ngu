@@ -87,4 +87,13 @@ export class CreateCourseDto {
   @IsOptional()
   @IsString()
   publicDescription?: string;
+
+  @ApiPropertyOptional({
+    example: '1.0',
+    description: 'Phiên bản lộ trình học thuật',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+\.\d+$/)
+  curriculumVersion?: string;
 }

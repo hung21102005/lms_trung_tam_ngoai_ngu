@@ -7,6 +7,7 @@ import {
   Min,
   Max,
   IsNumber,
+  IsObject,
 } from 'class-validator';
 
 export class CreateCourseLevelDto {
@@ -92,6 +93,16 @@ export class CreateCourseLevelDto {
   @IsOptional()
   @IsString()
   entryRequirements?: string;
+
+  @ApiPropertyOptional({ description: 'Mục tiêu đầu ra có cấu trúc' })
+  @IsOptional()
+  @IsObject()
+  expectedOutcomes?: Record<string, string>;
+
+  @ApiPropertyOptional({ description: 'Cấu phần và tiêu chí đánh giá' })
+  @IsOptional()
+  @IsObject()
+  assessmentScheme?: Record<string, string>;
 
   @ApiPropertyOptional()
   @IsOptional()

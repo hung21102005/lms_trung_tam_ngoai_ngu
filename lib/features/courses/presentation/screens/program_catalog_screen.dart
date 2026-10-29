@@ -34,6 +34,7 @@ Future<bool?> openCourseManagementEditor(
         targetAudience: values['targetAudience']!,
         language: values['language']!,
         thumbnailUrl: values['thumbnailUrl']!,
+        curriculumVersion: values['curriculumVersion']!,
         isActive: isActive,
       ),
     ),
@@ -335,6 +336,7 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
           targetAudience: values['targetAudience']!,
           language: values['language']!,
           thumbnailUrl: values['thumbnailUrl']!,
+          curriculumVersion: values['curriculumVersion']!,
           isActive: isActive,
         ),
       ),
@@ -812,6 +814,9 @@ class _CourseEditorState extends State<CourseEditor> {
       ),
       'language': TextEditingController(text: course?.language ?? 'English'),
       'thumbnailUrl': TextEditingController(text: course?.thumbnailUrl ?? ''),
+      'curriculumVersion': TextEditingController(
+        text: course?.curriculumVersion ?? '1.0',
+      ),
     };
   }
 
@@ -865,7 +870,8 @@ class _CourseEditorState extends State<CourseEditor> {
           if ((key == 'code' ||
                   key == 'title' ||
                   key == 'slug' ||
-                  key == 'language') &&
+                  key == 'language' ||
+                  key == 'curriculumVersion') &&
               (value == null || value.trim().isEmpty)) {
             return 'Vui lòng nhập $label';
           }
@@ -877,6 +883,10 @@ class _CourseEditorState extends State<CourseEditor> {
               !RegExp(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
                   .hasMatch(value?.trim() ?? '')) {
             return 'Đường dẫn chỉ gồm chữ thường, số và dấu gạch nối';
+          }
+          if (key == 'curriculumVersion' &&
+              !RegExp(r'^\d+\.\d+$').hasMatch(value?.trim() ?? '')) {
+            return 'Phiên bản cần có dạng 1.0';
           }
           final imageUri = key == 'thumbnailUrl' && value != null
               ? Uri.tryParse(value.trim())
@@ -949,6 +959,7 @@ class _CourseEditorState extends State<CourseEditor> {
                   field('publicDescription', 'Mô tả công khai', lines: 3),
                   field('targetAudience', 'Đối tượng học', lines: 2),
                   field('language', 'Ngôn ngữ giảng dạy'),
+                  field('curriculumVersion', 'Phiên bản lộ trình'),
                   field('thumbnailUrl', 'URL ảnh đại diện'),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,

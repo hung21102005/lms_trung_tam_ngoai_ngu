@@ -34,6 +34,7 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
   let manualClassId: string;
   let teacherId: string;
   let courseId: string;
+  let programId: string;
   let levelId: string;
   let branchId: string;
   let roomId: string;
@@ -117,6 +118,7 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
         isPublic: true,
       },
     });
+    programId = program.id;
     const course = await db.course.create({
       data: {
         code: `COURSE-${suffix}`,
@@ -560,5 +562,106 @@ run('Public admissions through enrollment (isolated PostgreSQL E2E)', () => {
       0,
     );
     expect(converted.body.student.id).toBeTypeOf('string');
+  });
+
+  it('creates, reviews, publishes and unpublishes a course through HTTP', async () => {
+    const server = app.getHttpServer();
+    const auth = `Bearer ${adminToken}`;
+    const slug = `academic-${suffix}`;
+    const created = await request(server)
+      .post('/courses')
+      .set('Authorization', auth)
+      .send({
+        code: `ACADEMIC-${suffix.toUpperCase()}`,
+        title: 'Khóa học thử nghiệm',
+        slug,
+        programId,
+        isActive: true,
+        description: 'Mô tả nội bộ',
+        publicDescription: 'Mô tả công khai',
+        targetAudience: 'Người học mới',
+      });
+    expect(created.status).toBe(201);
+    const id = created.body.id as string;
+    const edited = await request(server)
+      .patch(`/courses/${id}`)
+      .set('Authorization', auth)
+      .send({ title: 'Khóa học thử nghiệm đã sửa', curriculumVersion: '1.1' });
+    expect(edited.status).toBe(200);
+    expect(edited.body.title).toBe('Khóa học thử nghiệm đã sửa');
+    expect(edited.body.curriculumVersion).toBe('1.1');
+    const draftCatalog = await request(server).get('/public/courses');
+    expect(
+      draftCatalog.body.some((item: { slug: string }) => item.slug === slug),
+    ).toBe(false);
+
+    const level = await request(server)
+      .post(`/courses/${id}/levels`)
+      .set('Authorization', auth)
+      .send({
+        code: 'CORE',
+        name: 'Nền tảng',
+        entryRequirements: 'Chưa cần nền tảng',
+        expectedOutcomes: { summary: 'Giao tiếp cơ bản' },
+        assessmentScheme: { components: 'Bài kiểm tra cuối khóa' },
+        completionCriteria: 'Hoàn thành bài kiểm tra',
+      });
+    expect(level.status).toBe(201);
+    const module = await request(server)
+      .post(`/levels/${level.body.id}/modules`)
+      .set('Authorization', auth)
+      .send({ title: 'Giao tiếp' });
+    expect(module.status).toBe(201);
+    const lesson = await request(server)
+      .post(`/modules/${module.body.id}/lessons`)
+      .set('Authorization', auth)
+      .send({
+        title: 'Giới thiệu bản thân',
+        content: 'Học từ vựng và hội thoại',
+      });
+    expect(lesson.status).toBe(201);
+    const submitted = await request(server)
+      .patch(`/courses/${id}/publication`)
+      .set('Authorization', auth)
+      .send({ status: 'IN_REVIEW' });
+    expect(submitted.status).toBe(200);
+    const blocked = await request(server)
+      .patch(`/courses/${id}/publication`)
+      .set('Authorization', auth)
+      .send({ status: 'PUBLISHED' });
+    expect(blocked.status).toBe(400);
+    const review = await request(server)
+      .post(`/courses/${id}/academic-review`)
+      .set('Authorization', auth)
+      .send({});
+    expect(review.status).toBe(201);
+    const check = await request(server)
+      .get(`/courses/${id}/publication-check`)
+      .set('Authorization', auth);
+    expect(check.body.canPublish).toBe(true);
+    const published = await request(server)
+      .patch(`/courses/${id}/publication`)
+      .set('Authorization', auth)
+      .send({ status: 'PUBLISHED' });
+    expect(published.status).toBe(200);
+    const publicDetail = await request(server).get(`/public/courses/${slug}`);
+    expect(publicDetail.status).toBe(200);
+    expect(publicDetail.body.levels[0].modules[0].lessons[0].title).toBe(
+      'Giới thiệu bản thân',
+    );
+    const unsafeEdit = await request(server)
+      .patch(`/courses/${id}`)
+      .set('Authorization', auth)
+      .send({ title: 'Đổi sau công bố' });
+    expect(unsafeEdit.status).toBe(409);
+    const unpublished = await request(server)
+      .patch(`/courses/${id}/publication`)
+      .set('Authorization', auth)
+      .send({ status: 'DRAFT' });
+    expect(unpublished.status).toBe(200);
+    const after = await request(server).get('/public/courses');
+    expect(
+      after.body.some((item: { slug: string }) => item.slug === slug),
+    ).toBe(false);
   });
 });

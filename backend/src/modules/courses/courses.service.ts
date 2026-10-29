@@ -558,6 +558,7 @@ export class CoursesService {
       'description',
       'targetAudience',
       'language',
+      'curriculumVersion',
       'publicDescription',
     ] as const;
     if (

@@ -74,6 +74,7 @@ class ProgramCourseRecord {
   final String targetAudience;
   final String language;
   final String thumbnailUrl;
+  final String curriculumVersion;
 
   const ProgramCourseRecord({
     required this.id,
@@ -88,6 +89,7 @@ class ProgramCourseRecord {
     this.targetAudience = '',
     this.language = 'English',
     this.thumbnailUrl = '',
+    this.curriculumVersion = '1.0',
   });
 
   factory ProgramCourseRecord.fromJson(Map<String, dynamic> json) =>
@@ -104,6 +106,7 @@ class ProgramCourseRecord {
         targetAudience: json['targetAudience'] as String? ?? '',
         language: json['language'] as String? ?? 'English',
         thumbnailUrl: json['thumbnailUrl'] as String? ?? '',
+        curriculumVersion: json['curriculumVersion'] as String? ?? '1.0',
       );
 }
 
@@ -238,6 +241,7 @@ class ProgramCatalogRepository {
     required String targetAudience,
     required String language,
     required String thumbnailUrl,
+    required String curriculumVersion,
     required bool isActive,
   }) async {
     final data = <String, dynamic>{
@@ -248,6 +252,7 @@ class ProgramCatalogRepository {
       'targetAudience': targetAudience,
       'language': language,
       'thumbnailUrl': thumbnailUrl,
+      'curriculumVersion': curriculumVersion,
       'isActive': isActive,
     };
     if (id == null) {

@@ -115,6 +115,8 @@ class CourseLevelModel extends Equatable {
   final int? toeicTargetScore;
   final String? cambridgeQualification;
   final String? entryRequirements;
+  final Map<String, dynamic>? expectedOutcomes;
+  final Map<String, dynamic>? assessmentScheme;
   final String? completionCriteria;
   final int? recommendedHours;
   final List<ModuleModel> modules;
@@ -134,6 +136,8 @@ class CourseLevelModel extends Equatable {
     this.toeicTargetScore,
     this.cambridgeQualification,
     this.entryRequirements,
+    this.expectedOutcomes,
+    this.assessmentScheme,
     this.completionCriteria,
     this.recommendedHours,
     this.modules = const [],
@@ -172,6 +176,12 @@ class CourseLevelModel extends Equatable {
       ),
       cambridgeQualification: json['cambridgeQualification'] as String?,
       entryRequirements: json['entryRequirements'] as String?,
+      expectedOutcomes: json['expectedOutcomes'] is Map
+          ? Map<String, dynamic>.from(json['expectedOutcomes'] as Map)
+          : null,
+      assessmentScheme: json['assessmentScheme'] is Map
+          ? Map<String, dynamic>.from(json['assessmentScheme'] as Map)
+          : null,
       completionCriteria: json['completionCriteria'] as String?,
       recommendedHours: int.tryParse(
         json['recommendedHours']?.toString() ?? '',
@@ -196,6 +206,8 @@ class CourseLevelModel extends Equatable {
       'toeicTargetScore': toeicTargetScore,
       'cambridgeQualification': cambridgeQualification,
       'entryRequirements': entryRequirements,
+      'expectedOutcomes': expectedOutcomes,
+      'assessmentScheme': assessmentScheme,
       'completionCriteria': completionCriteria,
       'recommendedHours': recommendedHours,
     };
@@ -216,6 +228,8 @@ class CourseLevelModel extends Equatable {
     toeicTargetScore,
     cambridgeQualification,
     entryRequirements,
+    expectedOutcomes,
+    assessmentScheme,
     completionCriteria,
     recommendedHours,
     modules,

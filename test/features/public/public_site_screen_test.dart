@@ -282,6 +282,34 @@ void main() {
     },
   );
 
+  testWidgets('mobile home hero opens real catalog and consultation routes', (
+    tester,
+  ) async {
+    final router = _router(
+      PublicCatalogRepository(_FakeApiClient()),
+      RouteNames.publicHome,
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 760));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Khám phá khóa học'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicCourses,
+    );
+    router.go(RouteNames.publicHome);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nhận tư vấn chọn lộ trình'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicConsultation,
+    );
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
   testWidgets('course list displays only backend results', (tester) async {
     final api = _FakeApiClient();
     api.responses['/public/courses'] = [
