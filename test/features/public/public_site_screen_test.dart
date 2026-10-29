@@ -60,9 +60,17 @@ GoRouter _router(
           PublicSiteScreen(repository: repository, page: PublicPage.home),
     ),
     GoRoute(
-      path: RouteNames.publicCourses,
+      path: RouteNames.publicPrograms,
       builder: (_, _) =>
-          PublicSiteScreen(repository: repository, page: PublicPage.courses),
+          PublicSiteScreen(repository: repository, page: PublicPage.programs),
+    ),
+    GoRoute(
+      path: RouteNames.publicCourses,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.courses,
+        programSlug: state.uri.queryParameters['chuong-trinh'],
+      ),
     ),
     GoRoute(
       path: RouteNames.publicClasses,
@@ -102,6 +110,50 @@ GoRouter _router(
 );
 
 void main() {
+  testWidgets('program listing and course listing use distinct destinations', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/programs'] = [
+      {'slug': 'ielts', 'nameVi': 'IELTS Preparation'},
+    ];
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-a',
+        'title': 'IELTS A',
+        'program': {'slug': 'ielts', 'nameVi': 'IELTS Preparation'},
+        'levels': <Map<String, dynamic>>[],
+      },
+      {
+        'slug': 'general-a',
+        'title': 'General A',
+        'program': {'slug': 'general', 'nameVi': 'General English'},
+        'levels': <Map<String, dynamic>>[],
+      },
+    ];
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xem tất cả').first);
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicPrograms,
+    );
+    expect(find.text('IELTS Preparation'), findsWidgets);
+    await tester.tap(find.text('IELTS Preparation').last);
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicCourses,
+    );
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(find.text('General A'), findsNothing);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
   testWidgets(
     'public pages keep mobile navigation and empty state across widths',
     (tester) async {

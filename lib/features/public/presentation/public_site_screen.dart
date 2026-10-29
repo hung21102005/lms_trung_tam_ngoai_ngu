@@ -7,6 +7,7 @@ import '../data/public_catalog_repository.dart';
 
 enum PublicPage {
   home,
+  programs,
   courses,
   courseDetail,
   classes,
@@ -22,6 +23,8 @@ class PublicSiteScreen extends StatefulWidget {
     required this.page,
     this.slug,
     this.targetCourse,
+    this.programSlug,
+    this.dashboardRoute,
     this.classId,
     this.isStudent = false,
     this.studentName,
@@ -31,6 +34,8 @@ class PublicSiteScreen extends StatefulWidget {
   final PublicPage page;
   final String? slug;
   final String? targetCourse;
+  final String? programSlug;
+  final String? dashboardRoute;
   final String? classId;
   final bool isStudent;
   final String? studentName;
@@ -54,7 +59,9 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       PublicPage.home => Future.wait([
         widget.repository.programs(),
         widget.repository.classes(),
+        widget.repository.courses(),
       ]),
+      PublicPage.programs => widget.repository.programs(),
       PublicPage.courses => widget.repository.courses(),
       PublicPage.courseDetail => widget.repository.course(widget.slug ?? ''),
       PublicPage.classes => widget.repository.classes(page: _classPage),
@@ -77,19 +84,27 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
         final mobile = constraints.maxWidth < 1000;
         final current = switch (widget.page) {
           PublicPage.home => 0,
-          PublicPage.courses || PublicPage.courseDetail => 1,
+          PublicPage.programs => 1,
+          PublicPage.courses || PublicPage.courseDetail => 2,
           PublicPage.classes ||
           PublicPage.registration ||
-          PublicPage.myRegistrations => 2,
-          PublicPage.consultation => 3,
+          PublicPage.myRegistrations => 3,
+          PublicPage.consultation => 4,
         };
         const routes = [
           RouteNames.publicHome,
+          RouteNames.publicPrograms,
           RouteNames.publicCourses,
           RouteNames.publicClasses,
           RouteNames.publicConsultation,
         ];
-        const labels = ['Trang chủ', 'Khóa học', 'Lớp khai giảng', 'Tư vấn'];
+        const labels = [
+          'Trang chủ',
+          'Chương trình',
+          'Khóa học',
+          'Lớp khai giảng',
+          'Tư vấn',
+        ];
         return Scaffold(
           backgroundColor: AppColors.backgroundLight,
           appBar: AppBar(
@@ -102,9 +117,16 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
             actions: mobile
                 ? [
                     IconButton(
-                      tooltip: 'Đăng nhập',
-                      onPressed: () => _navigate(RouteNames.login),
-                      icon: const Icon(Icons.login_rounded),
+                      tooltip: widget.dashboardRoute == null
+                          ? 'Đăng nhập'
+                          : 'Vào LMS',
+                      onPressed: () =>
+                          _navigate(widget.dashboardRoute ?? RouteNames.login),
+                      icon: Icon(
+                        widget.dashboardRoute == null
+                            ? Icons.login_rounded
+                            : Icons.dashboard_outlined,
+                      ),
                     ),
                   ]
                 : [
@@ -118,8 +140,11 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                       ),
                     const SizedBox(width: 12),
                     OutlinedButton(
-                      onPressed: () => _navigate(RouteNames.login),
-                      child: const Text('Đăng nhập'),
+                      onPressed: () =>
+                          _navigate(widget.dashboardRoute ?? RouteNames.login),
+                      child: Text(
+                        widget.dashboardRoute == null ? 'Đăng nhập' : 'Vào LMS',
+                      ),
                     ),
                     const SizedBox(width: 24),
                   ],
@@ -132,6 +157,10 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                     NavigationDestination(
                       icon: Icon(Icons.home_outlined),
                       label: 'Trang chủ',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.account_tree_outlined),
+                      label: 'Chương trình',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.menu_book_outlined),
@@ -175,6 +204,9 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                       return switch (widget.page) {
                         PublicPage.home => _home(
                           snapshot.data as List<dynamic>,
+                        ),
+                        PublicPage.programs => _programs(
+                          snapshot.data as List<Map<String, dynamic>>,
                         ),
                         PublicPage.courses => _courses(
                           snapshot.data as List<Map<String, dynamic>>,
@@ -221,6 +253,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
     final programs = result[0] as List<Map<String, dynamic>>;
     final classes = result[1] as Map<String, dynamic>;
     final offerings = (classes['items'] as List).cast<Map<String, dynamic>>();
+    final courses = result[2] as List<Map<String, dynamic>>;
     return _pageScroll([
       _HeroCard(
         title: 'Học tiếng Anh theo lộ trình của bạn',
@@ -231,7 +264,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       const SizedBox(height: 32),
       _SectionHeading(
         'Chương trình đào tạo',
-        () => _navigate(RouteNames.publicCourses),
+        () => _navigate(RouteNames.publicPrograms),
       ),
       const SizedBox(height: 12),
       if (programs.isEmpty)
@@ -246,10 +279,36 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                   title: _string(item['nameVi']),
                   subtitle: _string(item['description']),
                   footnote: _string(item['targetAudience']),
-                  onTap: () => _navigate(RouteNames.publicCourses),
+                  onTap: () => _navigate(
+                    '${RouteNames.publicCourses}?chuong-trinh=${Uri.encodeQueryComponent(_string(item['slug']))}',
+                  ),
                 ),
               )
               .toList(),
+        ),
+      const SizedBox(height: 32),
+      _SectionHeading(
+        'Khóa học đã công bố',
+        () => _navigate(RouteNames.publicCourses),
+      ),
+      const SizedBox(height: 12),
+      if (courses.isEmpty)
+        const _EmptyCard('Khóa học đang được chuẩn bị công bố.')
+      else
+        _responsiveCards(
+          courses.take(3).map((course) {
+            final program = course['program'] as Map?;
+            return _InfoCard(
+              icon: Icons.menu_book_rounded,
+              title: _string(course['title']),
+              subtitle: _string(course['publicDescription']),
+              footnote: _string(program?['nameVi']),
+              actionLabel: 'Xem khóa học',
+              onTap: () => _navigate(
+                '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
+              ),
+            );
+          }).toList(),
         ),
       const SizedBox(height: 32),
       _SectionHeading(
@@ -264,6 +323,33 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
     ]);
   }
 
+  Widget _programs(List<Map<String, dynamic>> programs) => _pageScroll([
+    const _PageHeading(
+      'Chương trình đào tạo',
+      'Khám phá các nhóm chương trình đã được công bố.',
+    ),
+    const SizedBox(height: 24),
+    if (programs.isEmpty)
+      const _EmptyCard('Chưa có chương trình được công bố.')
+    else
+      _responsiveCards(
+        programs
+            .map(
+              (program) => _InfoCard(
+                icon: Icons.account_tree_outlined,
+                title: _string(program['nameVi']),
+                subtitle: _string(program['description']),
+                footnote: _string(program['targetAudience']),
+                actionLabel: 'Xem khóa học',
+                onTap: () => _navigate(
+                  '${RouteNames.publicCourses}?chuong-trinh=${Uri.encodeQueryComponent(_string(program['slug']))}',
+                ),
+              ),
+            )
+            .toList(),
+      ),
+  ]);
+
   Widget _courses(List<Map<String, dynamic>> courses) => _pageScroll([
     const _PageHeading(
       'Khóa học',
@@ -272,22 +358,35 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
     const SizedBox(height: 24),
     if (courses.isEmpty)
       const _EmptyCard('Chưa có khóa học được công bố. Vui lòng quay lại sau.')
+    else if (widget.programSlug != null &&
+        !courses.any(
+          (course) =>
+              (course['program'] as Map?)?['slug'] == widget.programSlug,
+        ))
+      const _EmptyCard('Chương trình này chưa có khóa học được công bố.')
     else
       _responsiveCards(
-        courses.map((course) {
-          final program = course['program'] as Map?;
-          final levels = course['levels'] as List? ?? [];
-          return _InfoCard(
-            icon: Icons.menu_book_rounded,
-            title: _string(course['title']),
-            subtitle: _string(course['publicDescription']),
-            footnote:
-                '${_string(program?['nameVi'])} · ${levels.length} cấp độ',
-            onTap: () => _navigate(
-              '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
-            ),
-          );
-        }).toList(),
+        courses
+            .where(
+              (course) =>
+                  widget.programSlug == null ||
+                  (course['program'] as Map?)?['slug'] == widget.programSlug,
+            )
+            .map((course) {
+              final program = course['program'] as Map?;
+              final levels = course['levels'] as List? ?? [];
+              return _InfoCard(
+                icon: Icons.menu_book_rounded,
+                title: _string(course['title']),
+                subtitle: _string(course['publicDescription']),
+                footnote:
+                    '${_string(program?['nameVi'])} · ${levels.length} cấp độ',
+                onTap: () => _navigate(
+                  '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
+                ),
+              );
+            })
+            .toList(),
       ),
   ]);
 

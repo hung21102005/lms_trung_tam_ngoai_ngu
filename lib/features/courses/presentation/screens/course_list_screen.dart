@@ -29,6 +29,20 @@ class _CourseListScreenState extends State<CourseListScreen> {
   String _selectedDuration = 'ALL';
   String _selectedStatus = 'ALL';
 
+  bool _isYoungOrCambridge(CourseModel course) {
+    final code = course.code.toUpperCase();
+    final title = course.title.toLowerCase();
+    return code.contains('YOUNG') ||
+        code.contains('TEEN') ||
+        code.contains('KIDS') ||
+        code.contains('CAMBRIDGE') ||
+        title.contains('thiếu nhi') ||
+        title.contains('cambridge') ||
+        title.contains('starters') ||
+        title.contains('movers') ||
+        title.contains('flyers');
+  }
+
   List<Map<String, dynamic>> _buildCategories(List<CourseModel> liveCourses) {
     final total = liveCourses.length;
     final ieltsCount = liveCourses
@@ -52,18 +66,11 @@ class _CourseListScreenState extends State<CourseListScreen> {
               c.title.toLowerCase().contains('giao tiếp'),
         )
         .length;
-    final kidsCount = liveCourses
-        .where(
-          (c) =>
-              c.code.toUpperCase().contains('KIDS') ||
-              c.title.toLowerCase().contains('thiếu nhi') ||
-              c.title.toLowerCase().contains('cambridge'),
-        )
-        .length;
+    final kidsCount = liveCourses.where(_isYoungOrCambridge).length;
 
     return [
       {
-        'title': 'Tất cả chương trình',
+        'title': 'Tất cả khóa học',
         'count': total,
         'icon': Icons.menu_book_rounded,
       },
@@ -388,7 +395,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
-                                          'Hôm nay: $todayStr • Tổng số ${liveCourses.length} chương trình đào tạo & ${liveCourses.fold<int>(0, (s, c) => s + c.levelsCount)} cấp độ đầu ra',
+                                          'Hôm nay: $todayStr • Tổng số ${liveCourses.length} khóa học & ${liveCourses.fold<int>(0, (s, c) => s + c.levelsCount)} cấp độ',
                                           style: const TextStyle(
                                             fontSize: 13,
                                             color: Color(0xFF64748B),
@@ -534,7 +541,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    'Hôm nay: $todayStr • Tổng số ${liveCourses.length} chương trình đào tạo & ${liveCourses.fold<int>(0, (s, c) => s + c.levelsCount)} cấp độ đầu ra',
+                                    'Hôm nay: $todayStr • Tổng số ${liveCourses.length} khóa học & ${liveCourses.fold<int>(0, (s, c) => s + c.levelsCount)} cấp độ',
                                     style: const TextStyle(
                                       fontSize: 12.5,
                                       color: Color(0xFF64748B),
@@ -619,16 +626,15 @@ class _CourseListScreenState extends State<CourseListScreen> {
                         ? (constraints.maxWidth - 48) / 4
                         : (constraints.maxWidth - 16) / 2;
                     final totalCourses = liveCourses.length;
-                    final totalClasses = liveCourses.fold<int>(
-                      0,
-                      (s, c) => s + c.classesCount,
-                    );
+                    final publishedCourses = liveCourses
+                        .where((c) => c.publicationStatus == 'PUBLISHED')
+                        .length;
                     final totalLevels = liveCourses.fold<int>(
                       0,
                       (s, c) => s + c.levelsCount,
                     );
-                    final activeCourses = liveCourses
-                        .where((c) => c.isActive)
+                    final reviewCourses = liveCourses
+                        .where((c) => c.publicationStatus == 'IN_REVIEW')
                         .length;
 
                     return Wrap(
@@ -636,10 +642,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                       runSpacing: 16,
                       children: [
                         _buildStatCard(
-                          title: 'Tổng số chương trình',
+                          title: 'Tổng số khóa học',
                           value: '$totalCourses khóa học',
                           subtext: totalCourses > 0
-                              ? liveCourses.map((c) => c.code).join(', ')
+                              ? 'Danh mục khóa học hiện có'
                               : 'Chưa có khóa học',
                           icon: Icons.school_rounded,
                           iconBg: const Color(0xFFEEF2FF),
@@ -647,9 +653,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           width: cardWidth,
                         ),
                         _buildStatCard(
-                          title: 'Lớp học đang áp dụng',
-                          value: '$totalClasses lớp',
-                          subtext: '100% khớp giáo trình',
+                          title: 'Khóa đã công bố',
+                          value: '$publishedCourses khóa',
+                          subtext: 'Hiển thị theo quyền công bố',
                           icon: Icons.class_rounded,
                           iconBg: const Color(0xFFEFF6FF),
                           iconColor: const Color(0xFF2563EB),
@@ -660,7 +666,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                         _buildStatCard(
                           title: 'Tổng số cấp độ (Levels)',
                           value: '$totalLevels cấp độ',
-                          subtext: 'Phân tầng chuẩn CEFR',
+                          subtext: 'Cấp độ đã thiết lập',
                           icon: Icons.layers_rounded,
                           iconBg: const Color(0xFFF0FDF4),
                           iconColor: const Color(0xFF16A34A),
@@ -669,9 +675,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           width: cardWidth,
                         ),
                         _buildStatCard(
-                          title: 'Trạng thái hoạt động',
-                          value: '$activeCourses/$totalCourses khóa',
-                          subtext: 'Đang mở tuyển sinh',
+                          title: 'Khóa chờ duyệt',
+                          value: '$reviewCourses khóa',
+                          subtext: 'Đang trong quy trình công bố',
                           icon: Icons.verified_user_rounded,
                           iconBg: const Color(0xFFECFDF5),
                           iconColor: const Color(0xFF059669),
@@ -1258,41 +1264,60 @@ class _CourseListScreenState extends State<CourseListScreen> {
   }
 
   Widget _buildCourseCardsGrid(List<CourseModel> liveCourses) {
-    // If live courses exist, combine with high-fidelity Stitch curriculum templates
-    final displayItems = _getCurriculumCourseCards(liveCourses);
-
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = liveCourses.where((course) {
+      if (_activeCategoryIndex == 1 &&
+          !course.code.toUpperCase().contains('IELTS') &&
+          !course.title.toUpperCase().contains('IELTS')) {
+        return false;
+      }
+      if (_activeCategoryIndex == 2 &&
+          !course.code.toUpperCase().contains('TOEIC') &&
+          !course.title.toUpperCase().contains('TOEIC')) {
+        return false;
+      }
+      if (_activeCategoryIndex == 3 &&
+          !course.code.toUpperCase().contains('COMM') &&
+          !course.title.toLowerCase().contains('giao tiếp')) {
+        return false;
+      }
+      if (_activeCategoryIndex == 4 && !_isYoungOrCambridge(course)) {
+        return false;
+      }
+      return query.isEmpty ||
+          course.code.toLowerCase().contains(query) ||
+          course.title.toLowerCase().contains(query);
+    }).toList();
+    if (filtered.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('Không có khóa học phù hợp'),
+        ),
+      );
+    }
     return LayoutBuilder(
-      builder: (ctx, constraints) {
-        final isTwoCol = constraints.maxWidth > 900;
-        final cardWidth = isTwoCol
+      builder: (context, constraints) {
+        final twoColumns = constraints.maxWidth > 900;
+        final cardWidth = twoColumns
             ? (constraints.maxWidth - 20) / 2
             : constraints.maxWidth;
-
         return Wrap(
           spacing: 20,
           runSpacing: 20,
-          children: displayItems
-              .map((item) => _buildCourseCard(item, cardWidth))
+          children: filtered
+              .map((course) => _buildCourseCard(course, cardWidth))
               .toList(),
         );
       },
     );
   }
 
-  Widget _buildCourseCard(Map<String, dynamic> c, double width) {
-    final code = c['code'] ?? 'CRS-IELTS-65';
-    final title = c['title'] ?? 'IELTS Fighter Intensive';
-    final target = c['target'] ?? 'Band 6.5 - 7.5+';
-    final duration = c['duration'] ?? '72 giờ (24 buổi)';
-    final frequency = c['frequency'] ?? '3 ca/tuần (2-4-6)';
-    final capacity = c['capacity'] ?? '18 học viên/lớp';
-    final tuition = c['tuition'] ?? '14.500.000 đ';
-    final curriculum =
-        c['curriculum'] ?? 'Cambridge IELTS 18-19 & Tài liệu Độc quyền';
-    final icon = c['icon'] as IconData? ?? Icons.military_tech_rounded;
-    final classesActive = c['classesCount'] ?? 18;
-    final studentsCount = c['studentsCount'] ?? 284;
-
+  Widget _buildCourseCard(CourseModel course, double width) {
+    final sessions = course.levels.fold<int>(
+      0,
+      (sum, level) => sum + level.estimatedSessions,
+    );
     return Container(
       width: width,
       padding: const EdgeInsets.all(20),
@@ -1300,516 +1325,81 @@ class _CourseListScreenState extends State<CourseListScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF003FB1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            code,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFA7F3D0)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircleAvatar(
-                                radius: 3,
-                                backgroundColor: Color(0xFF059669),
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Đang mở ghi danh',
-                                style: TextStyle(
-                                  color: Color(0xFF047857),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          'Mục tiêu: $target',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: const Color(0xFF003FB1), size: 22),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Meta Specs 4-Box Row
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: width > 520
-                ? Row(
-                    children: [
-                      Expanded(child: _buildSpecCol('Thời lượng:', duration)),
-                      Expanded(child: _buildSpecCol('Tần suất:', frequency)),
-                      Expanded(child: _buildSpecCol('Sĩ số tối đa:', capacity)),
-                      Expanded(
-                        child: _buildSpecCol(
-                          'Học phí:',
-                          tuition,
-                          isPrice: true,
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildSpecCol('Thời lượng:', duration),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildSpecCol('Tần suất:', frequency),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildSpecCol('Sĩ số tối đa:', capacity),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildSpecCol(
-                              'Học phí:',
-                              tuition,
-                              isPrice: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 12),
-
-          // Giáo trình tham chiếu
           Row(
             children: [
-              const Icon(
-                Icons.auto_stories_rounded,
-                size: 16,
-                color: Color(0xFF003FB1),
-              ),
-              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Giáo trình: $curriculum',
+                  course.title,
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF475569),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Chip(
+                label: Text(
+                  course.publicationStatus == 'PUBLISHED'
+                      ? 'Đã công bố'
+                      : course.publicationStatus == 'IN_REVIEW'
+                      ? 'Chờ duyệt'
+                      : 'Bản nháp',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-
-          // Lộ trình 3 giai đoạn (Pathway)
-          const Text(
-            'LỘ TRÌNH ĐÀO TẠO 3 GIAI ĐOẠN (PATHWAY):',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF94A3B8),
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (width > 520)
-            Row(
-              children: [
-                Expanded(
-                  child: _buildPathwayBox(
-                    title: 'GĐ 1: Foundation',
-                    weeks: 'Tuần 1-3',
-                    desc: 'Củng cố ngữ pháp & Phát âm nền tảng',
-                    sub: '6 buổi • 18 giờ',
-                    bgColor: const Color(0xFFEEF2FF),
-                    textColor: const Color(0xFF003FB1),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildPathwayBox(
-                    title: 'GĐ 2: Skill Mastery',
-                    weeks: 'Tuần 4-6',
-                    desc: 'Chiến lược giải đề & Phản xạ thực chiến',
-                    sub: '12 buổi • 36 giờ',
-                    bgColor: const Color(0xFFEFF6FF),
-                    textColor: const Color(0xFF2563EB),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildPathwayBox(
-                    title: 'GĐ 3: Mock Test',
-                    weeks: 'Tuần 7-8',
-                    desc: 'Thi thử phòng thi thật & 1-1 Coaching',
-                    sub: '6 buổi • 18 giờ',
-                    bgColor: const Color(0xFFECFDF5),
-                    textColor: const Color(0xFF047857),
-                  ),
-                ),
-              ],
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildPathwayBox(
-                  title: 'GĐ 1: Foundation',
-                  weeks: 'Tuần 1-3',
-                  desc: 'Củng cố ngữ pháp & Phát âm nền tảng',
-                  sub: '6 buổi • 18 giờ',
-                  bgColor: const Color(0xFFEEF2FF),
-                  textColor: const Color(0xFF003FB1),
-                ),
-                const SizedBox(height: 8),
-                _buildPathwayBox(
-                  title: 'GĐ 2: Skill Mastery',
-                  weeks: 'Tuần 4-6',
-                  desc: 'Chiến lược giải đề & Phản xạ thực chiến',
-                  sub: '12 buổi • 36 giờ',
-                  bgColor: const Color(0xFFEFF6FF),
-                  textColor: const Color(0xFF2563EB),
-                ),
-                const SizedBox(height: 8),
-                _buildPathwayBox(
-                  title: 'GĐ 3: Mock Test',
-                  weeks: 'Tuần 7-8',
-                  desc: 'Thi thử phòng thi thật & 1-1 Coaching',
-                  sub: '6 buổi • 18 giờ',
-                  bgColor: const Color(0xFFECFDF5),
-                  textColor: const Color(0xFF047857),
-                ),
-              ],
-            ),
+          const SizedBox(height: 4),
+          Text(course.code, style: const TextStyle(color: AppColors.primary)),
+          if (course.description?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 12),
+            Text(course.description!),
+          ],
           const SizedBox(height: 16),
-
-          // Footer Card & Action Buttons
-          Container(
-            padding: const EdgeInsets.only(top: 12),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-            ),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.groups_rounded,
-                      size: 16,
-                      color: Color(0xFF003FB1),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Đang mở: $classesActive lớp • $studentsCount cấp độ',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Chỉnh sửa giáo trình: $title'),
-                          ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: const Text(
-                        'Chỉnh sửa',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Chi tiết lộ trình: $title')),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF003FB1),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Lộ trình',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 12),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecCol(String label, String value, {bool isPrice = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: isPrice ? const Color(0xFF003FB1) : const Color(0xFF0F172A),
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPathwayBox({
-    required String title,
-    required String weeks,
-    required String desc,
-    required String sub,
-    required Color bgColor,
-    required Color textColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: textColor.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                weeks,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
+              Text('${course.levelsCount} cấp độ'),
+              Text('${course.classesCount} lớp liên kết'),
+              if (sessions > 0) Text('$sessions buổi dự kiến'),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            desc,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF0F172A)),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            sub,
-            style: const TextStyle(fontSize: 9, color: Color(0xFF64748B)),
+          if (course.levels.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Lộ trình theo cấp độ',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final level in course.levels)
+                  Chip(label: Text(level.name)),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            const Text('Chưa thiết lập lộ trình cho khóa học này.'),
+          ],
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/courses/${course.id}'),
+              icon: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: const Text('Xem chi tiết & lộ trình'),
+            ),
           ),
         ],
       ),
     );
-  }
-
-  List<Map<String, dynamic>> _getCurriculumCourseCards(
-    List<CourseModel> liveCourses,
-  ) {
-    final query = _searchController.text.trim().toLowerCase();
-    final filtered = liveCourses.where((lc) {
-      if (_activeCategoryIndex == 1 &&
-          !lc.code.toUpperCase().contains('IELTS') &&
-          !lc.title.toUpperCase().contains('IELTS')) {
-        return false;
-      }
-      if (_activeCategoryIndex == 2 &&
-          !lc.code.toUpperCase().contains('TOEIC') &&
-          !lc.title.toUpperCase().contains('TOEIC')) {
-        return false;
-      }
-      if (_activeCategoryIndex == 3 &&
-          !lc.code.toUpperCase().contains('COMM') &&
-          !lc.title.toLowerCase().contains('giao tiếp')) {
-        return false;
-      }
-      if (_activeCategoryIndex == 4 &&
-          !lc.code.toUpperCase().contains('KIDS') &&
-          !lc.title.toLowerCase().contains('thiếu nhi') &&
-          !lc.title.toLowerCase().contains('cambridge')) {
-        return false;
-      }
-      if (query.isNotEmpty) {
-        return lc.code.toLowerCase().contains(query) ||
-            lc.title.toLowerCase().contains(query);
-      }
-      return true;
-    }).toList();
-
-    return filtered.map((lc) {
-      final isIelts =
-          lc.code.toUpperCase().contains('IELTS') ||
-          lc.title.toUpperCase().contains('IELTS');
-      final totalSessions = lc.levels.isNotEmpty
-          ? lc.levels.fold<int>(0, (s, l) => s + l.estimatedSessions)
-          : (isIelts ? 24 : 20);
-      final totalHours = totalSessions * 2;
-      final levelNames = lc.levels.isNotEmpty
-          ? lc.levels.map((l) => l.name).join(' • ')
-          : (lc.description ?? 'Giáo trình chuẩn hóa theo khung CEFR');
-
-      return {
-        'code': lc.code,
-        'title': lc.title,
-        'target': lc.targetAudience ?? 'Chuẩn đầu ra CEFR',
-        'duration': '$totalHours giờ ($totalSessions buổi)',
-        'frequency': '3 ca/tuần',
-        'capacity': isIelts ? '25 học viên/lớp' : '30 học viên/lớp',
-        'tuition': isIelts ? '4.500.000 đ' : '3.200.000 đ',
-        'curriculum': levelNames,
-        'icon': isIelts
-            ? Icons.military_tech_rounded
-            : Icons.record_voice_over_rounded,
-        'classesCount': lc.classesCount,
-        'studentsCount': lc.levelsCount,
-      };
-    }).toList();
   }
 }
 

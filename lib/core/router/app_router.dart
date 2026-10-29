@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import 'route_names.dart';
 import '../di/injection.dart';
-import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -66,13 +65,39 @@ import '../../features/public/presentation/public_site_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
+String? _publicDashboardRoute(BuildContext context) {
+  final auth = context.watch<AuthBloc>().state;
+  if (auth is! AuthenticatedState) {
+    return null;
+  }
+  if (auth.requiresPasswordChange) {
+    return RouteNames.firstLoginSetup;
+  }
+  if (auth.user.isSuperAdmin ||
+      auth.user.isBranchAdmin ||
+      auth.user.isAcademicStaff) {
+    return RouteNames.adminHome;
+  }
+  if (auth.user.isTeacher) {
+    return RouteNames.teacherHome;
+  }
+  if (auth.user.isParent) {
+    return RouteNames.parentHome;
+  }
+  return RouteNames.studentHome;
+}
+
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: RouteNames.splash,
   routes: [
     GoRoute(
       path: RouteNames.splash,
-      builder: (context, state) => const SplashScreen(),
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.home,
+        dashboardRoute: _publicDashboardRoute(context),
+      ),
     ),
     GoRoute(
       path: RouteNames.login,
@@ -91,6 +116,15 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => PublicSiteScreen(
         repository: PublicCatalogRepository(getIt<ApiClient>()),
         page: PublicPage.home,
+        dashboardRoute: _publicDashboardRoute(context),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicPrograms,
+      builder: (context, state) => PublicSiteScreen(
+        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        page: PublicPage.programs,
+        dashboardRoute: _publicDashboardRoute(context),
       ),
     ),
     GoRoute(
@@ -98,6 +132,8 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => PublicSiteScreen(
         repository: PublicCatalogRepository(getIt<ApiClient>()),
         page: PublicPage.courses,
+        dashboardRoute: _publicDashboardRoute(context),
+        programSlug: state.uri.queryParameters['chuong-trinh'],
       ),
     ),
     GoRoute(
@@ -105,6 +141,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => PublicSiteScreen(
         repository: PublicCatalogRepository(getIt<ApiClient>()),
         page: PublicPage.courseDetail,
+        dashboardRoute: _publicDashboardRoute(context),
         slug: state.pathParameters['slug'],
       ),
     ),
@@ -113,6 +150,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => PublicSiteScreen(
         repository: PublicCatalogRepository(getIt<ApiClient>()),
         page: PublicPage.classes,
+        dashboardRoute: _publicDashboardRoute(context),
       ),
     ),
     GoRoute(
@@ -120,6 +158,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => PublicSiteScreen(
         repository: PublicCatalogRepository(getIt<ApiClient>()),
         page: PublicPage.consultation,
+        dashboardRoute: _publicDashboardRoute(context),
         targetCourse: state.uri.queryParameters['khoa-hoc'],
       ),
     ),
@@ -130,6 +169,7 @@ final GoRouter appRouter = GoRouter(
         return PublicSiteScreen(
           repository: PublicCatalogRepository(getIt<ApiClient>()),
           page: PublicPage.registration,
+          dashboardRoute: _publicDashboardRoute(context),
           classId: state.pathParameters['id'],
           isStudent: auth is AuthenticatedState && auth.user.isStudent,
           studentName: auth is AuthenticatedState && auth.user.isStudent

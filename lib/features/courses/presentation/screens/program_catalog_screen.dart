@@ -487,7 +487,7 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
                           itemBuilder: (_) => [
                             const PopupMenuItem(
                               value: 'edit',
-                              child: Text('Sửa thông tin công khai'),
+                              child: Text('Sửa khóa học'),
                             ),
                             if (course.status == 'DRAFT')
                               const PopupMenuItem(
@@ -714,7 +714,10 @@ class _CourseEditorState extends State<_CourseEditor> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: _fields[key],
-        enabled: widget.course == null || (key != 'code' && key != 'title'),
+        enabled:
+            widget.course == null ||
+            widget.course!.status == 'DRAFT' ||
+            (key != 'code' && key != 'title'),
         maxLines: lines,
         decoration: InputDecoration(
           labelText: label,

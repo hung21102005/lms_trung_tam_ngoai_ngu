@@ -218,6 +218,8 @@ class ProgramCatalogRepository {
       data['title'] = title;
       await apiClient.post('/courses', data: data);
     } else {
+      data['code'] = code;
+      data['title'] = title;
       await apiClient.patch('/courses/$id', data: data);
     }
   }

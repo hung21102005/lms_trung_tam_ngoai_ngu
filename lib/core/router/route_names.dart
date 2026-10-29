@@ -6,6 +6,7 @@ class RouteNames {
   static const String forgotPassword = '/forgot-password';
   static const String firstLoginSetup = '/first-login-setup';
   static const String publicHome = '/gioi-thieu';
+  static const String publicPrograms = '/chuong-trinh';
   static const String publicCourses = '/khoa-hoc-cong-khai';
   static const String publicCourseDetail = '/khoa-hoc-cong-khai/:slug';
   static const String publicClasses = '/lop-sap-khai-giang';

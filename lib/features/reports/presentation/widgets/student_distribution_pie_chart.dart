@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/report_model.dart';
@@ -10,10 +11,12 @@ class StudentDistributionPieChart extends StatefulWidget {
   const StudentDistributionPieChart({super.key, required this.distribution});
 
   @override
-  State<StudentDistributionPieChart> createState() => _StudentDistributionPieChartState();
+  State<StudentDistributionPieChart> createState() =>
+      _StudentDistributionPieChartState();
 }
 
-class _StudentDistributionPieChartState extends State<StudentDistributionPieChart> {
+class _StudentDistributionPieChartState
+    extends State<StudentDistributionPieChart> {
   int _touchedIndex = -1;
 
   final List<Color> _colors = const [
@@ -34,13 +37,28 @@ class _StudentDistributionPieChartState extends State<StudentDistributionPieChar
       );
     }
 
-    final total = widget.distribution.fold<int>(0, (sum, item) => sum + item.studentCount);
+    final enrolled =
+        widget.distribution.where((item) => item.studentCount > 0).toList()
+          ..sort((a, b) => b.studentCount.compareTo(a.studentCount));
+    final total = enrolled.fold<int>(0, (sum, item) => sum + item.studentCount);
     if (total == 0) {
       return const SizedBox(
         height: 180,
         child: Center(child: Text('Chưa có học viên nào trong các khóa học')),
       );
     }
+    final visible = enrolled.take(5).toList();
+    final otherCount = enrolled
+        .skip(5)
+        .fold<int>(0, (sum, item) => sum + item.studentCount);
+    final chartNames = [
+      for (final item in visible) item.courseName,
+      if (otherCount > 0) 'Khác',
+    ];
+    final chartCounts = [
+      for (final item in visible) item.studentCount,
+      if (otherCount > 0) otherCount,
+    ];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -57,9 +75,14 @@ class _StudentDistributionPieChartState extends State<StudentDistributionPieChar
             children: [
               Text(
                 'Phân bổ học viên theo khóa',
-                style: AppTextStyles.h4(context).copyWith(fontWeight: FontWeight.bold),
+                style: AppTextStyles.h4(context)
+                    .copyWith(fontWeight: FontWeight.bold),
               ),
-              const Icon(Icons.pie_chart_outline, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.pie_chart_outline,
+                color: AppColors.primary,
+                size: 20,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -80,24 +103,26 @@ class _StudentDistributionPieChartState extends State<StudentDistributionPieChar
                               _touchedIndex = -1;
                               return;
                             }
-                            _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                            _touchedIndex = pieTouchResponse
+                                .touchedSection!
+                                .touchedSectionIndex;
                           });
                         },
                       ),
                       borderData: FlBorderData(show: false),
                       sectionsSpace: 2,
                       centerSpaceRadius: 36,
-                      sections: List.generate(widget.distribution.length, (i) {
+                      sections: List.generate(chartCounts.length, (i) {
                         final isTouched = i == _touchedIndex;
                         final fontSize = isTouched ? 14.0 : 11.0;
                         final radius = isTouched ? 50.0 : 42.0;
-                        final item = widget.distribution[i];
-                        final pct = ((item.studentCount / total) * 100).toStringAsFixed(0);
+                        final count = chartCounts[i];
+                        final pct = ((count / total) * 100).toStringAsFixed(0);
                         final color = _colors[i % _colors.length];
 
                         return PieChartSectionData(
                           color: color,
-                          value: item.studentCount.toDouble(),
+                          value: count.toDouble(),
                           title: '$pct%',
                           radius: radius,
                           titleStyle: TextStyle(
@@ -116,8 +141,7 @@ class _StudentDistributionPieChartState extends State<StudentDistributionPieChar
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: List.generate(widget.distribution.length, (i) {
-                      final item = widget.distribution[i];
+                    children: List.generate(chartCounts.length, (i) {
                       final color = _colors[i % _colors.length];
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 3.0),
@@ -134,7 +158,7 @@ class _StudentDistributionPieChartState extends State<StudentDistributionPieChar
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                '${item.courseName} (${item.studentCount})',
+                                '${chartNames[i]} (${chartCounts[i]})',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 11),

@@ -79,6 +79,9 @@ class _Api extends Fake implements ApiClient {
     if (path == '/courses/course-1/publication') {
       course['publicationStatus'] = data['status'];
     }
+    if (path == '/courses/course-1') {
+      course.addAll(Map<String, dynamic>.from(data as Map));
+    }
     return {};
   }
 
@@ -184,6 +187,41 @@ void main() {
       api.calls,
       contains('PATCH /courses/course-1/publication IN_REVIEW'),
     );
+  });
+
+  testWidgets('draft course editor updates name and code through API', (
+    tester,
+  ) async {
+    final api = _Api();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProgramCatalogScreen(repository: ProgramCatalogRepository(api)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiếng Anh tổng quát'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác khóa học'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sửa khóa học'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Mã khóa học'),
+      'GEN-A1-NEW',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tên khóa học'),
+      'General A1 Updated',
+    );
+    await tester.ensureVisible(find.text('Lưu khóa học'));
+    await tester.tap(find.text('Lưu khóa học'));
+    await tester.pumpAndSettle();
+    expect(
+      api.calls.any((call) => call.startsWith('PATCH /courses/course-1')),
+      isTrue,
+    );
+    expect(api.course['code'], 'GEN-A1-NEW');
+    expect(api.course['title'], 'General A1 Updated');
   });
 
   testWidgets('branch admin sees read-only program actions', (tester) async {
