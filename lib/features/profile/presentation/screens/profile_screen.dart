@@ -376,9 +376,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 20),
                 const Icon(Icons.manage_accounts_rounded, color: Color(0xFF003FB1), size: 22),
                 const SizedBox(width: 10),
-                const Text(
-                  'Hồ sơ Cá nhân & Bảo mật Tài khoản',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF0F172A)),
+                const Flexible(
+                  child: Text(
+                    'Hồ sơ Cá nhân & Bảo mật Tài khoản',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF0F172A)),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Container(
@@ -444,11 +448,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
+                            Expanded(child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Xin chào, ${user.fullName}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: AppTextStyles.h2(context).copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF0F172A),
@@ -457,10 +463,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'Hôm nay: $todayStr • Quản lý thông tin định danh, mật khẩu bảo mật và quyền hạn truy cập trên hệ thống Web Portal',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                                 ),
                               ],
-                            ),
+                            )),
                             ElevatedButton.icon(
                               onPressed: isUpdating
                                   ? null
@@ -552,21 +560,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
+                        const Flexible(child: Row(
                           children: [
                             Icon(Icons.verified_user_rounded, color: Colors.white70, size: 16),
                             SizedBox(width: 6),
-                            Text(
+                            Flexible(child: Text(
                               'THẺ ĐỊNH DANH EDULMS',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.0,
-                              ),
-                            ),
+                              ))),
                           ],
-                        ),
+                        )),
                         InkWell(
                           onTap: () => _showQrIdentityDialog(user),
                           child: Container(
@@ -666,10 +675,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Icon(Icons.analytics_outlined, color: Color(0xFF003FB1), size: 19),
                   SizedBox(width: 8),
-                  Text(
+                  Flexible(child: Text(
                     'Thông Số Liên Kết Thực Tế',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Color(0xFF0F172A)),
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(height: 14),
@@ -736,10 +745,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Icon(Icons.laptop_chromebook_rounded, color: Color(0xFF003FB1), size: 19),
                   SizedBox(width: 8),
-                  Text(
+                  Flexible(child: Text(
                     'Phiên Làm Việc Website Hiện Tại',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
-                  ),
+                  )),
                 ],
               ),
               SizedBox(height: 10),
@@ -904,7 +913,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              const Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -914,10 +923,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   SizedBox(height: 4),
                   Text(
                     'Cập nhật họ tên, số điện thoại liên hệ và địa chỉ thường trú trực tiếp trên hệ thống',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
                   ),
                 ],
-              ),
+              )),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
