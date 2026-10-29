@@ -1014,7 +1014,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 flex: 2,
                 child: DropdownButtonFormField<String>(
                   isExpanded: true,
-                  value: (_selectedGender == 'MALE' || _selectedGender == 'FEMALE' || _selectedGender == 'OTHER')
+                  initialValue: (_selectedGender == 'MALE' || _selectedGender == 'FEMALE' || _selectedGender == 'OTHER')
                       ? _selectedGender
                       : null,
                   decoration: const InputDecoration(
@@ -1230,7 +1230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _notifyEmailLoginAlert,
-            activeColor: const Color(0xFF003FB1),
+            activeThumbColor: const Color(0xFF003FB1),
             title: const Text(
               'Gửi cảnh báo qua Email khi tài khoản đăng nhập trên trình duyệt hoặc máy tính mới',
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
@@ -1245,7 +1245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _autoLockIdleWebSession,
-            activeColor: const Color(0xFF003FB1),
+            activeThumbColor: const Color(0xFF003FB1),
             title: const Text(
               'Tự động khóa phiên làm việc trên trình duyệt khi không thao tác sau 30 phút',
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
@@ -1320,7 +1320,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           value: _notifyScheduleAndAssignments,
-          activeColor: const Color(0xFF003FB1),
+          activeThumbColor: const Color(0xFF003FB1),
           title: const Text(
             'Hiển thị thông báo thời gian thực (Lịch học, Điểm danh, Bài tập & Hóa đơn)',
             style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
@@ -1496,11 +1496,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                child: Row(
+              Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
@@ -1509,13 +1508,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: Colors.white.withAlpha(30),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.school_rounded, color: Colors.white, size: 20),
+                      child: Icon(
+                        (user.isSuperAdmin || user.isBranchAdmin || user.isAcademicStaff)
+                            ? Icons.admin_panel_settings_rounded
+                            : (user.isTeacher ? Icons.menu_book_rounded : Icons.school_rounded),
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    const Flexible(
+                    Flexible(
                       child: Text(
-                        'EDULMS SMART CARD',
-                        style: TextStyle(
+                        user.isSuperAdmin
+                            ? 'EDULMS SUPER ADMIN'
+                            : (user.isBranchAdmin || user.isAcademicStaff
+                                ? 'EDULMS ADMIN PASS'
+                                : (user.isTeacher ? 'EDULMS FACULTY CARD' : 'EDULMS SMART CARD')),
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -1525,9 +1534,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ],
-                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -1613,17 +1621,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
-              Expanded(
-                child: Text(
-                  'Cơ sở: ${user.branchName ?? "Chi nhánh Quận 1 - Hồ Chí Minh"}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Text(
+                'Cơ sở: ${user.branchName ?? "Chi nhánh Quận 1 - Hồ Chí Minh"}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
-              const SizedBox(width: 8),
               const Text(
                 'Niên khóa 2026 - 2027',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
@@ -1641,28 +1646,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatColumn(
-            context,
-            '$_totalCourses',
-            'Khóa đào tạo',
-            Icons.menu_book_rounded,
-            AppColors.primary,
+          Expanded(
+            child: _buildStatColumn(
+              context,
+              '$_totalCourses',
+              'Khóa đào tạo',
+              Icons.menu_book_rounded,
+              AppColors.primary,
+            ),
           ),
           Container(height: 36, width: 1, color: AppColors.borderLight),
-          _buildStatColumn(
-            context,
-            '$_totalClasses',
-            'Lớp hoạt động',
-            Icons.fact_check_rounded,
-            AppColors.success,
+          Expanded(
+            child: _buildStatColumn(
+              context,
+              '$_totalClasses',
+              'Lớp hoạt động',
+              Icons.fact_check_rounded,
+              AppColors.success,
+            ),
           ),
           Container(height: 36, width: 1, color: AppColors.borderLight),
-          _buildStatColumn(
-            context,
-            '$_totalBranches',
-            'Chi nhánh',
-            Icons.apartment_rounded,
-            AppColors.warning,
+          Expanded(
+            child: _buildStatColumn(
+              context,
+              '$_totalBranches',
+              'Chi nhánh',
+              Icons.apartment_rounded,
+              AppColors.warning,
+            ),
           ),
         ],
       ),
@@ -1686,6 +1697,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 4),
         Text(
           label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
           style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondaryLight),
         ),
       ],
