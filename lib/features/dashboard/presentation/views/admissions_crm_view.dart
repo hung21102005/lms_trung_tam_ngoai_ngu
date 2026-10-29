@@ -20,6 +20,7 @@ class AdmissionsCrmView extends StatefulWidget {
 class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
   final ApiClient _apiClient = getIt<ApiClient>();
   final TextEditingController _searchController = TextEditingController();
+  String? _registrationPhoneToReview;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -90,6 +91,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     );
     if (!mounted) return;
     if (phone != null) {
+      _registrationPhoneToReview = phone;
       _searchController.text = phone;
       setState(() {});
       await _fetchLeads();
@@ -366,6 +368,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             ],
           ),
         );
+        if (!mounted) return;
+        final pendingPhone = _registrationPhoneToReview?.replaceAll(
+          RegExp(r'\D'),
+          '',
+        );
+        final convertedPhone = '${lead['phone']}'.replaceAll(RegExp(r'\D'), '');
+        if (pendingPhone != null && pendingPhone == convertedPhone) {
+          _registrationPhoneToReview = null;
+          await _openRegistrations();
+        }
         return;
       } else {
         await _apiClient.patch(

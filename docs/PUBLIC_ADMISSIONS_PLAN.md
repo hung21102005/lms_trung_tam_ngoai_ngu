@@ -195,3 +195,9 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Nếu email chào mừng lỗi sau khi transaction đã commit, API vẫn trả thành công cùng thông tin tài khoản cho học vụ; ghi cảnh báo gửi email để không tạo tài khoản xong rồi báo sai là chuyển đổi thất bại.
 - Backend build đạt, lint đạt với 8 cảnh báo cũ, toàn bộ unit **178/178 đạt**; 3 hồi quy mới kiểm tra transaction, hai lượt chuyển cùng Lead và lỗi email. Chưa kiểm chứng SMTP thật, HTTP chuyển Lead thành công trên database thật hoặc tải đồng thời thật.
 - **Tiếp theo:** hoàn thiện trải nghiệm đi từ đơn đăng ký → Lead → quay lại duyệt trong CRM; kiểm thử HTTP toàn chuỗi khi có lớp vận hành và chương trình đã duyệt. Giữ trạng thái công bố của 47 khóa seed nháp; không tự tạo dữ liệu kinh doanh giả.
+
+## Checkpoint nối hành trình CRM và hàng chờ đơn (2026-10-29)
+
+- Từ đơn khách mới, học vụ chọn **Tìm Lead trong CRM** để lọc đúng số điện thoại. Sau khi chuyển Lead đó thành tài khoản và đóng hộp thoại chứa thông tin cấp tài khoản, CRM tự mở lại hàng chờ; trạng thái học viên liên kết được tải lại từ API, cho phép xác nhận nhập học. Các API và quy tắc duyệt hiện có được tái sử dụng.
+- Widget test mô phỏng toàn bộ điều hướng và chuyển Lead trên Mobile, bên cạnh kiểm tra CRM ở 320/375/393/430/800/1200 px. Analyzer phạm vi CRM/test **0 issues**; hồi quy UI Public + CRM + đơn đăng ký **18/18 đạt**; `flutter build web --no-wasm-dry-run` **đạt**.
+- **Chưa kiểm chứng:** HTTP thành công với lớp hợp lệ, trình duyệt/thiết bị thật và nhận email thật. Chưa đánh dấu giai đoạn tuyển sinh hay Adaptive UI hoàn thành.
