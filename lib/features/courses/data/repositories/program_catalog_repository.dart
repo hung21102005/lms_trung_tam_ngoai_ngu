@@ -71,6 +71,9 @@ class ProgramCourseRecord {
   final String slug;
   final String description;
   final String publicDescription;
+  final String targetAudience;
+  final String language;
+  final String thumbnailUrl;
 
   const ProgramCourseRecord({
     required this.id,
@@ -82,6 +85,9 @@ class ProgramCourseRecord {
     this.slug = '',
     this.description = '',
     this.publicDescription = '',
+    this.targetAudience = '',
+    this.language = 'English',
+    this.thumbnailUrl = '',
   });
 
   factory ProgramCourseRecord.fromJson(Map<String, dynamic> json) =>
@@ -95,6 +101,9 @@ class ProgramCourseRecord {
         slug: json['slug'] as String? ?? '',
         description: json['description'] as String? ?? '',
         publicDescription: json['publicDescription'] as String? ?? '',
+        targetAudience: json['targetAudience'] as String? ?? '',
+        language: json['language'] as String? ?? 'English',
+        thumbnailUrl: json['thumbnailUrl'] as String? ?? '',
       );
 }
 
@@ -127,6 +136,14 @@ class ProgramCatalogRepository {
       throw const FormatException('Chi tiết chương trình không hợp lệ');
     }
     return TrainingProgramRecord.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  Future<ProgramCourseRecord> getCourse(String id) async {
+    final data = _unwrap(await apiClient.get('/courses/$id'));
+    if (data is! Map) {
+      throw const FormatException('Chi tiết khóa học không hợp lệ');
+    }
+    return ProgramCourseRecord.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<void> saveProgram({
@@ -204,6 +221,9 @@ class ProgramCatalogRepository {
     required String slug,
     required String description,
     required String publicDescription,
+    required String targetAudience,
+    required String language,
+    required String thumbnailUrl,
     required bool isActive,
   }) async {
     final data = <String, dynamic>{
@@ -211,6 +231,9 @@ class ProgramCatalogRepository {
       'slug': slug,
       'description': description,
       'publicDescription': publicDescription,
+      'targetAudience': targetAudience,
+      'language': language,
+      'thumbnailUrl': thumbnailUrl,
       'isActive': isActive,
     };
     if (id == null) {

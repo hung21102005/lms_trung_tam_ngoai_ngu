@@ -151,7 +151,7 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Roles('super_admin', 'academic_staff')
   @ApiBearerAuth('JWT-auth')
   @Post('courses')
   @HttpCode(HttpStatus.CREATED)
@@ -165,7 +165,7 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Roles('super_admin', 'academic_staff')
   @ApiBearerAuth('JWT-auth')
   @Patch('courses/:id')
   @ApiOperation({ summary: 'Cập nhật thông tin khóa học' })
@@ -198,7 +198,7 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Roles('super_admin', 'academic_staff')
   @ApiBearerAuth('JWT-auth')
   @Post('courses/:id/levels')
   @HttpCode(HttpStatus.CREATED)

@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -17,16 +19,20 @@ import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
 import '../../data/models/course_model.dart';
+import '../../data/repositories/program_catalog_repository.dart';
+import 'program_catalog_screen.dart';
 import 'lesson_detail_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final String courseId;
   final bool canEditAcademicLevel;
+  final ProgramCatalogRepository? catalogRepository;
 
   const CourseDetailScreen({
     super.key,
     required this.courseId,
     this.canEditAcademicLevel = true,
+    this.catalogRepository,
   });
 
   @override
@@ -34,6 +40,34 @@ class CourseDetailScreen extends StatefulWidget {
 }
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
+  bool _openingEditor = false;
+
+  Future<void> _editCourse() async {
+    if (_openingEditor || !widget.canEditAcademicLevel) return;
+    setState(() => _openingEditor = true);
+    try {
+      final repository =
+          widget.catalogRepository ??
+          ProgramCatalogRepository(getIt<ApiClient>());
+      final saved = await openCourseManagementEditor(
+        context,
+        repository: repository,
+        courseId: widget.courseId,
+      );
+      if (saved == true && mounted) {
+        context.read<CoursesBloc>().add(FetchCourseDetail(widget.courseId));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không mở được biểu mẫu khóa học: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingEditor = false);
+    }
+  }
+
   bool get _canEditCurriculum {
     final state = context.read<CoursesBloc>().state;
     return widget.canEditAcademicLevel &&
@@ -360,6 +394,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         foregroundColor: isDark ? Colors.white : AppColors.textPrimaryLight,
         actions: [
+          if (widget.canEditAcademicLevel)
+            IconButton(
+              onPressed: _openingEditor ? null : _editCourse,
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Chỉnh sửa khóa học',
+            ),
           IconButton(
             onPressed: () {
               context.read<CoursesBloc>().add(

@@ -22,6 +22,9 @@ describe('CoursesService', () => {
   };
 
   const mockPrismaService = {
+    class: {
+      count: vi.fn().mockResolvedValue(0),
+    },
     trainingProgram: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -77,6 +80,21 @@ describe('CoursesService', () => {
   });
 
   describe('curriculum editing', () => {
+    it('rejects changing a lesson used by an active class', async () => {
+      mockPrismaService.lesson.findUnique.mockResolvedValueOnce({
+        module: {
+          level: {
+            courseId: 'course-uuid-1',
+            course: { publicationStatus: PublicationStatus.DRAFT },
+          },
+        },
+      });
+      mockPrismaService.class.count.mockResolvedValueOnce(1);
+      await expect(
+        service.updateLesson('lesson-1', { title: 'Thay đổi bài học' }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.lesson.update).not.toHaveBeenCalled();
+    });
     it('rejects adding materials to an archived course', async () => {
       mockPrismaService.lesson.findUnique.mockResolvedValueOnce({
         module: {
@@ -318,6 +336,32 @@ describe('CoursesService', () => {
       expect(mockPrismaService.course.update).toHaveBeenCalledWith({
         where: { id: 'course-1' },
         data: { publicationStatus: PublicationStatus.PUBLISHED },
+      });
+    });
+
+    it('blocks unpublishing while a class is open', async () => {
+      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+        id: 'course-1',
+        publicationStatus: PublicationStatus.PUBLISHED,
+        levels: [],
+      });
+      mockPrismaService.class.count.mockResolvedValueOnce(1);
+      await expect(
+        service.changeCourseStatus('course-1', PublicationStatus.DRAFT),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.course.update).not.toHaveBeenCalled();
+    });
+
+    it('unpublishes a course without open or running classes', async () => {
+      mockPrismaService.course.findUnique.mockResolvedValueOnce({
+        id: 'course-1',
+        publicationStatus: PublicationStatus.PUBLISHED,
+        levels: [],
+      });
+      await service.changeCourseStatus('course-1', PublicationStatus.DRAFT);
+      expect(mockPrismaService.course.update).toHaveBeenCalledWith({
+        where: { id: 'course-1' },
+        data: { publicationStatus: PublicationStatus.DRAFT },
       });
     });
   });

@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/mobile/mobile_ui.dart';
@@ -13,16 +15,53 @@ import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
 import '../../data/models/course_model.dart';
+import '../../data/repositories/program_catalog_repository.dart';
+import 'program_catalog_screen.dart';
 
 class CourseListScreen extends StatefulWidget {
   final bool showAppBar;
-  const CourseListScreen({super.key, this.showAppBar = true});
+  final bool canManage;
+  final ProgramCatalogRepository? catalogRepository;
+  const CourseListScreen({
+    super.key,
+    this.showAppBar = true,
+    this.canManage = true,
+    this.catalogRepository,
+  });
 
   @override
   State<CourseListScreen> createState() => _CourseListScreenState();
 }
 
 class _CourseListScreenState extends State<CourseListScreen> {
+  bool _openingEditor = false;
+
+  Future<void> _openCourseEditor([CourseModel? course]) async {
+    if (_openingEditor || !widget.canManage) return;
+    setState(() => _openingEditor = true);
+    try {
+      final repository =
+          widget.catalogRepository ??
+          ProgramCatalogRepository(getIt<ApiClient>());
+      final saved = await openCourseManagementEditor(
+        context,
+        repository: repository,
+        courseId: course?.id,
+      );
+      if (saved == true && mounted) {
+        context.read<CoursesBloc>().add(const FetchCourses(refresh: true));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không mở được biểu mẫu khóa học: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingEditor = false);
+    }
+  }
+
   final TextEditingController _searchController = TextEditingController();
   int _activeCategoryIndex = 0;
   String _selectedLevel = 'ALL';
@@ -107,160 +146,6 @@ class _CourseListScreenState extends State<CourseListScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _showCreateCourseDialog() {
-    if (MediaQuery.sizeOf(context).width < 1024) {
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        showDragHandle: true,
-        builder: (_) => _MobileCreateCourseSheet(
-          onSubmit: (code, title, description, targetAudience, language) {
-            context.read<CoursesBloc>().add(
-              CreateCourseEvent(
-                code: code,
-                title: title,
-                description: description,
-                targetAudience: targetAudience,
-                language: language,
-              ),
-            );
-          },
-        ),
-      );
-      return;
-    }
-    final codeCtrl = TextEditingController();
-    final titleCtrl = TextEditingController();
-    final feeCtrl = TextEditingController(text: '14500000');
-    final durationCtrl = TextEditingController(text: '72 giờ (24 buổi)');
-    String dialogLang = 'English';
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.school_rounded, color: Color(0xFF003FB1)),
-            SizedBox(width: 8),
-            Text(
-              'Tạo Khóa Học / Chương Trình Mới',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 480,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: codeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Mã khóa học *',
-                    hintText: 'VD: CRS-IELTS-65',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên khóa học *',
-                    hintText: 'VD: IELTS Fighter Intensive (Band 6.5 - 7.5+)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: feeCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Học phí trọn khóa (VNĐ)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: durationCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Thời lượng đào tạo',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  initialValue: dialogLang,
-                  decoration: const InputDecoration(
-                    labelText: 'Ngôn ngữ đào tạo',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'English',
-                      child: Text('Tiếng Anh (English)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Japanese',
-                      child: Text('Tiếng Nhật (Japanese)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Korean',
-                      child: Text('Tiếng Hàn (Korean)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Chinese',
-                      child: Text('Tiếng Trung (Chinese)'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) dialogLang = v;
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Hủy bỏ'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (codeCtrl.text.trim().isEmpty ||
-                  titleCtrl.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Vui lòng điền đủ mã và tên khóa học'),
-                  ),
-                );
-                return;
-              }
-              Navigator.of(dialogCtx).pop();
-              context.read<CoursesBloc>().add(
-                CreateCourseEvent(
-                  code: codeCtrl.text.trim().toUpperCase(),
-                  title: titleCtrl.text.trim(),
-                  language: dialogLang,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF003FB1),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Tạo khóa học'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -448,7 +333,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                     ),
                                   ),
                                   ElevatedButton.icon(
-                                    onPressed: _showCreateCourseDialog,
+                                    onPressed:
+                                        widget.canManage && !_openingEditor
+                                        ? () => _openCourseEditor()
+                                        : null,
                                     icon: const Icon(
                                       Icons.add_circle_rounded,
                                       size: 18,
@@ -587,7 +475,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                   ),
                                 ),
                                 ElevatedButton.icon(
-                                  onPressed: _showCreateCourseDialog,
+                                  onPressed: widget.canManage && !_openingEditor
+                                      ? () => _openCourseEditor()
+                                      : null,
                                   icon: const Icon(
                                     Icons.add_circle_rounded,
                                     size: 16,
@@ -1025,7 +915,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
           ),
           const SizedBox(height: MobileTokens.sectionGap),
           FilledButton.icon(
-            onPressed: _showCreateCourseDialog,
+            onPressed: widget.canManage && !_openingEditor
+                ? () => _openCourseEditor()
+                : null,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Tạo khóa học mới'),
           ),
@@ -1152,18 +1044,33 @@ class _CourseListScreenState extends State<CourseListScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 4,
               children: [
-                Text(
+                if (widget.canManage) ...[
+                  TextButton.icon(
+                    onPressed: _openingEditor
+                        ? null
+                        : () => _openCourseEditor(course),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Chỉnh sửa'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                const Text(
                   'Xem chi tiết',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.primary,
+                ),
               ],
             ),
           ],
@@ -1391,178 +1298,27 @@ class _CourseListScreenState extends State<CourseListScreen> {
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/courses/${course.id}'),
-              icon: const Icon(Icons.open_in_new_rounded, size: 16),
-              label: const Text('Xem chi tiết & lộ trình'),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (widget.canManage)
+                  TextButton.icon(
+                    onPressed: _openingEditor
+                        ? null
+                        : () => _openCourseEditor(course),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Chỉnh sửa'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/courses/${course.id}'),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  label: const Text('Xem chi tiết & lộ trình'),
+                ),
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MobileCreateCourseSheet extends StatefulWidget {
-  const _MobileCreateCourseSheet({required this.onSubmit});
-
-  final void Function(
-    String code,
-    String title,
-    String? description,
-    String? targetAudience,
-    String language,
-  )
-  onSubmit;
-
-  @override
-  State<_MobileCreateCourseSheet> createState() =>
-      _MobileCreateCourseSheetState();
-}
-
-class _MobileCreateCourseSheetState extends State<_MobileCreateCourseSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _codeController = TextEditingController();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _audienceController = TextEditingController();
-  String _language = 'English';
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _audienceController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    widget.onSubmit(
-      _codeController.text.trim().toUpperCase(),
-      _titleController.text.trim(),
-      _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      _audienceController.text.trim().isEmpty
-          ? null
-          : _audienceController.text.trim(),
-      _language,
-    );
-    Navigator.of(context).pop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight:
-              (MediaQuery.sizeOf(context).height * 0.9 -
-                      MediaQuery.viewInsetsOf(context).bottom)
-                  .clamp(120.0, double.infinity),
-        ),
-        child: SafeArea(
-          top: false,
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            children: [
-              Text(
-                'Tạo khóa học mới',
-                style: Theme.of(context).textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              const Text('Thiết lập thông tin chương trình đào tạo.'),
-              const SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _codeController,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: const InputDecoration(
-                        labelText: 'Mã khóa học *',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) => value?.trim().isEmpty == true
-                          ? 'Nhập mã khóa học'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tên khóa học *',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) => value?.trim().isEmpty == true
-                          ? 'Nhập tên khóa học'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _audienceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Đối tượng học viên',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _descriptionController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Mô tả',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      initialValue: _language,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Ngôn ngữ',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'English',
-                          child: Text('Tiếng Anh'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Japanese',
-                          child: Text('Tiếng Nhật'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Korean',
-                          child: Text('Tiếng Hàn'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Chinese',
-                          child: Text('Tiếng Trung'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) setState(() => _language = value);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _submit,
-                child: const Text('Tạo khóa học'),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

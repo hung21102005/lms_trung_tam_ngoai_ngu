@@ -262,7 +262,11 @@ final GoRouter appRouter = GoRouter(
         }
         return BlocProvider<CoursesBloc>(
           create: (_) => getIt<CoursesBloc>(),
-          child: const CourseListScreen(),
+          child: CourseListScreen(
+            canManage:
+                auth is AuthenticatedState &&
+                (auth.user.isSuperAdmin || auth.user.isAcademicStaff),
+          ),
         );
       },
     ),

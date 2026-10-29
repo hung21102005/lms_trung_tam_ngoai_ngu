@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/data/models/course_model.dart';
+import 'package:lms_trung_tam_ngoai_ngu/core/network/api_client.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/courses/data/repositories/program_catalog_repository.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/domain/repositories/courses_repository.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/bloc/courses_bloc.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/courses/presentation/screens/course_list_screen.dart';
@@ -62,14 +64,74 @@ class _CoursesRepository extends Fake implements CoursesRepository {
   }
 }
 
-Widget _app(_CoursesRepository repository) {
+class _CatalogApi extends Fake implements ApiClient {
+  Map<String, dynamic>? saved;
+  String? savedPath;
+
+  @override
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    dynamic options,
+  }) async {
+    if (path == '/programs') {
+      return [
+        {'id': 'program-1', 'nameVi': 'Tiếng Anh tổng quát', 'status': 'DRAFT'},
+      ];
+    }
+    if (path == '/courses/course-1') {
+      return {
+        'id': 'course-1',
+        'code': 'IELTS-F',
+        'title': 'IELTS Foundation',
+        'programId': 'program-1',
+        'publicationStatus': 'DRAFT',
+        'slug': 'ielts-foundation',
+        'language': 'English',
+      };
+    }
+    throw StateError(path);
+  }
+
+  @override
+  Future<dynamic> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    dynamic options,
+  }) async {
+    savedPath = path;
+    saved = Map<String, dynamic>.from(data as Map);
+    return {'id': 'new-course'};
+  }
+
+  @override
+  Future<dynamic> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    dynamic options,
+  }) async {
+    savedPath = path;
+    saved = Map<String, dynamic>.from(data as Map);
+    return {};
+  }
+}
+
+Widget _app(
+  _CoursesRepository repository, {
+  ProgramCatalogRepository? catalogRepository,
+}) {
   final router = GoRouter(
     routes: [
       GoRoute(
         path: '/',
         builder: (context, state) => BlocProvider(
           create: (_) => CoursesBloc(repository: repository),
-          child: const CourseListScreen(showAppBar: false),
+          child: CourseListScreen(
+            showAppBar: false,
+            catalogRepository: catalogRepository,
+          ),
         ),
       ),
       GoRoute(
@@ -162,32 +224,82 @@ void main() {
     expect(find.text('Chi tiết course-1'), findsOneWidget);
   });
 
-  testWidgets('Mobile tạo khóa học qua bottom sheet và Bloc', (tester) async {
+  testWidgets('Mobile tạo khóa học với chương trình qua API', (tester) async {
     tester.view.physicalSize = const Size(375, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final repository = _CoursesRepository();
-    await tester.pumpWidget(_app(repository));
+    final api = _CatalogApi();
+    await tester.pumpWidget(
+      _app(repository, catalogRepository: ProgramCatalogRepository(api)),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tạo khóa học mới'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tạo khóa học'));
+    expect(find.text('Vui lòng chọn chương trình đào tạo'), findsNothing);
+    await tester.tap(find.text('Chương trình đào tạo').last);
     await tester.pumpAndSettle();
-    expect(find.text('Nhập mã khóa học'), findsOneWidget);
+    await tester.tap(find.text('Tiếng Anh tổng quát').last);
+    await tester.pumpAndSettle();
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Mã khóa học *'),
-      'crs-a1',
+      find.widgetWithText(TextFormField, 'Mã khóa học'),
+      'CRS-A1',
     );
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Tên khóa học *'),
+      find.widgetWithText(TextFormField, 'Tên khóa học'),
       'Giao tiếp A1',
     );
-    await tester.ensureVisible(find.text('Tạo khóa học'));
-    await tester.tap(find.text('Tạo khóa học'));
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Đường dẫn công khai'),
+      'giao-tiep-a1',
+    );
+    await tester.ensureVisible(find.text('Lưu khóa học'));
+    await tester.tap(find.text('Lưu khóa học'));
     await tester.pumpAndSettle();
-    expect(repository.createdCode, 'CRS-A1');
-    expect(repository.createdTitle, 'Giao tiếp A1');
+    expect(api.savedPath, '/courses');
+    expect(api.saved?['programId'], 'program-1');
+    expect(api.saved?['code'], 'CRS-A1');
+    expect(api.saved?['title'], 'Giao tiếp A1');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Mobile sửa khóa trực tiếp từ danh sách với đầy đủ trường', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final api = _CatalogApi();
+    await tester.pumpWidget(
+      _app(
+        _CoursesRepository(),
+        catalogRepository: ProgramCatalogRepository(api),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Chỉnh sửa').first,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Chỉnh sửa').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Đối tượng học'),
+      'Người bắt đầu',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'URL ảnh đại diện'),
+      'https://example.com/course.png',
+    );
+    await tester.ensureVisible(find.text('Lưu khóa học'));
+    await tester.tap(find.text('Lưu khóa học'));
+    await tester.pumpAndSettle();
+    expect(api.savedPath, '/courses/course-1');
+    expect(api.saved?['targetAudience'], 'Người bắt đầu');
+    expect(api.saved?['thumbnailUrl'], 'https://example.com/course.png');
     expect(tester.takeException(), isNull);
   });
 }

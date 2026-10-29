@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { PublicationStatus } from '@prisma/client';
+import { ClassStatus, PublicationStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   CreateCourseDto,
@@ -24,6 +24,35 @@ import {
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async assertCurriculumEditable(
+    courseId: string,
+    status?: PublicationStatus,
+  ) {
+    if (status === PublicationStatus.PUBLISHED ||
+        status === PublicationStatus.ARCHIVED) {
+      throw new ConflictException(
+        'Cần ngừng công bố khóa học trước khi sửa nội dung học thuật',
+      );
+    }
+    const protectedClasses = await this.prisma.class.count({
+      where: {
+        courseId,
+        status: {
+          in: [
+            ClassStatus.OPEN_FOR_ENROLLMENT,
+            ClassStatus.IN_PROGRESS,
+            ClassStatus.COMPLETED,
+          ],
+        },
+      },
+    });
+    if (protectedClasses > 0) {
+      throw new ConflictException(
+        'Khóa học đã có lớp mở hoặc từng giảng dạy; cần tạo phiên bản học thuật mới trước khi sửa giáo trình',
+      );
+    }
+  }
 
   findPublicPrograms() {
     return this.prisma.trainingProgram.findMany({
@@ -366,7 +395,22 @@ export class CoursesService {
   }
 
   async update(id: string, dto: UpdateCourseDto) {
-    await this.findOne(id);
+    const course = await this.findOne(id);
+    const academicFields = [
+      'code',
+      'title',
+      'slug',
+      'programId',
+      'description',
+      'targetAudience',
+      'language',
+      'publicDescription',
+    ] as const;
+    if (academicFields.some((field) =>
+      dto[field] !== undefined && dto[field] !== course[field],
+    )) {
+      await this.assertCurriculumEditable(id, course.publicationStatus);
+    }
 
     if (dto.code) {
       const existing = await this.prisma.course.findUnique({
@@ -410,11 +454,29 @@ export class CoursesService {
     const allowed: Record<PublicationStatus, PublicationStatus[]> = {
       DRAFT: [PublicationStatus.IN_REVIEW],
       IN_REVIEW: [PublicationStatus.DRAFT, PublicationStatus.PUBLISHED],
-      PUBLISHED: [PublicationStatus.ARCHIVED],
+      PUBLISHED: [PublicationStatus.DRAFT, PublicationStatus.ARCHIVED],
       ARCHIVED: [],
     };
     if (!allowed[course.publicationStatus].includes(status)) {
       throw new BadRequestException('Chuyển trạng thái khóa học không hợp lệ');
+    }
+    if (
+      status === PublicationStatus.DRAFT &&
+      course.publicationStatus === PublicationStatus.PUBLISHED
+    ) {
+      const activeClasses = await this.prisma.class.count({
+        where: {
+          courseId: id,
+          status: {
+            in: [ClassStatus.OPEN_FOR_ENROLLMENT, ClassStatus.IN_PROGRESS],
+          },
+        },
+      });
+      if (activeClasses > 0) {
+        throw new ConflictException(
+          'Cần đóng đăng ký và kết thúc lớp đang học trước khi ngừng công bố khóa',
+        );
+      }
     }
     if (status === PublicationStatus.PUBLISHED) {
       if (
@@ -475,7 +537,8 @@ export class CoursesService {
   }
 
   async createLevel(courseId: string, dto: CreateCourseLevelDto) {
-    await this.findOne(courseId);
+    const course = await this.findOne(courseId);
+    await this.assertCurriculumEditable(courseId, course.publicationStatus);
 
     const existing = await this.prisma.courseLevel.findUnique({
       where: {
@@ -511,6 +574,7 @@ export class CoursesService {
         'Khóa học đã lưu trữ, không thể chỉnh sửa cấp độ',
       );
     }
+    await this.assertCurriculumEditable(level.courseId, level.course.publicationStatus);
     if (dto.code && dto.code !== level.code) {
       const existing = await this.prisma.courseLevel.findUnique({
         where: { courseId_code: { courseId: level.courseId, code: dto.code } },
@@ -562,6 +626,7 @@ export class CoursesService {
         'Không thể thêm học phần vào khóa đã lưu trữ',
       );
     }
+    await this.assertCurriculumEditable(level.courseId, level.course.publicationStatus);
 
     return this.prisma.module.create({
       data: {
@@ -575,7 +640,7 @@ export class CoursesService {
     const module = await this.prisma.module.findUnique({
       where: { id },
       include: {
-        level: { select: { course: { select: { publicationStatus: true } } } },
+        level: { select: { courseId: true, course: { select: { publicationStatus: true } } } },
       },
     });
     if (!module) {
@@ -586,6 +651,7 @@ export class CoursesService {
         'Không thể sửa học phần của khóa đã lưu trữ',
       );
     }
+    await this.assertCurriculumEditable(module.level.courseId, module.level.course.publicationStatus);
     return this.prisma.module.update({ where: { id }, data: dto });
   }
 
@@ -629,6 +695,7 @@ export class CoursesService {
         'Không thể thêm bài học vào khóa đã lưu trữ',
       );
     }
+    await this.assertCurriculumEditable(mod.level.courseId, mod.level.course.publicationStatus);
 
     return this.prisma.lesson.create({
       data: {
@@ -664,6 +731,7 @@ export class CoursesService {
         'Không thể sửa bài học của khóa đã lưu trữ',
       );
     }
+    await this.assertCurriculumEditable(lesson.module.level.courseId, lesson.module.level.course.publicationStatus);
     return this.prisma.lesson.update({ where: { id }, data: dto });
   }
 
@@ -696,6 +764,7 @@ export class CoursesService {
         'Không thể thêm tài liệu vào khóa đã lưu trữ',
       );
     }
+    await this.assertCurriculumEditable(lesson.module.level.courseId, lesson.module.level.course.publicationStatus);
 
     return this.prisma.lessonMaterial.create({
       data: {

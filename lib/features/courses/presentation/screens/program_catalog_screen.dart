@@ -6,6 +6,40 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../data/repositories/program_catalog_repository.dart';
 
+Future<bool?> openCourseManagementEditor(
+  BuildContext context, {
+  required ProgramCatalogRepository repository,
+  String? courseId,
+}) async {
+  final programs = await repository.getPrograms();
+  final course = courseId == null ? null : await repository.getCourse(courseId);
+  if (!context.mounted) return null;
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (_) => CourseEditor(
+      course: course,
+      programs: programs,
+      initialProgramId: course?.programId,
+      onSave: (values, isActive) => repository.saveCourse(
+        id: course?.id,
+        programId: values['programId']!,
+        code: values['code']!,
+        title: values['title']!,
+        slug: values['slug']!,
+        description: values['description']!,
+        publicDescription: values['publicDescription']!,
+        targetAudience: values['targetAudience']!,
+        language: values['language']!,
+        thumbnailUrl: values['thumbnailUrl']!,
+        isActive: isActive,
+      ),
+    ),
+  );
+}
+
 class ProgramCatalogScreen extends StatefulWidget {
   final ProgramCatalogRepository repository;
   final bool canManage;
@@ -286,16 +320,21 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => _CourseEditor(
+      builder: (_) => CourseEditor(
         course: course,
+        programs: [program],
+        initialProgramId: program.id,
         onSave: (values, isActive) => widget.repository.saveCourse(
           id: course?.id,
-          programId: program.id,
+          programId: values['programId']!,
           code: values['code']!,
           title: values['title']!,
           slug: values['slug']!,
           description: values['description']!,
           publicDescription: values['publicDescription']!,
+          targetAudience: values['targetAudience']!,
+          language: values['language']!,
+          thumbnailUrl: values['thumbnailUrl']!,
           isActive: isActive,
         ),
       ),
@@ -504,11 +543,16 @@ class _ProgramDetailsState extends State<_ProgramDetails> {
                                 child: Text('Duyệt công bố khóa'),
                               ),
                             ],
-                            if (course.status == 'PUBLISHED')
+                            if (course.status == 'PUBLISHED') ...[
+                              const PopupMenuItem(
+                                value: 'DRAFT',
+                                child: Text('Ngừng công bố'),
+                              ),
                               const PopupMenuItem(
                                 value: 'ARCHIVED',
                                 child: Text('Lưu trữ khóa'),
                               ),
+                            ],
                           ],
                         )
                       : const Icon(Icons.chevron_right),
@@ -648,20 +692,29 @@ class _ProgramEditorState extends State<_ProgramEditor> {
   }
 }
 
-class _CourseEditor extends StatefulWidget {
+class CourseEditor extends StatefulWidget {
   final ProgramCourseRecord? course;
+  final List<TrainingProgramRecord> programs;
+  final String? initialProgramId;
   final Future<void> Function(Map<String, String>, bool) onSave;
 
-  const _CourseEditor({this.course, required this.onSave});
+  const CourseEditor({
+    super.key,
+    this.course,
+    required this.programs,
+    this.initialProgramId,
+    required this.onSave,
+  });
 
   @override
-  State<_CourseEditor> createState() => _CourseEditorState();
+  State<CourseEditor> createState() => _CourseEditorState();
 }
 
-class _CourseEditorState extends State<_CourseEditor> {
+class _CourseEditorState extends State<CourseEditor> {
   final _form = GlobalKey<FormState>();
   late final Map<String, TextEditingController> _fields;
   late bool _isActive;
+  late String? _programId;
   bool _saving = false;
 
   @override
@@ -669,6 +722,7 @@ class _CourseEditorState extends State<_CourseEditor> {
     super.initState();
     final course = widget.course;
     _isActive = course?.isActive ?? false;
+    _programId = course?.programId ?? widget.initialProgramId;
     _fields = {
       'code': TextEditingController(text: course?.code ?? ''),
       'title': TextEditingController(text: course?.title ?? ''),
@@ -677,6 +731,11 @@ class _CourseEditorState extends State<_CourseEditor> {
       'publicDescription': TextEditingController(
         text: course?.publicDescription ?? '',
       ),
+      'targetAudience': TextEditingController(
+        text: course?.targetAudience ?? '',
+      ),
+      'language': TextEditingController(text: course?.language ?? 'English'),
+      'thumbnailUrl': TextEditingController(text: course?.thumbnailUrl ?? ''),
     };
   }
 
@@ -689,13 +748,15 @@ class _CourseEditorState extends State<_CourseEditor> {
   }
 
   Future<void> _save() async {
-    if (_saving || !_form.currentState!.validate()) return;
+    if (_saving || !_form.currentState!.validate() || _programId == null) {
+      return;
+    }
     setState(() => _saving = true);
     try {
-      await widget.onSave(
-        _fields.map((key, value) => MapEntry(key, value.text.trim())),
-        _isActive,
-      );
+      await widget.onSave({
+        ..._fields.map((key, value) => MapEntry(key, value.text.trim())),
+        'programId': _programId!,
+      }, _isActive);
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
@@ -717,19 +778,40 @@ class _CourseEditorState extends State<_CourseEditor> {
         enabled:
             widget.course == null ||
             widget.course!.status == 'DRAFT' ||
-            (key != 'code' && key != 'title'),
+            widget.course!.status == 'IN_REVIEW' ||
+            key == 'thumbnailUrl',
         maxLines: lines,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
         ),
         validator: (value) {
-          if (value == null || value.trim().isEmpty) {
+          if ((key == 'code' ||
+                  key == 'title' ||
+                  key == 'slug' ||
+                  key == 'language') &&
+              (value == null || value.trim().isEmpty)) {
             return 'Vui lòng nhập $label';
           }
+          if (key == 'code' &&
+              !RegExp(r'^[A-Z0-9_-]+$').hasMatch(value!.trim())) {
+            return 'Mã chỉ gồm chữ hoa, số, gạch dưới và gạch nối';
+          }
           if (key == 'slug' &&
-              !RegExp(r'^[a-z0-9]+(?:-[a-z0-9]+)*$').hasMatch(value.trim())) {
+              !RegExp(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+                  .hasMatch(value?.trim() ?? '')) {
             return 'Đường dẫn chỉ gồm chữ thường, số và dấu gạch nối';
+          }
+          final imageUri = key == 'thumbnailUrl' && value != null
+              ? Uri.tryParse(value.trim())
+              : null;
+          if (key == 'thumbnailUrl' &&
+              value != null &&
+              value.trim().isNotEmpty &&
+              (imageUri == null ||
+                  !imageUri.hasAuthority ||
+                  !['http', 'https'].contains(imageUri.scheme))) {
+            return 'Vui lòng nhập URL ảnh hợp lệ';
           }
           return null;
         },
@@ -758,11 +840,40 @@ class _CourseEditorState extends State<_CourseEditor> {
                     'Khóa mới ở trạng thái nháp. Cần nội dung học thuật và duyệt trước khi công bố.',
                   ),
                   const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _programId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Chương trình đào tạo',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: widget.programs
+                        .where((program) => program.status != 'ARCHIVED')
+                        .map(
+                          (program) => DropdownMenuItem(
+                            value: program.id,
+                            child: Text(program.nameVi),
+                          ),
+                        )
+                        .toList(),
+                    onChanged:
+                        widget.course == null ||
+                            widget.course!.status == 'DRAFT'
+                        ? (value) => setState(() => _programId = value)
+                        : null,
+                    validator: (value) => value == null
+                        ? 'Vui lòng chọn chương trình đào tạo'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
                   field('code', 'Mã khóa học'),
                   field('title', 'Tên khóa học'),
                   field('slug', 'Đường dẫn công khai'),
                   field('description', 'Mô tả nội bộ', lines: 3),
                   field('publicDescription', 'Mô tả công khai', lines: 3),
+                  field('targetAudience', 'Đối tượng học', lines: 2),
+                  field('language', 'Ngôn ngữ giảng dạy'),
+                  field('thumbnailUrl', 'URL ảnh đại diện'),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Khóa đang hoạt động'),
