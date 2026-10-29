@@ -63,6 +63,8 @@ abstract class ClassesRepository {
 
   Future<void> removeStudent(String classId, String studentId);
 
+  Future<void> deleteClass(String id);
+
   Future<List<ClassSessionModel>> getClassSessions(String classId);
 
   Future<ClassSessionModel> updateSession(

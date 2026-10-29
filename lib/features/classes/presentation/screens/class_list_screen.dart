@@ -12,6 +12,7 @@ import '../../../../shared/widgets/error_widget.dart';
 import '../bloc/classes_bloc.dart';
 import '../bloc/classes_event.dart';
 import '../bloc/classes_state.dart';
+import '../class_deletion_message.dart';
 import '../../data/models/class_model.dart';
 import 'schedule_screen.dart';
 
@@ -50,6 +51,218 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   void _showCreateClassDialog() {
     context.push(RouteNames.classCreate);
+  }
+
+  Future<void> _showChangeStatusDialog(
+    String classId,
+    String className,
+    String currentStatus,
+  ) async {
+    final bloc = context.read<ClassesBloc>();
+    String selectedStatus = currentStatus;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Đổi trạng thái - $className'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Chọn trạng thái vận hành của lớp học:'),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedStatus,
+                    decoration: const InputDecoration(
+                      labelText: 'Trạng thái',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'PLANNING',
+                        child: Text('Đang lập kế hoạch (PLANNING)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'OPEN_FOR_ENROLLMENT',
+                        child: Text('Đang mở tuyển sinh (OPEN)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'IN_PROGRESS',
+                        child: Text('Đang diễn ra (IN_PROGRESS)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'COMPLETED',
+                        child: Text('Đã hoàn thành (COMPLETED)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CANCELLED',
+                        child: Text('Đã hủy (CANCELLED)'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() => selectedStatus = val);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx, false),
+                  child: const Text('Hủy'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogCtx, true),
+                  child: const Text('Cập nhật'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await bloc.repository.updateClass(classId, status: selectedStatus);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã cập nhật trạng thái lớp học thành công'),
+              backgroundColor: Color(0xFF047857),
+            ),
+          );
+          bloc.add(const FetchClasses(refresh: true));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi cập nhật trạng thái: $e'),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showDeleteClassDialog(
+    String classId,
+    String className,
+    String classCode,
+  ) async {
+    final codeCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626)),
+              SizedBox(width: 8),
+              Text('Xác nhận xóa lớp học'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Lớp học "$className" ($classCode) sẽ bị xóa vĩnh viễn khỏi hệ thống.',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Chỉ lớp học mới lập kế hoạch, chưa phát sinh học viên, đăng ký hay hóa đơn mới có thể xóa. Vui lòng nhập mã lớp để xác nhận:',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  classCode,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Nhập lại mã lớp để xác nhận',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => setDlgState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy bỏ'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+              onPressed: codeCtrl.text.trim() == classCode.trim()
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              child: const Text('Xác nhận xóa'),
+            ),
+          ],
+        ),
+      ),
+    );
+    codeCtrl.dispose();
+    if (confirmed == true && mounted) {
+      final bloc = context.read<ClassesBloc>();
+      try {
+        await bloc.repository.deleteClass(classId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã xóa lớp học thành công'),
+              backgroundColor: Color(0xFF047857),
+            ),
+          );
+          bloc.add(const FetchClasses(refresh: true));
+        }
+      } catch (e) {
+        if (mounted) {
+          showDialog<void>(
+            context: context,
+            builder: (errorCtx) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: Color(0xFFD97706)),
+                  SizedBox(width: 8),
+                  Text('Không thể xóa lớp'),
+                ],
+              ),
+              content: Text(classDeletionMessage(e)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(errorCtx),
+                  child: const Text('Đã hiểu'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -521,7 +734,8 @@ class _ClassListScreenState extends State<ClassListScreen> {
                             child: TextField(
                               controller: _searchController,
                               decoration: InputDecoration(
-                                hintText: 'Tìm theo mã lớp, tên khóa, giáo viên, phòng...',
+                                hintText:
+                                    'Tìm theo mã lớp, tên khóa, giáo viên, phòng...',
                                 hintStyle: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF94A3B8),
@@ -1001,15 +1215,40 @@ class _ClassListScreenState extends State<ClassListScreen> {
             const SizedBox(height: 5),
             LinearProgressIndicator(value: ratio),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.push(
-                  RouteNames.classDetail.replaceFirst(':id', classItem.id),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      RouteNames.classDetail.replaceFirst(':id', classItem.id),
+                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Xem lớp & Điểm danh'),
+                  ),
                 ),
-                icon: const Icon(Icons.arrow_forward_rounded),
-                label: const Text('Xem lớp học và điểm danh'),
-              ),
+                const SizedBox(width: 8),
+                if (classItem.status == 'PLANNING' && classItem.studentsCount == 0) ...[
+                  IconButton.outlined(
+                    tooltip: 'Xóa lớp học',
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFDC2626)),
+                    onPressed: () => _showDeleteClassDialog(
+                      classItem.id,
+                      classItem.name,
+                      classItem.code,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                IconButton.outlined(
+                  tooltip: 'Đổi trạng thái lớp',
+                  icon: const Icon(Icons.sync_alt_rounded, size: 18),
+                  onPressed: () => _showChangeStatusDialog(
+                    classItem.id,
+                    classItem.name,
+                    classItem.status,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1320,16 +1559,57 @@ class _ClassListScreenState extends State<ClassListScreen> {
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     itemBuilder: (ctx, idx) {
                       final c = classes[idx];
+                      final classId = c['id']?.toString() ?? '';
                       final code = c['code'] ?? 'ENG-01';
                       final name = c['name'] ?? 'Lớp Tiếng Anh';
                       final course = c['courseTitle'] ?? 'Chương trình đào tạo';
                       final teacher = c['teacher'] ?? 'Giáo viên';
                       final days = c['days'] ?? 'T2 - T4 - T6';
                       final shift = c['shift'] ?? '08:00 - 09:30';
-                      final room = c['room'] ?? 'Phòng A101';
+                      final room = c['room'] ?? 'Phòng học';
                       final enrolled = c['enrolled'] ?? 16;
                       final maxCap = c['capacity'] ?? 18;
                       final ratio = (enrolled / maxCap).clamp(0.0, 1.0);
+                      final classStatus =
+                          c['status']?.toString() ?? 'IN_PROGRESS';
+                      final statusConfig = switch (classStatus) {
+                        'IN_PROGRESS' => (
+                          'Đang học',
+                          const Color(0xFF047857),
+                          const Color(0xFFECFDF5),
+                          const Color(0xFFA7F3D0),
+                        ),
+                        'OPEN_FOR_ENROLLMENT' => (
+                          'Đang tuyển',
+                          const Color(0xFF003FB1),
+                          const Color(0xFFEFF6FF),
+                          const Color(0xFFBFDBFE),
+                        ),
+                        'PLANNING' => (
+                          'Sắp mở',
+                          const Color(0xFFD97706),
+                          const Color(0xFFFFFBEB),
+                          const Color(0xFFFDE68A),
+                        ),
+                        'COMPLETED' => (
+                          'Đã kết thúc',
+                          const Color(0xFF64748B),
+                          const Color(0xFFF1F5F9),
+                          const Color(0xFFCBD5E1),
+                        ),
+                        'CANCELLED' => (
+                          'Đã hủy',
+                          const Color(0xFFDC2626),
+                          const Color(0xFFFEF2F2),
+                          const Color(0xFFFECACA),
+                        ),
+                        _ => (
+                          classStatus,
+                          const Color(0xFF64748B),
+                          const Color(0xFFF1F5F9),
+                          const Color(0xFFCBD5E1),
+                        ),
+                      };
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(
@@ -1391,7 +1671,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                     radius: 12,
                                     backgroundColor: const Color(0xFFEFF6FF),
                                     child: Text(
-                                      teacher[0],
+                                      teacher.isNotEmpty ? teacher[0] : 'G',
                                       style: const TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
@@ -1491,18 +1771,16 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFECFDF5),
+                                    color: statusConfig.$3,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFFA7F3D0),
-                                    ),
+                                    border: Border.all(color: statusConfig.$4),
                                   ),
-                                  child: const Text(
-                                    'Đang học',
+                                  child: Text(
+                                    statusConfig.$1,
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF047857),
+                                      color: statusConfig.$2,
                                     ),
                                   ),
                                 ),
@@ -1515,10 +1793,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                 children: [
                                   ElevatedButton(
                                     onPressed: () {
-                                      final classId = c['id']?.toString();
-                                      if (classId == null || classId.isEmpty) {
-                                        return;
-                                      }
+                                      if (classId.isEmpty) return;
                                       context.push(
                                         RouteNames.classDetail.replaceFirst(
                                           ':id',
@@ -1538,25 +1813,108 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       ),
                                     ),
                                     child: const Text(
-                                      'Điểm danh',
+                                      'Chi tiết & Điểm danh',
                                       style: TextStyle(fontSize: 11),
                                     ),
                                   ),
-                                  IconButton(
+                                  PopupMenuButton<String>(
                                     icon: const Icon(
                                       Icons.more_vert,
                                       size: 18,
                                       color: Color(0xFF64748B),
                                     ),
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Tùy chọn cho $name'),
-                                        ),
-                                      );
+                                    tooltip: 'Tùy chọn lớp học',
+                                    onSelected: (value) async {
+                                      if (classId.isEmpty) return;
+                                      switch (value) {
+                                        case 'detail':
+                                          context.push(
+                                            RouteNames.classDetail.replaceFirst(
+                                              ':id',
+                                              classId,
+                                            ),
+                                          );
+                                          break;
+                                        case 'schedule':
+                                          context.push(RouteNames.schedule);
+                                          break;
+                                        case 'delete':
+                                          _showDeleteClassDialog(
+                                            classId,
+                                            name,
+                                            code,
+                                          );
+                                          break;
+                                        case 'status':
+                                          _showChangeStatusDialog(
+                                            classId,
+                                            name,
+                                            classStatus,
+                                          );
+                                          break;
+                                      }
                                     },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'detail',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.visibility_outlined,
+                                              size: 16,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text('Chi tiết lớp học'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'schedule',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_month_outlined,
+                                              size: 16,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text('Lịch học & Xếp lịch'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'status',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.sync_alt_rounded,
+                                              size: 16,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text('Đổi trạng thái lớp'),
+                                          ],
+                                        ),
+                                      ),
+                                      if (classStatus == 'PLANNING' && enrolled == 0)
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.delete_outline_rounded,
+                                              size: 16,
+                                              color: Color(0xFFDC2626),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Xóa lớp học',
+                                              style: TextStyle(
+                                                color: Color(0xFFDC2626),
+                                              ),
+                                            ),
+                                          ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),

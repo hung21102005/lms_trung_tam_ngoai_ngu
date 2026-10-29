@@ -65,6 +65,8 @@ abstract class ClassesRemoteDataSource {
 
   Future<void> removeStudent(String classId, String studentId);
 
+  Future<void> deleteClass(String id);
+
   Future<List<ClassSessionModel>> getClassSessions(String classId);
 
   Future<ClassSessionModel> updateSession(
@@ -293,6 +295,11 @@ class ClassesRemoteDataSourceImpl implements ClassesRemoteDataSource {
   @override
   Future<void> removeStudent(String classId, String studentId) async {
     await apiClient.delete(ApiEndpoints.classStudentDelete(classId, studentId));
+  }
+
+  @override
+  Future<void> deleteClass(String id) async {
+    await apiClient.delete('${ApiEndpoints.classes}/$id');
   }
 
   @override

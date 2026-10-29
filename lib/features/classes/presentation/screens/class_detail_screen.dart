@@ -22,6 +22,7 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/classes_bloc.dart';
 import '../bloc/classes_event.dart';
 import '../bloc/classes_state.dart';
+import '../class_deletion_message.dart';
 import '../../data/models/class_model.dart';
 
 class ClassDetailScreen extends StatefulWidget {
@@ -326,6 +327,104 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _showDeleteClass(ClassModel classObj) async {
+    final codeCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Xác nhận xóa lớp học'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Lớp học "${classObj.name}" (${classObj.code}) sẽ bị xóa vĩnh viễn khỏi hệ thống.',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Thao tác này KHÔNG thể hoàn tác. Để xác nhận, vui lòng nhập chính xác mã lớp học:',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  classObj.code,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Nhập lại mã lớp để xác nhận',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => setDlgState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy bỏ'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: codeCtrl.text.trim() == classObj.code.trim()
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              child: const Text('Xác nhận xóa'),
+            ),
+          ],
+        ),
+      ),
+    );
+    codeCtrl.dispose();
+    if (confirmed == true && mounted) {
+      final bloc = context.read<ClassesBloc>();
+      try {
+        await bloc.repository.deleteClass(classObj.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã xóa lớp học thành công'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          Navigator.of(context).pop(true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(classDeletionMessage(e)),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -857,6 +956,24 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
               },
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Sửa thông tin lớp',
+            ),
+          if (_canManageEnrollment)
+            BlocBuilder<ClassesBloc, ClassesState>(
+              builder: (context, state) {
+                if (state is! ClassDetailLoaded ||
+                    state.classDetail.status != 'PLANNING' ||
+                    state.classDetail.students.isNotEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return IconButton(
+                  onPressed: () => _showDeleteClass(state.classDetail),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.error,
+                  ),
+                  tooltip: 'Xóa lớp học',
+                );
+              },
             ),
           IconButton(
             onPressed: () {

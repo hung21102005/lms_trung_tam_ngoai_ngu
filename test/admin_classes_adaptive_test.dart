@@ -10,11 +10,19 @@ import 'package:lms_trung_tam_ngoai_ngu/features/classes/presentation/bloc/class
 import 'package:lms_trung_tam_ngoai_ngu/features/classes/presentation/screens/class_list_screen.dart';
 
 class _ClassesRepository extends Fake implements ClassesRepository {
-  _ClassesRepository({this.empty = false, this.fail = false, this.waitFor});
+  _ClassesRepository({
+    this.empty = false,
+    this.fail = false,
+    this.waitFor,
+    this.classStatus = 'IN_PROGRESS',
+    this.studentCount = 12,
+  });
 
   final bool empty;
   final bool fail;
   final Completer<void>? waitFor;
+  final String classStatus;
+  final int studentCount;
 
   @override
   Future<List<ClassModel>> getClasses({
@@ -29,7 +37,7 @@ class _ClassesRepository extends Fake implements ClassesRepository {
     if (waitFor != null) await waitFor!.future;
     if (fail) throw StateError('Không thể tải lớp');
     if (empty) return [];
-    return const [
+    return [
       ClassModel(
         id: 'class-1',
         code: 'IELTS-F-01',
@@ -41,11 +49,11 @@ class _ClassesRepository extends Fake implements ClassesRepository {
         branchName: 'Quận 1',
         roomName: 'Phòng Smart 101',
         mainTeacherName: 'Nguyễn Văn Dũng',
-        status: 'IN_PROGRESS',
+        status: classStatus,
         scheduleDays: ['MONDAY', 'WEDNESDAY'],
         startTime: '18:00',
         endTime: '19:30',
-        studentsCount: 12,
+        studentsCount: studentCount,
         maxCapacity: 20,
       ),
     ];
@@ -53,6 +61,34 @@ class _ClassesRepository extends Fake implements ClassesRepository {
 }
 
 void main() {
+  for (final status in ['CANCELLED', 'PLANNING']) {
+    testWidgets('Mobile delete action follows class status $status', (tester) async {
+      tester.view.physicalSize = const Size(375, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider(
+            create: (_) => ClassesBloc(
+              repository: _ClassesRepository(
+                classStatus: status,
+                studentCount: 0,
+              ),
+            ),
+            child: const ClassListScreen(showAppBar: false),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byTooltip('Xóa lớp học'),
+        status == 'PLANNING' ? findsOneWidget : findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
     testWidgets('quản lý lớp ở $width px', (tester) async {
       tester.view.physicalSize = Size(width, 900);

@@ -138,6 +138,11 @@ class ClassesRepositoryImpl implements ClassesRepository {
   }
 
   @override
+  Future<void> deleteClass(String id) {
+    return remoteDataSource.deleteClass(id);
+  }
+
+  @override
   Future<List<ClassSessionModel>> getClassSessions(String classId) {
     return remoteDataSource.getClassSessions(classId);
   }
