@@ -151,6 +151,7 @@ final GoRouter appRouter = GoRouter(
         repository: PublicCatalogRepository(getIt<ApiClient>()),
         page: PublicPage.classes,
         dashboardRoute: _publicDashboardRoute(context),
+        courseId: state.uri.queryParameters['khoa-hoc'],
       ),
     ),
     GoRoute(

@@ -25,6 +25,7 @@ class PublicSiteScreen extends StatefulWidget {
     this.targetCourse,
     this.programSlug,
     this.dashboardRoute,
+    this.courseId,
     this.classId,
     this.isStudent = false,
     this.studentName,
@@ -36,6 +37,7 @@ class PublicSiteScreen extends StatefulWidget {
   final String? targetCourse;
   final String? programSlug;
   final String? dashboardRoute;
+  final String? courseId;
   final String? classId;
   final bool isStudent;
   final String? studentName;
@@ -64,7 +66,10 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       PublicPage.programs => widget.repository.programs(),
       PublicPage.courses => widget.repository.courses(),
       PublicPage.courseDetail => widget.repository.course(widget.slug ?? ''),
-      PublicPage.classes => widget.repository.classes(page: _classPage),
+      PublicPage.classes => widget.repository.classes(
+        courseId: widget.courseId,
+        page: _classPage,
+      ),
       PublicPage.consultation => Future.value(null),
       PublicPage.registration => widget.repository.classDetail(
         widget.classId ?? '',
@@ -406,12 +411,26 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       const SizedBox(height: 16),
       Text('Đối tượng: ${_string(course['targetAudience'])}'),
       const SizedBox(height: 24),
-      FilledButton.icon(
-        onPressed: () => _navigate(
-          '${RouteNames.publicConsultation}?khoa-hoc=${Uri.encodeQueryComponent(_string(course['title']))}',
-        ),
-        icon: const Icon(Icons.support_agent_outlined),
-        label: const Text('Nhận tư vấn khóa học'),
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          FilledButton.icon(
+            onPressed: () => _navigate(
+              '${RouteNames.publicConsultation}?khoa-hoc=${Uri.encodeQueryComponent(_string(course['title']))}',
+            ),
+            icon: const Icon(Icons.support_agent_outlined),
+            label: const Text('Nhận tư vấn khóa học'),
+          ),
+          if (_string(course['id']).isNotEmpty)
+            OutlinedButton.icon(
+              onPressed: () => _navigate(
+                '${RouteNames.publicClasses}?khoa-hoc=${Uri.encodeQueryComponent(_string(course['id']))}',
+              ),
+              icon: const Icon(Icons.event_available_outlined),
+              label: const Text('Xem lớp đang mở'),
+            ),
+        ],
       ),
       const SizedBox(height: 32),
       const Text(
@@ -422,21 +441,16 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       if (levels.isEmpty)
         const _EmptyCard('Thông tin cấp độ đang được cập nhật.')
       else
-        _responsiveCards(
-          levels.map((raw) {
-            final level = raw as Map;
-            return _InfoCard(
-              icon: Icons.stacked_bar_chart_rounded,
-              title: _string(level['name']),
-              subtitle: _string(level['description']),
-              footnote: [
-                level['cefrLevel'],
-                level['recommendedHours'] == null
-                    ? null
-                    : '${level['recommendedHours']} giờ',
-              ].where((part) => part != null && '$part'.isNotEmpty).join(' · '),
-            );
-          }).toList(),
+        Column(
+          children: [
+            for (final raw in levels)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _PublicLevelCard(
+                  level: Map<String, dynamic>.from(raw as Map),
+                ),
+              ),
+          ],
         ),
     ]);
   }
@@ -445,8 +459,8 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
     final items = (data['items'] as List).cast<Map<String, dynamic>>();
     final totalPages = (data['totalPages'] as num?)?.toInt() ?? 0;
     return _pageScroll([
-      const _PageHeading(
-        'Lớp sắp khai giảng',
+      _PageHeading(
+        widget.courseId == null ? 'Lớp sắp khai giảng' : 'Lớp mở cho khóa học',
         'Lịch học, học phí và chỗ còn lại được cập nhật từ hệ thống.',
       ),
       const SizedBox(height: 24),
@@ -568,6 +582,78 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
 }
 
 String _string(dynamic value) => value == null ? '' : '$value';
+
+class _PublicLevelCard extends StatelessWidget {
+  const _PublicLevelCard({required this.level});
+
+  final Map<String, dynamic> level;
+
+  @override
+  Widget build(BuildContext context) {
+    final modules = level['modules'] as List? ?? const [];
+    final details = [
+      _string(level['cefrLevel']),
+      if (level['recommendedHours'] != null)
+        '${level['recommendedHours']} giờ tham khảo',
+    ].where((part) => part.isNotEmpty).join(' · ');
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        leading: const Icon(
+          Icons.stacked_bar_chart_rounded,
+          color: AppColors.primary,
+        ),
+        title: Text(
+          _string(level['name']),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: details.isEmpty ? null : Text(details),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_string(level['description']).isNotEmpty)
+            Text(_string(level['description'])),
+          for (final entry in <(String, String)>[
+            ('Đầu vào', _string(level['entryRequirements'])),
+            ('Kết quả học tập', _string(level['expectedOutcomes'])),
+            ('Đánh giá', _string(level['assessmentScheme'])),
+            ('Hoàn thành', _string(level['completionCriteria'])),
+          ])
+            if (entry.$2.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                entry.$1,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              Text(entry.$2),
+            ],
+          if (modules.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Học phần',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            for (final raw in modules) ...[
+              const SizedBox(height: 10),
+              Text(
+                _string((raw as Map)['title']),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              if (_string(raw['description']).isNotEmpty)
+                Text(_string(raw['description'])),
+              for (final lesson in raw['lessons'] as List? ?? const [])
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 4),
+                  child: Text('• ${_string((lesson as Map)['title'])}'),
+                ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 class _PageHeading extends StatelessWidget {
   const _PageHeading(this.title, this.subtitle);

@@ -21,13 +21,19 @@ class _FakeApiClient implements ApiClient {
   int leadCalls = 0;
   String? lastPostPath;
   Map<String, dynamic>? leadData;
+  Map<String, dynamic>? lastClassQuery;
 
   @override
   Future<dynamic> get(
     String path, {
     Map<String, dynamic>? queryParameters,
     dynamic options,
-  }) async => responses[path];
+  }) async {
+    if (path == '/public/classes') {
+      lastClassQuery = queryParameters;
+    }
+    return responses[path];
+  }
 
   @override
   Future<dynamic> post(
@@ -73,9 +79,20 @@ GoRouter _router(
       ),
     ),
     GoRoute(
+      path: RouteNames.publicCourseDetail,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.courseDetail,
+        slug: state.pathParameters['slug'],
+      ),
+    ),
+    GoRoute(
       path: RouteNames.publicClasses,
-      builder: (_, _) =>
-          PublicSiteScreen(repository: repository, page: PublicPage.classes),
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.classes,
+        courseId: state.uri.queryParameters['khoa-hoc'],
+      ),
     ),
     GoRoute(
       path: RouteNames.publicConsultation,
@@ -110,6 +127,47 @@ GoRouter _router(
 );
 
 void main() {
+  testWidgets('course detail shows real curriculum and filters its classes', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses/general-a1'] = {
+      'id': 'course-1',
+      'title': 'General A1',
+      'publicDescription': 'Tiếng Anh sơ cấp',
+      'levels': [
+        {
+          'name': 'A1',
+          'cefrLevel': 'A1',
+          'expectedOutcomes': 'Giao tiếp cơ bản',
+          'modules': [
+            {
+              'title': 'Giao tiếp hằng ngày',
+              'lessons': [
+                {'title': 'Giới thiệu bản thân'},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    final router = _router(
+      PublicCatalogRepository(api),
+      '/khoa-hoc-cong-khai/general-a1',
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ExpansionTile).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Giao tiếp cơ bản'), findsOneWidget);
+    expect(find.text('• Giới thiệu bản thân'), findsOneWidget);
+    await tester.ensureVisible(find.text('Xem lớp đang mở'));
+    await tester.tap(find.text('Xem lớp đang mở'));
+    await tester.pumpAndSettle();
+    expect(api.lastClassQuery?['courseId'], 'course-1');
+  });
+
   testWidgets('program listing and course listing use distinct destinations', (
     tester,
   ) async {
