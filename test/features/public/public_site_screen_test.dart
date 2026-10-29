@@ -331,6 +331,53 @@ void main() {
     router.dispose();
   });
 
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+    testWidgets('homepage shows an eligible API class at $width px', (
+      tester,
+    ) async {
+      final api = _FakeApiClient();
+      const classId = 'class-eligible';
+      final offering = <String, dynamic>{
+        'id': classId,
+        'name': 'Lớp IELTS mục tiêu 6.5 - 01',
+        'startDate': '2026-11-06T00:00:00.000Z',
+        'startTime': '18:00',
+        'endTime': '19:30',
+        'remainingSeats': 20,
+        'tuitionFee': '4500000',
+        'course': {'title': 'IELTS mục tiêu 6.5'},
+        'branch': {'name': 'Chi nhánh Quận 1'},
+      };
+      api.responses['/public/classes'] = {
+        'items': [offering],
+        'total': 1,
+        'totalPages': 1,
+      };
+      api.responses['/public/classes/$classId'] = offering;
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicHome,
+      );
+      await tester.binding.setSurfaceSize(Size(width, 850));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lớp IELTS mục tiêu 6.5 - 01'), findsOneWidget);
+      expect(find.text('Hiện chưa có lớp mở đăng ký.'), findsNothing);
+      expect(api.lastClassQuery?['page'], 1);
+      await tester.ensureVisible(find.text('Đăng ký lớp'));
+      await tester.tap(find.text('Đăng ký lớp'));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/dang-ky-lop/$classId',
+      );
+      expect(find.text('Lớp IELTS mục tiêu 6.5 - 01'), findsWidgets);
+      expect(tester.takeException(), isNull, reason: 'width $width');
+      router.dispose();
+    });
+  }
+
   testWidgets(
     'public pages keep mobile navigation and empty state across widths',
     (tester) async {
@@ -419,6 +466,7 @@ void main() {
     );
     await tester.binding.setSurfaceSize(const Size(375, 800));
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.ensureVisible(find.text('Gửi yêu cầu tư vấn'));
     await tester.tap(find.text('Gửi yêu cầu tư vấn'));
     await tester.pump();
     expect(find.text('Vui lòng nhập họ tên'), findsOneWidget);

@@ -51,6 +51,20 @@ const publicOfferingSelect = {
   },
 } satisfies Prisma.ClassSelect;
 
+// Class enrollment dates are PostgreSQL DATE values. Compare them with the
+// center's calendar date, not the server's current UTC calendar date.
+function vietnamCalendarDate(now: Date): Date {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const value = (part: string) =>
+    Number(parts.find((item) => item.type === part)?.value);
+  return new Date(Date.UTC(value('year'), value('month') - 1, value('day')));
+}
+
 export interface ClassActor {
   id: string;
   roles: string[];
@@ -82,7 +96,7 @@ export class ClassesService {
 
   async findPublicOfferings(query: QueryPublicClassesDto) {
     const { page = 1, limit = 12, branchId, courseId } = query;
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = vietnamCalendarDate(new Date());
     const where: Prisma.ClassWhereInput = {
       ...this.publicOfferingWhere(today),
       ...(branchId ? { branchId } : {}),
@@ -113,7 +127,7 @@ export class ClassesService {
   }
 
   async findPublicOffering(id: string) {
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = vietnamCalendarDate(new Date());
     const item = await this.prisma.class.findFirst({
       where: { ...this.publicOfferingWhere(today), id },
       select: publicOfferingSelect,

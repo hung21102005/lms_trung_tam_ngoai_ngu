@@ -137,6 +137,54 @@ describe('ClassesService', () => {
   );
 
   describe('public class offerings', () => {
+    it.each([
+      ['2026-10-29T16:59:59.999Z', '2026-10-29T00:00:00.000Z'],
+      ['2026-10-29T17:00:00.000Z', '2026-10-30T00:00:00.000Z'],
+      ['2026-10-30T16:59:59.999Z', '2026-10-30T00:00:00.000Z'],
+      ['2026-10-30T17:00:00.000Z', '2026-10-31T00:00:00.000Z'],
+    ])('uses the Vietnam calendar date at %s', async (instant, day) => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(instant));
+        mockPrismaService.class.findMany.mockResolvedValueOnce([]);
+        mockPrismaService.class.count.mockResolvedValueOnce(0);
+        await service.findPublicOfferings({ page: 1, limit: 12 });
+        expect(mockPrismaService.class.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              registrationOpenAt: { lte: new Date(day) },
+              registrationCloseAt: { gte: new Date(day) },
+              startDate: { gte: new Date(day) },
+            }),
+          }),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('uses the same local calendar date for class details and registration', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date('2026-10-29T21:17:41.613Z'));
+        mockPrismaService.class.findFirst.mockResolvedValueOnce(null);
+        await expect(service.findPublicOffering('class-1')).rejects.toThrow(
+          NotFoundException,
+        );
+        expect(mockPrismaService.class.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              id: 'class-1',
+              registrationOpenAt: { lte: new Date('2026-10-30') },
+              registrationCloseAt: { gte: new Date('2026-10-30') },
+            }),
+          }),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('filters by publication and enrollment window without exposing students', async () => {
       mockPrismaService.class.findMany.mockResolvedValueOnce([
         {
