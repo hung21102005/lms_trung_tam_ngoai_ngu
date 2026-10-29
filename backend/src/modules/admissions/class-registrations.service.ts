@@ -136,6 +136,14 @@ export class ClassRegistrationsService {
     if (enrolled?.status === 'ENROLLED') {
       throw new ConflictException('Bạn đã là học viên của lớp này');
     }
+    const guestRequest = await this.prisma.classRegistration.findFirst({
+      where: {
+        classId: dto.classId,
+        lead: { is: { convertedUserId: actor.id } },
+      },
+      select: { id: true, classId: true, status: true, createdAt: true },
+    });
+    if (guestRequest) return guestRequest;
     const applicantKey = `user:${actor.id}`;
     try {
       return await this.prisma.classRegistration.upsert({
@@ -170,7 +178,9 @@ export class ClassRegistrationsService {
 
   myRegistrations(studentId: string) {
     return this.prisma.classRegistration.findMany({
-      where: { studentId },
+      where: {
+        OR: [{ studentId }, { lead: { is: { convertedUserId: studentId } } }],
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

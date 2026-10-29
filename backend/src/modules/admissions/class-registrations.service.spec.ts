@@ -50,6 +50,8 @@ function setup() {
   const prisma = {
     classRegistration: {
       findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       upsert: vi.fn().mockResolvedValue({ id: 'request-1', status: 'PENDING' }),
     },
     classStudent: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -148,6 +150,37 @@ describe('ClassRegistrationsService', () => {
         }),
       }),
     );
+  });
+
+  it('shows a converted guest request in the new student account', async () => {
+    const { service, prisma } = setup();
+    await service.myRegistrations('student-1');
+    expect(prisma.classRegistration.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { studentId: 'student-1' },
+            { lead: { is: { convertedUserId: 'student-1' } } },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('reuses the guest request after its Lead becomes a student', async () => {
+    const { service, prisma } = setup();
+    prisma.classRegistration.findFirst.mockResolvedValueOnce({
+      id: 'guest-request',
+      classId: 'class-1',
+      status: 'PENDING',
+    });
+    await expect(
+      service.createStudent(
+        { classId: 'class-1' },
+        { id: 'student-1', roles: ['student'] },
+      ),
+    ).resolves.toMatchObject({ id: 'guest-request' });
+    expect(prisma.classRegistration.upsert).not.toHaveBeenCalled();
   });
 
   it('rejects non-students and already enrolled students', async () => {

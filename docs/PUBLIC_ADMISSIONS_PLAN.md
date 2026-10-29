@@ -201,3 +201,9 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Từ đơn khách mới, học vụ chọn **Tìm Lead trong CRM** để lọc đúng số điện thoại. Sau khi chuyển Lead đó thành tài khoản và đóng hộp thoại chứa thông tin cấp tài khoản, CRM tự mở lại hàng chờ; trạng thái học viên liên kết được tải lại từ API, cho phép xác nhận nhập học. Các API và quy tắc duyệt hiện có được tái sử dụng.
 - Widget test mô phỏng toàn bộ điều hướng và chuyển Lead trên Mobile, bên cạnh kiểm tra CRM ở 320/375/393/430/800/1200 px. Analyzer phạm vi CRM/test **0 issues**; hồi quy UI Public + CRM + đơn đăng ký **18/18 đạt**; `flutter build web --no-wasm-dry-run` **đạt**.
 - **Chưa kiểm chứng:** HTTP thành công với lớp hợp lệ, trình duyệt/thiết bị thật và nhận email thật. Chưa đánh dấu giai đoạn tuyển sinh hay Adaptive UI hoàn thành.
+
+## Checkpoint trạng thái đơn cho học viên được chuyển từ Lead (2026-10-29)
+
+- `GET /my/registrations` nay trả cả đơn đăng ký bằng tài khoản và đơn khách mới có Lead đã liên kết với tài khoản học viên hiện tại. Khi học viên đăng ký lại cùng lớp sau khi được tạo tài khoản, `POST /my/registrations` trả đơn khách cũ thay vì tạo bản sao mới. Trạng thái vẫn là `PENDING` hoặc `CONTACTED` cho đến khi học vụ duyệt và ghi danh thật.
+- Backend build đạt, lint đạt với 8 cảnh báo cũ, unit **180/180 đạt**, gồm 2 hồi quy mới cho truy vấn và chống trùng. Chưa kiểm chứng HTTP thực tế với lớp hợp lệ và tài khoản chuyển đổi thật; không công bố seed nháp để ép dữ liệu thử.
+- **Điểm tiếp tục:** HTTP end-to-end trên lớp thật do học vụ mở; kiểm tra tải đồng thời PostgreSQL, hóa đơn/lịch học sau duyệt, gửi email thật và thiết bị Mobile. Tiếp tục các mục Adaptive UI Pending trong `docs/ADAPTIVE_UI_PLAN.md`.
