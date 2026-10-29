@@ -57,11 +57,11 @@ Migration chỉ thêm bảng/cột, nullable hoặc default an toàn. Không xó
 | Checkpoint | Trạng thái | Kết quả / giới hạn |
 | --- | --- | --- |
 | 1 Audit | Hoàn thành vòng đầu | Đã xác định các entity/API/seed hiện tại và nguồn demo; các bước còn lại được ghi theo module. |
-| 2 Curriculum foundation | Đang thực hiện | Migration cộng dồn đã áp dụng; seed nháp tạo 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần và 188 bài học. Chạy lại seed không tạo trùng. Có API và màn hình Admin quản trị chương trình/khóa: tạo, gắn khóa có sẵn, sửa trường công khai, duyệt/công bố; màn hình sửa cấp độ qua API hiện có. Còn thiếu UI sửa học phần/bài học, biên tập học thuật chi tiết và kiểm thử HTTP thực tế. |
-| 3 Class offering | Đang thực hiện | Đã bổ sung cửa sổ đăng ký và ràng buộc cơ bản khi tạo lớp; còn cần UI sửa lớp, kiểm tra phân công GV, công bố lớp và HTTP workflow. Catalog seed vẫn chờ duyệt. |
+| 2 Curriculum foundation | Đang thực hiện | Migration/seed nháp 7 chương trình, 47 khóa, 47 cấp độ, 94 học phần, 188 bài học; chạy lại không tạo trùng. Admin đã có tạo/sửa/duyệt chương trình, khóa, cấp độ, học phần, bài học và gắn tài liệu. Cần biên tập học thuật sâu, duyệt nội dung thực tế, kiểm chứng upload/HTTP; seed vẫn DRAFT. |
+| 3 Class offering | Đang thực hiện | Có form tạo/sửa lớp, thời gian đăng ký, phân công giáo viên/phòng, lịch, học phí, kiểm tra điều kiện mở tuyển sinh và API lớp công khai. Ghi danh thủ công/duyệt đơn dùng transaction Serializable. Cần HTTP workflow với lớp vận hành thật, tải đồng thời PostgreSQL và kiểm chứng thiết bị. |
 | 4 Public website | Đang thực hiện | Đã có Flutter landing/catalog/chi tiết khóa/lớp sắp khai giảng/form tư vấn trên route công khai; dùng API thật và trạng thái loading/empty/error. Chưa kiểm chứng luồng form với Backend đang chạy và dữ liệu lớp đã công bố. |
-| 5 Registration/CRM | Đang thực hiện | Đã có đơn đăng ký riêng cho khách mới/học viên cũ, hàng chờ học vụ, đánh dấu liên hệ/từ chối và xác nhận nhập học có transaction ghi danh/hóa đơn. Còn thiếu kiểm chứng HTTP thành công trên lớp đã công bố thật, chuyển Lead thành tài khoản qua UI liền mạch và kiểm tra tải đồng thời với các luồng ghi danh khác. |
-| 6 Đồng bộ/kiểm thử | Pending | Chờ luồng đăng ký |
+| 5 Registration/CRM | Đang thực hiện | Có đơn khách mới/học viên cũ, hàng chờ học vụ, liên hệ/từ chối/duyệt, chuyển Lead thành tài khoản và quay lại đơn, trạng thái học viên. Cần HTTP thành công trên lớp thật, SMTP và kiểm tra tải đồng thời. |
+| 6 Đồng bộ/kiểm thử | Đang thực hiện | Duyệt ghi `ClassStudent` và hóa đơn trong transaction; học viên từ Lead thấy đơn của mình, không tạo đơn trùng. Backend 180 unit tests và 18 widget tests tuyển sinh đạt. PostgreSQL cục bộ hiện không chạy; HTTP success path, lịch học/học phí sau duyệt và thiết bị thật chưa kiểm chứng. |
 
 ## Rủi ro và điều chưa kiểm chứng
 
