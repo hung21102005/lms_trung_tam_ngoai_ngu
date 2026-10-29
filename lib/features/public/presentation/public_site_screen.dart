@@ -49,11 +49,19 @@ class PublicSiteScreen extends StatefulWidget {
 class _PublicSiteScreenState extends State<PublicSiteScreen> {
   late Future<dynamic> _content;
   int _classPage = 1;
+  final TextEditingController _courseSearch = TextEditingController();
+  String _courseSort = 'name';
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _courseSearch.dispose();
+    super.dispose();
   }
 
   void _load() {
@@ -355,45 +363,105 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
       ),
   ]);
 
-  Widget _courses(List<Map<String, dynamic>> courses) => _pageScroll([
-    const _PageHeading(
-      'Khóa học',
-      'Chọn lộ trình phù hợp với mục tiêu học tập của bạn.',
-    ),
-    const SizedBox(height: 24),
-    if (courses.isEmpty)
-      const _EmptyCard('Chưa có khóa học được công bố. Vui lòng quay lại sau.')
-    else if (widget.programSlug != null &&
-        !courses.any(
+  Widget _courses(List<Map<String, dynamic>> courses) {
+    final inProgram = courses
+        .where(
           (course) =>
+              widget.programSlug == null ||
               (course['program'] as Map?)?['slug'] == widget.programSlug,
-        ))
-      const _EmptyCard('Chương trình này chưa có khóa học được công bố.')
-    else
-      _responsiveCards(
-        courses
-            .where(
-              (course) =>
-                  widget.programSlug == null ||
-                  (course['program'] as Map?)?['slug'] == widget.programSlug,
-            )
-            .map((course) {
-              final program = course['program'] as Map?;
-              final levels = course['levels'] as List? ?? [];
-              return _InfoCard(
-                icon: Icons.menu_book_rounded,
-                title: _string(course['title']),
-                subtitle: _string(course['publicDescription']),
-                footnote:
-                    '${_string(program?['nameVi'])} · ${levels.length} cấp độ',
-                onTap: () => _navigate(
-                  '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
-                ),
-              );
-            })
-            .toList(),
+        )
+        .toList();
+    final query = _courseSearch.text.trim().toLowerCase();
+    final visible = inProgram.where((course) {
+      if (query.isEmpty) return true;
+      final program = course['program'] as Map?;
+      return [
+        course['title'],
+        course['code'],
+        program?['nameVi'],
+      ].any((value) => _string(value).toLowerCase().contains(query));
+    }).toList();
+    visible.sort((a, b) {
+      final result = _string(a['title'])
+          .toLowerCase()
+          .compareTo(_string(b['title']).toLowerCase());
+      return _courseSort == 'name_desc' ? -result : result;
+    });
+    return _pageScroll([
+      const _PageHeading(
+        'Khóa học',
+        'Chọn lộ trình phù hợp với mục tiêu học tập của bạn.',
       ),
-  ]);
+      const SizedBox(height: 24),
+      if (inProgram.isNotEmpty) ...[
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final search = TextField(
+              controller: _courseSearch,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Tìm khóa học',
+                hintText: 'Tên, mã hoặc chương trình',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            );
+            final sort = DropdownButtonFormField<String>(
+              initialValue: _courseSort,
+              decoration: const InputDecoration(
+                labelText: 'Sắp xếp',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'name', child: Text('Tên A–Z')),
+                DropdownMenuItem(value: 'name_desc', child: Text('Tên Z–A')),
+              ],
+              onChanged: (value) =>
+                  setState(() => _courseSort = value ?? 'name'),
+            );
+            if (constraints.maxWidth < 600) {
+              return Column(
+                children: [search, const SizedBox(height: 12), sort],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: search),
+                const SizedBox(width: 12),
+                SizedBox(width: 180, child: sort),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+      ],
+      if (courses.isEmpty)
+        const _EmptyCard(
+          'Chưa có khóa học được công bố. Vui lòng quay lại sau.',
+        )
+      else if (inProgram.isEmpty)
+        const _EmptyCard('Chương trình này chưa có khóa học được công bố.')
+      else if (visible.isEmpty)
+        const _EmptyCard('Không tìm thấy khóa học phù hợp.')
+      else
+        _responsiveCards(
+          visible.map((course) {
+            final program = course['program'] as Map?;
+            final levels = course['levels'] as List? ?? [];
+            return _InfoCard(
+              icon: Icons.menu_book_rounded,
+              title: _string(course['title']),
+              subtitle: _string(course['publicDescription']),
+              footnote:
+                  '${_string(program?['nameVi'])} · ${levels.length} cấp độ',
+              onTap: () => _navigate(
+                '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
+              ),
+            );
+          }).toList(),
+        ),
+    ]);
+  }
 
   Widget _courseDetail(Map<String, dynamic> course) {
     final levels = course['levels'] as List? ?? [];

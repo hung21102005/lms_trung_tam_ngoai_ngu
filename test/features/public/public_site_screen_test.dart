@@ -127,6 +127,50 @@ GoRouter _router(
 );
 
 void main() {
+  testWidgets('public catalog searches published API records on mobile', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-a',
+        'title': 'IELTS A',
+        'code': 'IELTS-A',
+        'levels': [],
+        'program': {'nameVi': 'Luyện thi IELTS'},
+      },
+      {
+        'slug': 'general-a',
+        'title': 'General A',
+        'code': 'GEN-A',
+        'levels': [],
+        'program': {'nameVi': 'Tiếng Anh tổng quát'},
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.publicCourses,
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(find.text('General A'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Tìm khóa học'),
+      'IELTS',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(find.text('General A'), findsNothing);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Tìm khóa học'),
+      'không có',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Không tìm thấy khóa học phù hợp.'), findsOneWidget);
+  });
+
   testWidgets('course detail shows real curriculum and filters its classes', (
     tester,
   ) async {
