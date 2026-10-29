@@ -2,14 +2,16 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { randomInt } from 'node:crypto';
 import * as XLSX from 'xlsx';
 import { PrismaService } from '../../database/index.js';
 import { MailService } from '../mail/index.js';
-import { LeadStatus, UserStatus } from '@prisma/client';
+import { LeadStatus, UserStatus, Prisma } from '@prisma/client';
 import {
   CreateLeadDto,
   UpdateLeadDto,
@@ -235,73 +237,57 @@ export class AdmissionsService {
 
     // 2. Mật khẩu tạm thời
     const tempPassword =
-      dto.temporaryPassword?.trim() ||
-      `Student@${Math.floor(100000 + Math.random() * 900000)}`;
+      dto.temporaryPassword?.trim() || `Student@${randomInt(100000, 1000000)}`;
     const passwordHash = bcrypt.hashSync(tempPassword, this.saltRounds);
 
     // 3. Thực hiện chuyển đổi trong Transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Đếm số lượng học viên hiện tại để sinh mã học viên tự tăng: HV-2026-0001
-      const year = new Date().getFullYear();
-      const countStudents = await tx.studentProfile.count();
-      const studentCode = `HV-${year}-${String(countStudents + 1).padStart(4, '0')}`;
-
-      // Tạo User
-      const newUser = await tx.user.create({
-        data: {
-          userCode: studentCode,
-          fullName: lead.fullName,
-          phone: lead.phone,
-          email: lead.email,
+    let result:
+      Awaited<ReturnType<typeof this.convertLeadTransaction>> | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        result = await this.convertLeadTransaction(
+          lead,
+          dto,
+          studentRole.id,
           passwordHash,
-          status: UserStatus.ACTIVE,
-          isFirstLogin: true, // Bắt buộc đổi mật khẩu khi đăng nhập lần đầu
-          branchId: dto.branchId || lead.branchId,
-          userRoles: {
-            create: {
-              roleId: studentRole.id,
-            },
-          },
-          studentProfile: {
-            create: {
-              entryLevel: dto.entryLevel?.trim(),
-              targetLevel: dto.targetLevel?.trim() || lead.targetCourse,
-              schoolName: dto.schoolName?.trim(),
-              notes: dto.notes?.trim() || lead.notes,
-            },
-          },
-        },
-        include: {
-          studentProfile: true,
-          branch: { select: { id: true, code: true, name: true } },
-          userRoles: { include: { role: true } },
-        },
-      });
-
-      // Cập nhật trạng thái AdmissionLead
-      const updatedLead = await tx.admissionLead.update({
-        where: { id: lead.id },
-        data: {
-          status: LeadStatus.ENROLLED,
-          convertedUserId: newUser.id,
-          convertedAt: new Date(),
-          notes: dto.notes
-            ? `${lead.notes || ''}\n[Chuyển đổi HV]: ${dto.notes}`.trim()
-            : lead.notes,
-        },
-      });
-
-      return { user: newUser, lead: updatedLead, tempPassword };
-    });
+          tempPassword,
+          attempt,
+        );
+        break;
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2034' || error.code === 'P2002') &&
+          attempt < 2
+        )
+          continue;
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2034' || error.code === 'P2002')
+        )
+          throw new ConflictException(
+            'Không thể cấp mã học viên, vui lòng thử lại',
+          );
+        throw error;
+      }
+    }
+    if (!result)
+      throw new ConflictException('Không thể chuyển Lead, vui lòng thử lại');
 
     // 4. Gửi email chào mừng và cấp tài khoản (nếu học viên có email)
     if (result.user.email) {
-      await this.mailService.sendWelcomeEmail(
-        result.user.email,
-        result.user.fullName,
-        result.user.userCode,
-        result.tempPassword,
-      );
+      try {
+        await this.mailService.sendWelcomeEmail(
+          result.user.email,
+          result.user.fullName,
+          result.user.userCode,
+          result.tempPassword,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Đã tạo học viên nhưng gửi email chào mừng thất bại: ${error}`,
+        );
+      }
     }
 
     return {
@@ -319,5 +305,83 @@ export class AdmissionsService {
       },
       lead: result.lead,
     };
+  }
+
+  private convertLeadTransaction(
+    lead: Awaited<ReturnType<typeof this.findOne>>,
+    dto: ConvertLeadDto,
+    roleId: string,
+    passwordHash: string,
+    tempPassword: string,
+    attempt: number,
+  ) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Đếm số lượng học viên hiện tại để sinh mã học viên tự tăng: HV-2026-0001
+        const year = new Date().getFullYear();
+        const countStudents = await tx.studentProfile.count();
+        const studentCode = `HV-${year}-${String(countStudents + attempt + 1).padStart(4, '0')}`;
+
+        // Tạo User
+        const newUser = await tx.user.create({
+          data: {
+            userCode: studentCode,
+            fullName: lead.fullName,
+            phone: lead.phone,
+            email: lead.email,
+            passwordHash,
+            status: UserStatus.ACTIVE,
+            isFirstLogin: true, // Bắt buộc đổi mật khẩu khi đăng nhập lần đầu
+            branchId: dto.branchId || lead.branchId,
+            userRoles: {
+              create: {
+                roleId,
+              },
+            },
+            studentProfile: {
+              create: {
+                entryLevel: dto.entryLevel?.trim(),
+                targetLevel: dto.targetLevel?.trim() || lead.targetCourse,
+                schoolName: dto.schoolName?.trim(),
+                notes: dto.notes?.trim() || lead.notes,
+              },
+            },
+          },
+          include: {
+            studentProfile: true,
+            branch: { select: { id: true, code: true, name: true } },
+            userRoles: { include: { role: true } },
+          },
+        });
+
+        // Cập nhật trạng thái AdmissionLead
+        const changed = await tx.admissionLead.updateMany({
+          where: {
+            id: lead.id,
+            convertedUserId: null,
+            status: { not: LeadStatus.ENROLLED },
+          },
+          data: {
+            status: LeadStatus.ENROLLED,
+            convertedUserId: newUser.id,
+            convertedAt: new Date(),
+            notes: dto.notes
+              ? `${lead.notes || ''}\n[Chuyển đổi HV]: ${dto.notes}`.trim()
+              : lead.notes,
+          },
+        });
+        if (changed.count !== 1) {
+          throw new ConflictException(
+            'Hồ sơ đã được nhân viên khác chuyển thành học viên',
+          );
+        }
+        const updatedLead = await tx.admissionLead.findUniqueOrThrow({
+          where: { id: lead.id },
+        });
+
+        return { user: newUser, lead: updatedLead, tempPassword };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 }

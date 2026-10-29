@@ -6,8 +6,9 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
-import { LeadStatus } from '@prisma/client';
+import { LeadStatus, Prisma } from '@prisma/client';
 
 describe('AdmissionsService', () => {
   let service: AdmissionsService;
@@ -30,7 +31,9 @@ describe('AdmissionsService', () => {
       findMany: vi.fn(),
       count: vi.fn(),
       findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     role: {
       findUnique: vi.fn(),
@@ -38,6 +41,7 @@ describe('AdmissionsService', () => {
     studentProfile: {
       count: vi.fn(),
     },
+    user: { create: vi.fn() },
     $transaction: vi.fn(),
   };
 
@@ -55,6 +59,7 @@ describe('AdmissionsService', () => {
     }).compile();
 
     service = module.get<AdmissionsService>(AdmissionsService);
+    vi.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -104,6 +109,73 @@ describe('AdmissionsService', () => {
   });
 
   describe('convertLead', () => {
+    const setupConversion = () => {
+      mockPrismaService.admissionLead.findUnique.mockResolvedValue(mockLead);
+      mockPrismaService.role.findUnique.mockResolvedValue({
+        id: 'role-student',
+      });
+      mockPrismaService.studentProfile.count.mockResolvedValue(9);
+      mockPrismaService.user.create.mockResolvedValue({
+        id: 'student-1',
+        userCode: 'HV-2026-0010',
+        fullName: mockLead.fullName,
+        phone: mockLead.phone,
+        email: mockLead.email,
+        branch: null,
+        studentProfile: { id: 'profile-1' },
+      });
+      mockPrismaService.admissionLead.updateMany.mockResolvedValue({
+        count: 1,
+      });
+      mockPrismaService.admissionLead.findUniqueOrThrow.mockResolvedValue({
+        ...mockLead,
+        convertedUserId: 'student-1',
+      });
+      mockPrismaService.$transaction.mockImplementation((callback) =>
+        callback(mockPrismaService),
+      );
+    };
+
+    it('converts one lead and guards the update in a serializable transaction', async () => {
+      setupConversion();
+      const result = await service.convertLead('lead-uuid-1', {});
+      expect(result.student.id).toBe('student-1');
+      expect(mockPrismaService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      expect(mockPrismaService.admissionLead.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: mockLead.id,
+            convertedUserId: null,
+            status: { not: LeadStatus.ENROLLED },
+          },
+        }),
+      );
+    });
+
+    it('rejects a lead converted concurrently instead of reporting success', async () => {
+      setupConversion();
+      mockPrismaService.admissionLead.updateMany.mockResolvedValueOnce({
+        count: 0,
+      });
+      await expect(service.convertLead('lead-uuid-1', {})).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('does not mask account creation when welcome email fails', async () => {
+      setupConversion();
+      mockMailService.sendWelcomeEmail.mockRejectedValueOnce(
+        new Error('SMTP offline'),
+      );
+      await expect(
+        service.convertLead('lead-uuid-1', {}),
+      ).resolves.toMatchObject({
+        student: { id: 'student-1' },
+      });
+    });
     it('should throw BadRequestException if lead is already enrolled', async () => {
       mockPrismaService.admissionLead.findUnique.mockResolvedValue({
         ...mockLead,

@@ -188,3 +188,10 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - `ClassesService.enrollStudent` nay kiểm tra sĩ số, ghi danh và tạo hóa đơn trong một Prisma transaction `Serializable`, cùng mức cách ly với duyệt đơn đăng ký. Lỗi tranh chấp `P2034` được thử lại tối đa 3 lần; mã hóa đơn dùng định danh ngẫu nhiên thay cho phép đếm dễ trùng. Nếu một bước thất bại, transaction không xác nhận ghi danh riêng lẻ.
 - Backend build đạt; lint đạt với 8 cảnh báo cũ; toàn bộ unit **175/175 đạt**, gồm 2 hồi quy mới cho transaction và retry; `git diff --check` đạt. Chưa kiểm chứng tải đồng thời thật với PostgreSQL, HTTP ghi danh thành công trên lớp đã công bố, hoặc luồng thiết bị thật.
 - **Điểm tiếp tục:** kết nối chuyển Lead thành học viên với xác nhận đơn trong CRM, rồi chạy HTTP E2E trên lớp đã được học vụ duyệt học thuật. Không tự công bố seed nháp. Đồng thời rà soát các luồng điều chỉnh sĩ số và hóa đơn khác trước khi đánh dấu toàn bộ tuyển sinh hoàn thành.
+
+## Checkpoint an toàn chuyển Lead thành tài khoản (2026-10-29)
+
+- Tái sử dụng `POST /admissions/leads/:id/convert`. Tạo tài khoản và cập nhật Lead trong transaction `Serializable`; chỉ cập nhật khi Lead chưa liên kết học viên. Cạnh tranh mã học viên (`P2002`) hoặc transaction (`P2034`) được thử lại tối đa 3 lần, rồi trả lỗi xung đột rõ ràng. Mật khẩu tạm sinh bằng `crypto.randomInt` thay vì `Math.random`.
+- Nếu email chào mừng lỗi sau khi transaction đã commit, API vẫn trả thành công cùng thông tin tài khoản cho học vụ; ghi cảnh báo gửi email để không tạo tài khoản xong rồi báo sai là chuyển đổi thất bại.
+- Backend build đạt, lint đạt với 8 cảnh báo cũ, toàn bộ unit **178/178 đạt**; 3 hồi quy mới kiểm tra transaction, hai lượt chuyển cùng Lead và lỗi email. Chưa kiểm chứng SMTP thật, HTTP chuyển Lead thành công trên database thật hoặc tải đồng thời thật.
+- **Tiếp theo:** hoàn thiện trải nghiệm đi từ đơn đăng ký → Lead → quay lại duyệt trong CRM; kiểm thử HTTP toàn chuỗi khi có lớp vận hành và chương trình đã duyệt. Giữ trạng thái công bố của 47 khóa seed nháp; không tự tạo dữ liệu kinh doanh giả.
