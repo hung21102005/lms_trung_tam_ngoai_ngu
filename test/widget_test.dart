@@ -1,30 +1,87 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/auth/domain/entities/user_entity.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/auth/data/models/login_response_model.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/auth/presentation/screens/login_screen.dart';
 
-import 'package:lms_trung_tam_ngoai_ngu/main.dart';
+class FakeAuthRepository implements AuthRepository {
+  @override
+  Future<LoginResponseModel> login(String identifier, String password) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<UserEntity> getMe() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<UserEntity?> getSavedUser() async => null;
+
+  @override
+  Future<bool> isLoggedIn() async => false;
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  Future<void> changePassword(String oldPassword, String newPassword) async {}
+
+  @override
+  Future<LoginResponseModel> firstLoginSetup(String newPassword, String confirmPassword) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {}
+
+  @override
+  Future<void> resetPassword(String email, String otp, String newPassword) async {}
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  late AuthBloc authBloc;
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  setUp(() {
+    authBloc = AuthBloc(authRepository: FakeAuthRepository());
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  tearDown(() {
+    authBloc.close();
+  });
+
+  Widget createWidgetUnderTest() {
+    return MaterialApp(
+      home: BlocProvider<AuthBloc>.value(
+        value: authBloc,
+        child: const LoginScreen(),
+      ),
+    );
+  }
+
+  testWidgets('LoginScreen renders header, text fields, and login button', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+
+    // Header checks
+    expect(find.text('Đăng Nhập LMS'), findsOneWidget);
+    expect(find.text('Tài khoản đăng nhập'), findsOneWidget);
+    expect(find.text('Mật khẩu'), findsOneWidget);
+    expect(find.text('Đăng nhập'), findsOneWidget);
+    expect(find.text('Quên mật khẩu?'), findsOneWidget);
+  });
+
+  testWidgets('LoginForm shows validation error when submitted empty', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+
+    // Nhấp nút Đăng nhập khi chưa điền thông tin
+    await tester.tap(find.text('Đăng nhập'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Kiểm tra thông báo lỗi validation hiển thị
+    expect(find.text('Vui lòng nhập email, số điện thoại hoặc mã người dùng'), findsOneWidget);
+    expect(find.text('Vui lòng nhập mật khẩu'), findsOneWidget);
   });
 }

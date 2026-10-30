@@ -1,0 +1,2822 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/widgets/error_widget.dart';
+import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/mobile/mobile_ui.dart';
+import '../bloc/courses_bloc.dart';
+import '../bloc/courses_event.dart';
+import '../bloc/courses_state.dart';
+import '../../data/models/course_model.dart';
+import '../../data/repositories/program_catalog_repository.dart';
+import 'program_catalog_screen.dart';
+import 'lesson_detail_screen.dart';
+
+class CourseDetailScreen extends StatefulWidget {
+  final String courseId;
+  final bool canEditAcademicLevel;
+  final ProgramCatalogRepository? catalogRepository;
+
+  const CourseDetailScreen({
+    super.key,
+    required this.courseId,
+    this.canEditAcademicLevel = true,
+    this.catalogRepository,
+  });
+
+  @override
+  State<CourseDetailScreen> createState() => _CourseDetailScreenState();
+}
+
+class _CoursePublicPreview extends StatelessWidget {
+  const _CoursePublicPreview({required this.course});
+
+  final CourseModel course;
+
+  @override
+  Widget build(BuildContext context) => FractionallySizedBox(
+    heightFactor: .9,
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          children: [
+            Text(
+              'Xem trước nội dung công khai',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            if (course.publicationStatus != 'PUBLISHED')
+              const Text(
+                'Khóa học chỉ hiển thị với khách sau khi được duyệt công bố.',
+              ),
+            const SizedBox(height: 16),
+            Text(
+              course.title,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              course.publicDescription?.trim().isNotEmpty == true
+                  ? course.publicDescription!
+                  : 'Chưa có mô tả công khai.',
+            ),
+            if (course.targetAudience?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              Text('Đối tượng học: ${course.targetAudience}'),
+            ],
+            const SizedBox(height: 20),
+            Text(
+              'Lộ trình học tập',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (course.levels.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text('Chưa có cấp độ và bài học.'),
+              ),
+            for (final level in course.levels)
+              Card(
+                child: ExpansionTile(
+                  title: Text(level.name),
+                  subtitle: Text(
+                    '${level.modules.length} học phần · '
+                    '${level.estimatedSessions} buổi dự kiến',
+                  ),
+                  children: [
+                    if (level.entryRequirements?.trim().isNotEmpty == true)
+                      ListTile(
+                        title: const Text('Yêu cầu đầu vào'),
+                        subtitle: Text(level.entryRequirements!),
+                      ),
+                    if (level.expectedOutcomes?['summary'] != null)
+                      ListTile(
+                        title: const Text('Kết quả học tập'),
+                        subtitle: Text('${level.expectedOutcomes!['summary']}'),
+                      ),
+                    for (final module in level.modules)
+                      ExpansionTile(
+                        title: Text(module.title),
+                        children: [
+                          for (final lesson in module.lessons)
+                            ListTile(
+                              title: Text(lesson.title),
+                              subtitle:
+                                  lesson.content?.trim().isNotEmpty == true
+                                  ? Text(lesson.content!)
+                                  : null,
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _CourseDetailScreenState extends State<CourseDetailScreen> {
+  bool _openingEditor = false;
+  CourseModel? _course;
+
+  Future<void> _editCourse() async {
+    if (_openingEditor || !widget.canEditAcademicLevel) return;
+    setState(() => _openingEditor = true);
+    try {
+      final repository =
+          widget.catalogRepository ??
+          ProgramCatalogRepository(getIt<ApiClient>());
+      final saved = await openCourseManagementEditor(
+        context,
+        repository: repository,
+        courseId: widget.courseId,
+      );
+      if (saved == true && mounted) {
+        context.read<CoursesBloc>().add(FetchCourseDetail(widget.courseId));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không mở được biểu mẫu khóa học: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingEditor = false);
+    }
+  }
+
+  void _showPublicPreview() {
+    final course = _course;
+    if (course == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _CoursePublicPreview(course: course),
+    );
+  }
+
+  bool get _canEditCurriculum {
+    final course = _course;
+    if (course == null) return false;
+    return widget.canEditAcademicLevel &&
+        course.publicationStatus != 'ARCHIVED' &&
+        course.publicationStatus != 'PUBLISHED';
+  }
+
+  Future<void> _deleteCourse(CourseModel course) async {
+    final codeCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Xóa vĩnh viễn khóa học'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Khóa học "${course.title}" và toàn bộ đề cương, bài học sẽ bị xóa vĩnh viễn.',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Thao tác này không thể khôi phục. Vui lòng nhập mã khóa học để xác nhận:',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  course.code,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Nhập lại mã khóa học',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => setDlgState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy bỏ'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: codeCtrl.text.trim() == course.code.trim()
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              child: const Text('Xác nhận xóa'),
+            ),
+          ],
+        ),
+      ),
+    );
+    codeCtrl.dispose();
+    if (confirmed == true && mounted) {
+      context.read<CoursesBloc>().add(DeleteCourseEvent(course.id));
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _archiveCourse(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Lưu trữ khóa học'),
+        content: Text(
+          'Lưu trữ khóa học "${course.title}"? Khóa học sẽ không còn mở tuyển sinh mới nhưng vẫn bảo toàn toàn bộ dữ liệu lịch sử.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF475569)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Lưu trữ'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'ARCHIVED',
+        ),
+      );
+    }
+  }
+
+  Map<String, dynamic>? _publicationCheck;
+  bool _loadingCheck = false;
+
+  Future<void> _runPublicationCheck() async {
+    setState(() => _loadingCheck = true);
+    try {
+      final repository =
+          widget.catalogRepository ??
+          ProgramCatalogRepository(getIt<ApiClient>());
+      final result =
+          await repository.validateCoursePublication(widget.courseId);
+      if (mounted) {
+        setState(() {
+          _publicationCheck = result;
+          _loadingCheck = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingCheck = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không kiểm tra được điều kiện: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _submitForReview(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gửi duyệt học thuật'),
+        content: Text(
+          'Bạn có chắc chắn muốn gửi khóa học "${course.title}" (${course.code}) để Trưởng bộ môn / Academic Staff phê duyệt?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Gửi duyệt'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'IN_REVIEW',
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmAcademicReview(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận rà soát học thuật'),
+        content: Text(
+          'Xác nhận nội dung đề cương, cấp độ, bài học và tiêu chí đánh giá của khóa học "${course.title}" đã được rà soát đạt chuẩn theo khung khảo thí?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF4F46E5),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận đạt chuẩn'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ConfirmCourseAcademicReviewEvent(course.id),
+      );
+      Future.delayed(const Duration(milliseconds: 600), _runPublicationCheck);
+    }
+  }
+
+  Future<void> _publishCourse(CourseModel course) async {
+    await _runPublicationCheck();
+    if (!mounted) return;
+    final blockers = (_publicationCheck?['blockers'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    if (blockers.isNotEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Chưa đủ điều kiện công bố'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Khóa học còn các tiêu chí chưa hoàn tất:'),
+              const SizedBox(height: 10),
+              for (final b in blockers)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '• ',
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(b, style: const TextStyle(fontSize: 13)),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Phê duyệt & Công bố khóa học'),
+        content: Text(
+          'Khóa học "${course.title}" đã hoàn tất mọi tiêu chí học thuật. Bạn có chắc chắn muốn công bố lên website công khai và cho phép tuyển sinh mở lớp?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Công bố khóa học'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'PUBLISHED',
+        ),
+      );
+    }
+  }
+
+  Future<void> _requestChanges(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yêu cầu chỉnh sửa khóa học'),
+        content: Text(
+          'Chuyển khóa học "${course.title}" trở lại trạng thái Bản nháp (DRAFT) để học vụ/giảng viên tiếp tục hoàn thiện đề cương?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yêu cầu sửa'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'DRAFT',
+        ),
+      );
+    }
+  }
+
+  Future<void> _unpublishCourse(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ngừng công bố khóa học'),
+        content: Text(
+          'Khóa học "${course.title}" sẽ được gỡ khỏi website công khai và chuyển về Bản nháp.\nLưu ý: Không được ngừng công bố nếu có lớp học đang mở tuyển sinh hoặc đang diễn ra.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ngừng công bố'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'DRAFT',
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleActive(CourseModel course) async {
+    final newActive = !course.isActive;
+    context.read<CoursesBloc>().add(
+      ToggleCourseActiveEvent(courseId: course.id, isActive: newActive),
+    );
+  }
+
+  void _openClassForCourse(CourseModel course) {
+    context.push('${RouteNames.classCreate}?courseId=${course.id}');
+  }
+
+  final NumberFormat _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: 'đ',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<CoursesBloc>().add(FetchCourseDetail(widget.courseId));
+  }
+
+  void _showAddLevelDialog() {
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => _MobileCreateLevelSheet(
+          onSubmit: (code, name, description, sessions, fee) {
+            context.read<CoursesBloc>().add(
+              CreateCourseLevelEvent(
+                courseId: widget.courseId,
+                code: code,
+                name: name,
+                description: description,
+                estimatedSessions: sessions,
+                tuitionFee: fee,
+              ),
+            );
+          },
+        ),
+      );
+      return;
+    }
+    final codeCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final sessionsCtrl = TextEditingController(text: '24');
+    final feeCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Thêm Cấp Độ Đào Tạo Mới',
+          style: AppTextStyles.h4(context),
+        ),
+        content: SingleChildScrollView(
+          child: SizedBox(
+            width: 480,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppTextField(
+                  label: 'Mã cấp độ *',
+                  hintText: 'VD: BAND-5.5, FOUNDATION...',
+                  controller: codeCtrl,
+                ),
+                const SizedBox(height: 14),
+                AppTextField(
+                  label: 'Tên cấp độ *',
+                  hintText: 'VD: IELTS Target 5.5 - 6.5',
+                  controller: nameCtrl,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        label: 'Số buổi học',
+                        hintText: '24',
+                        keyboardType: TextInputType.number,
+                        controller: sessionsCtrl,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'Học phí chuẩn (VNĐ)',
+                        hintText: 'VD: 4500000',
+                        keyboardType: TextInputType.number,
+                        controller: feeCtrl,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                AppTextField(
+                  label: 'Mục tiêu chuẩn đầu ra',
+                  hintText:
+                      'Chuẩn đầu ra của học viên sau khi hoàn thành level...',
+                  controller: descCtrl,
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Hủy bỏ'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (codeCtrl.text.trim().isEmpty ||
+                  nameCtrl.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vui lòng nhập đầy đủ mã và tên cấp độ'),
+                  ),
+                );
+                return;
+              }
+              Navigator.of(dialogCtx).pop();
+              final sessions = int.tryParse(sessionsCtrl.text.trim()) ?? 24;
+              final fee = double.tryParse(feeCtrl.text.trim()) ?? 0;
+
+              context.read<CoursesBloc>().add(
+                CreateCourseLevelEvent(
+                  courseId: widget.courseId,
+                  code: codeCtrl.text.trim().toUpperCase(),
+                  name: nameCtrl.text.trim(),
+                  description: descCtrl.text.trim().isEmpty
+                      ? null
+                      : descCtrl.text.trim(),
+                  estimatedSessions: sessions,
+                  tuitionFee: fee,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Thêm cấp độ'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditLevelDialog(CourseLevelModel level) async {
+    final bloc = context.read<CoursesBloc>();
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => BlocProvider.value(
+          value: bloc,
+          child: _EditLevelForm(
+            level: level,
+            onSubmit: (changes) => bloc.add(
+              UpdateCourseLevelEvent(
+                courseId: widget.courseId,
+                levelId: level.id,
+                changes: changes,
+              ),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620, maxHeight: 760),
+          child: BlocProvider.value(
+            value: bloc,
+            child: _EditLevelForm(
+              level: level,
+              onSubmit: (changes) => bloc.add(
+                UpdateCourseLevelEvent(
+                  courseId: widget.courseId,
+                  levelId: level.id,
+                  changes: changes,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCurriculumEditor({
+    ModuleModel? module,
+    LessonModel? lesson,
+    String? newLevelId,
+    String? newModuleId,
+    int nextOrder = 1,
+  }) async {
+    final bloc = context.read<CoursesBloc>();
+    final editor = BlocProvider.value(
+      value: bloc,
+      child: _CurriculumItemEditor(
+        module: module,
+        lesson: lesson,
+        creatingLesson: newModuleId != null,
+        nextOrder: nextOrder,
+        onSubmit: (changes) {
+          if (lesson != null) {
+            bloc.add(
+              UpdateLessonEvent(
+                courseId: widget.courseId,
+                lessonId: lesson.id,
+                changes: changes,
+              ),
+            );
+          } else if (module != null) {
+            bloc.add(
+              UpdateModuleEvent(
+                courseId: widget.courseId,
+                moduleId: module.id,
+                changes: changes,
+              ),
+            );
+          } else if (newLevelId != null) {
+            bloc.add(
+              CreateModuleEvent(
+                courseId: widget.courseId,
+                levelId: newLevelId,
+                values: changes,
+              ),
+            );
+          } else if (newModuleId != null) {
+            bloc.add(
+              CreateLessonEvent(
+                courseId: widget.courseId,
+                moduleId: newModuleId,
+                values: changes,
+              ),
+            );
+          }
+        },
+      ),
+    );
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => editor,
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620, maxHeight: 740),
+            child: editor,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showMaterialUpload(LessonModel lesson) async {
+    final bloc = context.read<CoursesBloc>();
+    final sheet = BlocProvider.value(
+      value: bloc,
+      child: _MaterialUploadSheet(
+        onSubmit: (title, fileName, bytes) => bloc.add(
+          UploadLessonMaterialEvent(
+            courseId: widget.courseId,
+            lessonId: lesson.id,
+            title: title,
+            fileName: fileName,
+            bytes: bytes,
+          ),
+        ),
+      ),
+    );
+    if (MediaQuery.sizeOf(context).width < 1024) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => sheet,
+      );
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: sheet,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Scaffold(
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      appBar: AppBar(
+        title: Text(_course != null ? _course!.title : 'Chi tiết Khóa học'),
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+        foregroundColor: isDark ? Colors.white : AppColors.textPrimaryLight,
+        actions: [
+          if (widget.canEditAcademicLevel)
+            IconButton(
+              onPressed: _showPublicPreview,
+              icon: const Icon(Icons.visibility_outlined),
+              tooltip: 'Xem trước nội dung công khai',
+            ),
+          if (widget.canEditAcademicLevel)
+            IconButton(
+              onPressed: _openingEditor ? null : _editCourse,
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Chỉnh sửa khóa học',
+            ),
+          if (_course != null &&
+              _course!.publicationStatus == 'DRAFT' &&
+              _course!.classesCount == 0)
+            IconButton(
+              onPressed: () => _deleteCourse(_course!),
+              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+              tooltip: 'Xóa vĩnh viễn khóa học',
+            ),
+          if (_course != null && _course!.publicationStatus != 'ARCHIVED')
+            IconButton(
+              onPressed: () => _archiveCourse(_course!),
+              icon: const Icon(Icons.archive_outlined),
+              tooltip: 'Lưu trữ khóa học',
+            ),
+          IconButton(
+            onPressed: () {
+              context.read<CoursesBloc>().add(
+                FetchCourseDetail(widget.courseId),
+              );
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Làm mới',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: BlocConsumer<CoursesBloc, CoursesState>(
+        listener: (context, state) {
+          if (state is CourseDetailLoaded) {
+            setState(() {
+              _course = state.course;
+            });
+          } else if (state is CourseOperationSuccess) {
+            if (state.course != null) {
+              setState(() {
+                _course = state.course;
+              });
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.success,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else if (state is CoursesError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is CourseDetailLoaded &&
+              state.course.id == widget.courseId) {
+            _course = state.course;
+          } else if (state is CourseOperationSuccess &&
+              state.course != null &&
+              state.course!.id == widget.courseId) {
+            _course = state.course;
+          } else {
+            _course ??= context.read<CoursesBloc>().getCachedCourseDetail(
+              widget.courseId,
+            );
+          }
+
+          if (state is CourseDetailLoading && _course == null) {
+            return const LoadingWidget(
+              message: 'Đang tải thông tin chi tiết khóa học...',
+            );
+          } else if (state is CoursesError && _course == null) {
+            if (MediaQuery.sizeOf(context).width < 1024) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: MobileSectionCard(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: AppColors.error,
+                          size: 36,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Không tải được khóa học: ${state.message}',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () => context.read<CoursesBloc>().add(
+                            FetchCourseDetail(widget.courseId),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+            return AppErrorWidget(
+              message: state.message,
+              onRetry: () {
+                context.read<CoursesBloc>().add(
+                  FetchCourseDetail(widget.courseId),
+                );
+              },
+            );
+          } else if (_course != null) {
+            final course = _course!;
+            if (MediaQuery.sizeOf(context).width < 1024) {
+              return _buildMobileDetail(course);
+            }
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Header Info Card
+                _buildCourseHeader(context, course),
+                const SizedBox(height: 16),
+
+                // Review & Publication Process Card
+                _buildReviewAndPublicationCard(context, course),
+                const SizedBox(height: 20),
+
+                // Levels Section Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Khung Cấp Độ & Giáo Trình (${course.levels.length})',
+                      style: AppTextStyles.h4(context).copyWith(fontSize: 18),
+                    ),
+                    if (_canEditCurriculum)
+                      ElevatedButton.icon(
+                        onPressed: _showAddLevelDialog,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Thêm Level'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Levels List
+                if (course.levels.isEmpty)
+                  const EmptyStateWidget(
+                    title: 'Chưa có cấp độ đào tạo nào',
+                    description: 'Hãy nhấn nút "Thêm Level" để bắt đầu thiết lập lộ trình học tập.',
+                    icon: Icons.layers_clear_outlined,
+                  )
+                else
+                  ...course.levels.map(
+                    (level) => _buildLevelCard(context, level),
+                  ),
+              ],
+            );
+          }
+          return const LoadingWidget(
+            message: 'Đang tải thông tin chi tiết...',
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMobileDetail(CourseModel course) {
+    return SafeArea(
+      top: false,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
+          MobileSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    MobileStatusPill(
+                      label: course.code,
+                      color: AppColors.primary,
+                    ),
+                    MobileStatusPill(
+                      label: course.isActive ? 'Đang đào tạo' : 'Tạm dừng',
+                      color: course.isActive
+                          ? AppColors.success
+                          : AppColors.error,
+                    ),
+                    MobileStatusPill(
+                      label: switch (course.publicationStatus) {
+                        'PUBLISHED' => 'Đã công bố',
+                        'IN_REVIEW' => 'Chờ duyệt',
+                        'ARCHIVED' => 'Đã lưu trữ',
+                        _ => 'Bản nháp',
+                      },
+                      color: course.publicationStatus == 'PUBLISHED'
+                          ? AppColors.success
+                          : AppColors.primary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  course.title,
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                if (course.description?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Text(course.description!),
+                ],
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    Text('${course.levelsCount} cấp độ'),
+                    Text('${course.classesCount} lớp'),
+                    Text(course.language),
+                  ],
+                ),
+                if (course.targetAudience?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Text('Đối tượng: ${course.targetAudience}'),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          _buildReviewAndPublicationCard(context, course, isMobile: true),
+          const SizedBox(height: MobileTokens.sectionGap),
+          Text(
+            'Lộ trình học tập',
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          if (_canEditCurriculum)
+            FilledButton.icon(
+              onPressed: _showAddLevelDialog,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Thêm cấp độ'),
+            ),
+          const SizedBox(height: 16),
+          if (course.levels.isEmpty)
+            const MobileSectionCard(child: Text('Chưa có cấp độ đào tạo nào'))
+          else
+            for (final level in course.levels) ...[
+              _mobileLevelCard(level),
+              const SizedBox(height: 12),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileLevelCard(CourseLevelModel level) {
+    return MobileSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MobileStatusPill(label: level.code, color: AppColors.primary),
+          const SizedBox(height: 8),
+          Text(
+            level.name,
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          if (level.description?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            Text(level.description!),
+          ],
+          if (level.expectedOutcomes?['summary'] != null) ...[
+            const SizedBox(height: 8),
+            Text('Đầu ra: ${level.expectedOutcomes!['summary']}'),
+          ],
+          if (level.assessmentScheme?['components'] != null) ...[
+            const SizedBox(height: 6),
+            Text('Đánh giá: ${level.assessmentScheme!['components']}'),
+          ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              Text('${level.estimatedSessions} buổi'),
+              Text(_currencyFormat.format(level.tuitionFee)),
+              Text('${level.modules.length} học phần'),
+            ],
+          ),
+          if (_canEditCurriculum)
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showEditLevelDialog(level),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Sửa cấp độ'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showCurriculumEditor(
+                    newLevelId: level.id,
+                    nextOrder: level.modules.length + 1,
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Thêm học phần'),
+                ),
+              ],
+            ),
+          const Divider(height: 24),
+          if (level.modules.isEmpty)
+            const Text('Chưa có học phần hoặc bài học')
+          else
+            for (final module in level.modules)
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: Text(
+                  module.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text('${module.lessons.length} bài học'),
+                children: [
+                  if (_canEditCurriculum)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () =>
+                                _showCurriculumEditor(module: module),
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Sửa học phần'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showCurriculumEditor(
+                              newModuleId: module.id,
+                              nextOrder: module.lessons.length + 1,
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Thêm bài học'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (module.lessons.isEmpty)
+                    const ListTile(title: Text('Chưa có bài học'))
+                  else
+                    for (final lesson in module.lessons)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(lesson.title),
+                        subtitle: Text(
+                          '${lesson.durationMinutes} phút · ${lesson.materials.length} tài liệu',
+                        ),
+                        trailing: _canEditCurriculum
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Thêm tài liệu',
+                                    icon: const Icon(Icons.attach_file),
+                                    onPressed: () =>
+                                        _showMaterialUpload(lesson),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Sửa bài học',
+                                    icon: const Icon(Icons.edit_outlined),
+                                    onPressed: () =>
+                                        _showCurriculumEditor(lesson: lesson),
+                                  ),
+                                ],
+                              )
+                            : const Icon(Icons.chevron_right_rounded),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => LessonDetailScreen(
+                              moduleTitle: module.title,
+                              lesson: lesson,
+                            ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewAndPublicationCard(
+    BuildContext context,
+    CourseModel course, {
+    bool isMobile = false,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canOpenClass =
+        course.publicationStatus == 'PUBLISHED' && course.isActive;
+
+    final pubStatusConfig = switch (course.publicationStatus) {
+      'PUBLISHED' => (
+        'ĐÃ CÔNG BỐ (PUBLISHED)',
+        'Khóa học đang hiển thị công khai trên Website và sẵn sàng mở lớp tuyển sinh.',
+        AppColors.success,
+        Icons.check_circle_outline,
+      ),
+      'IN_REVIEW' => (
+        'CHỜ DUYỆT (IN_REVIEW)',
+        'Khóa học đã gửi duyệt, đang chờ Trưởng bộ môn kiểm định và phê duyệt.',
+        const Color(0xFFD97706),
+        Icons.pending_actions_outlined,
+      ),
+      'ARCHIVED' => (
+        'ĐÃ LƯU TRỮ (ARCHIVED)',
+        'Khóa học đã lưu trữ, không còn tiếp nhận tuyển sinh hoặc đào tạo mới.',
+        const Color(0xFF64748B),
+        Icons.archive_outlined,
+      ),
+      _ => (
+        'BẢN NHÁP (DRAFT)',
+        'Khóa học đang trong giai đoạn soạn thảo đề cương, chưa được gửi duyệt học thuật.',
+        const Color(0xFF64748B),
+        Icons.edit_note_outlined,
+      ),
+    };
+
+    final blockers = (_publicationCheck?['blockers'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.verified_user_outlined,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'QUY TRÌNH HỌC THUẬT & CÔNG BỐ KHÓA HỌC',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .5,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      'Kiểm định đề cương, chuẩn đầu ra, phê duyệt và kích hoạt mở lớp',
+                      style: AppTextStyles.caption(context),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 28),
+
+          // Status & Operational Overview
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: pubStatusConfig.$3.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: pubStatusConfig.$3.withAlpha(80)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(pubStatusConfig.$4,
+                        size: 16, color: pubStatusConfig.$3),
+                    const SizedBox(width: 6),
+                    Text(
+                      pubStatusConfig.$1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: pubStatusConfig.$3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (course.isActive ? AppColors.success : AppColors.error)
+                      .withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color:
+                        (course.isActive ? AppColors.success : AppColors.error)
+                            .withAlpha(80),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      course.isActive
+                          ? Icons.power_rounded
+                          : Icons.power_off_rounded,
+                      size: 16,
+                      color:
+                          course.isActive ? AppColors.success : AppColors.error,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      course.isActive
+                          ? 'VẬN HÀNH: ĐANG HOẠT ĐỘNG'
+                          : 'VẬN HÀNH: TẠM NGƯNG',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: course.isActive
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            pubStatusConfig.$2,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white70 : const Color(0xFF475569),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Class Opening Eligibility Banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: canOpenClass
+                  ? const Color(0xFFECFDF5)
+                  : const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: canOpenClass
+                    ? const Color(0xFFA7F3D0)
+                    : const Color(0xFFFDE68A),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  canOpenClass
+                      ? Icons.check_circle_rounded
+                      : Icons.info_outline_rounded,
+                  color: canOpenClass
+                      ? const Color(0xFF047857)
+                      : const Color(0xFFD97706),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    canOpenClass
+                        ? 'Khóa học đã được Phê duyệt & Kích hoạt. ĐỦ ĐIỀU KIỆN MỞ LỚP VẬN HÀNH.'
+                        : 'CHƯA ĐỦ ĐIỀU KIỆN MỞ LỚP: Backend yêu cầu khóa học phải được Duyệt & Công bố (PUBLISHED) và Kích hoạt (ACTIVE).',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: canOpenClass
+                          ? const Color(0xFF047857)
+                          : const Color(0xFFB45309),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Academic Readiness Checklist Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'DANH MỤC KIỂM TRA ĐIỀU KIỆN DUYỆT (ACADEMIC READINESS)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _loadingCheck ? null : _runPublicationCheck,
+                icon: _loadingCheck
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.rule_folder_outlined, size: 16),
+                label: Text(
+                  _loadingCheck ? 'Đang kiểm tra...' : 'Kiểm tra điều kiện',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          if (_publicationCheck != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color:
+                    isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: blockers.isEmpty
+                      ? AppColors.success.withAlpha(120)
+                      : AppColors.error.withAlpha(120),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (blockers.isEmpty)
+                    const Row(
+                      children: [
+                        Icon(Icons.check_circle,
+                            color: AppColors.success, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tất cả tiêu chí học thuật, bài học, cấp độ và chương trình đã đạt chuẩn công bố!',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.cancel,
+                            color: AppColors.error, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Còn ${blockers.length} tiêu chí chưa hoàn tất:',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    for (final b in blockers)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 26, bottom: 4),
+                        child:
+                            Text('• $b', style: const TextStyle(fontSize: 13)),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          // Action Buttons
+          if (widget.canEditAcademicLevel) ...[
+            const Divider(height: 24),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                if (course.publicationStatus == 'DRAFT') ...[
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                    ),
+                    onPressed: () => _submitForReview(course),
+                    icon: const Icon(Icons.send_rounded, size: 16),
+                    label: const Text('Gửi duyệt học thuật'),
+                  ),
+                ],
+                if (course.publicationStatus == 'IN_REVIEW') ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => _confirmAcademicReview(course),
+                    icon: const Icon(Icons.fact_check_outlined, size: 16),
+                    label: const Text('Xác nhận rà soát học thuật'),
+                  ),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success),
+                    onPressed: () => _publishCourse(course),
+                    icon: const Icon(Icons.publish_rounded, size: 16),
+                    label: const Text('Phê duyệt & Công bố'),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFD97706),
+                    ),
+                    onPressed: () => _requestChanges(course),
+                    icon: const Icon(Icons.undo_rounded, size: 16),
+                    label: const Text('Yêu cầu sửa (Về nháp)'),
+                  ),
+                ],
+                if (course.publicationStatus == 'PUBLISHED') ...[
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF003FB1),
+                    ),
+                    onPressed: () => _openClassForCourse(course),
+                    icon:
+                        const Icon(Icons.add_circle_outline_rounded, size: 16),
+                    label: const Text('Mở Lớp Học Mới'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _showPublicPreview,
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text('Xem trang công khai'),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                    ),
+                    onPressed: () => _unpublishCourse(course),
+                    icon: const Icon(Icons.unpublished_outlined, size: 16),
+                    label: const Text('Ngừng công bố'),
+                  ),
+                ],
+                OutlinedButton.icon(
+                  onPressed: () => _toggleActive(course),
+                  icon: Icon(
+                    course.isActive
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.play_circle_outline_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    course.isActive
+                        ? 'Tạm dừng vận hành'
+                        : 'Kích hoạt vận hành',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCourseHeader(BuildContext context, CourseModel course) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return AppCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: primaryColor.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: primaryColor.withAlpha(60)),
+                ),
+                child: Text(
+                  course.code,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.language, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      course.language,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: course.isActive
+                      ? AppColors.success.withAlpha(25)
+                      : AppColors.error.withAlpha(25),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  course.isActive ? 'ĐANG MỞ ĐÀO TẠO' : 'TẠM DỪNG',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: course.isActive
+                        ? AppColors.success
+                        : AppColors.error,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            course.title,
+            style: AppTextStyles.h4(context).copyWith(fontSize: 20),
+          ),
+          const SizedBox(height: 4),
+          Text(switch (course.publicationStatus) {
+            'PUBLISHED' => 'Trạng thái công bố: Đã công bố',
+            'IN_REVIEW' => 'Trạng thái công bố: Chờ duyệt',
+            'ARCHIVED' => 'Trạng thái công bố: Đã lưu trữ',
+            _ => 'Trạng thái công bố: Bản nháp',
+          }, style: AppTextStyles.caption(context)),
+          if (course.targetAudience != null &&
+              course.targetAudience!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(
+                  Icons.people_outline,
+                  size: 16,
+                  color: AppColors.secondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Đối tượng: ${course.targetAudience}',
+                  style: AppTextStyles.caption(context).copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? Colors.white70
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (course.description != null && course.description!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              course.description!,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLevelCard(BuildContext context, CourseLevelModel level) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: AppCard(
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: true,
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    level.code,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    level.name,
+                    style: AppTextStyles.h4(context).copyWith(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.schedule,
+                    size: 14,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondaryLight,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${level.estimatedSessions} buổi',
+                    style: AppTextStyles.caption(context),
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.payments_outlined,
+                    size: 14,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondaryLight,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _currencyFormat.format(level.tuitionFee),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.library_books_outlined,
+                    size: 14,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondaryLight,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${level.modules.length} modules',
+                    style: AppTextStyles.caption(context),
+                  ),
+                ],
+              ),
+            ),
+            children: [
+              if (level.expectedOutcomes?['summary'] != null)
+                ListTile(
+                  title: const Text('Kết quả học tập mong đợi'),
+                  subtitle: Text('${level.expectedOutcomes!['summary']}'),
+                ),
+              if (level.assessmentScheme?['components'] != null)
+                ListTile(
+                  title: const Text('Phương án đánh giá'),
+                  subtitle: Text('${level.assessmentScheme!['components']}'),
+                ),
+              if (_canEditCurriculum)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _showEditLevelDialog(level),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Sửa cấp độ'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _showCurriculumEditor(
+                          newLevelId: level.id,
+                          nextOrder: level.modules.length + 1,
+                        ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Thêm học phần'),
+                      ),
+                    ],
+                  ),
+                ),
+              const Divider(height: 1),
+              if (level.modules.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(
+                    child: Text(
+                      'Chưa có chương trình/bài học chi tiết cho level này.',
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: level.modules.length,
+                  itemBuilder: (context, mIdx) {
+                    final module = level.modules[mIdx];
+                    return _buildModuleItem(context, module);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModuleItem(BuildContext context, ModuleModel module) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1E293B).withAlpha(120)
+            : const Color(0xFFF8FAFC),
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.folder_open_rounded,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    module.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${module.lessons.length} bài học',
+                  style: AppTextStyles.caption(context),
+                ),
+                if (_canEditCurriculum)
+                  IconButton(
+                    tooltip: 'Sửa học phần',
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _showCurriculumEditor(module: module),
+                  ),
+                if (_canEditCurriculum)
+                  IconButton(
+                    tooltip: 'Thêm bài học',
+                    icon: const Icon(Icons.add, size: 18),
+                    onPressed: () => _showCurriculumEditor(
+                      newModuleId: module.id,
+                      nextOrder: module.lessons.length + 1,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          ...module.lessons.map(
+            (lesson) => _buildLessonTile(context, module, lesson),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLessonTile(
+    BuildContext context,
+    ModuleModel module,
+    LessonModel lesson,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+        leading: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            '${lesson.order}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(
+          lesson.title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        subtitle: Row(
+          children: [
+            Icon(
+              Icons.timer_outlined,
+              size: 13,
+              color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${lesson.durationMinutes} phút',
+              style: const TextStyle(fontSize: 12),
+            ),
+            if (lesson.materials.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Icon(
+                Icons.attach_file,
+                size: 13,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 2),
+              Text(
+                '${lesson.materials.length} tài liệu',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+        trailing: _canEditCurriculum
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Thêm tài liệu',
+                    icon: const Icon(Icons.attach_file, size: 18),
+                    onPressed: () => _showMaterialUpload(lesson),
+                  ),
+                  IconButton(
+                    tooltip: 'Sửa bài học',
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _showCurriculumEditor(lesson: lesson),
+                  ),
+                ],
+              )
+            : const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  LessonDetailScreen(moduleTitle: module.title, lesson: lesson),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MobileCreateLevelSheet extends StatefulWidget {
+  const _MobileCreateLevelSheet({required this.onSubmit});
+
+  final void Function(
+    String code,
+    String name,
+    String? description,
+    int sessions,
+    double fee,
+  )
+  onSubmit;
+
+  @override
+  State<_MobileCreateLevelSheet> createState() =>
+      _MobileCreateLevelSheetState();
+}
+
+class _MobileCreateLevelSheetState extends State<_MobileCreateLevelSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _codeController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _sessionsController = TextEditingController(text: '24');
+  final _feeController = TextEditingController(text: '0');
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _sessionsController.dispose();
+    _feeController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    widget.onSubmit(
+      _codeController.text.trim().toUpperCase(),
+      _nameController.text.trim(),
+      _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      int.parse(_sessionsController.text.trim()),
+      double.parse(_feeController.text.trim()),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight:
+              (MediaQuery.sizeOf(context).height * 0.9 -
+                      MediaQuery.viewInsetsOf(context).bottom)
+                  .clamp(120.0, double.infinity),
+        ),
+        child: SafeArea(
+          top: false,
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            children: [
+              Text(
+                'Thêm cấp độ',
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              const Text('Thiết lập một bước trong lộ trình học tập.'),
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _codeController,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Mã cấp độ *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => value?.trim().isEmpty == true
+                          ? 'Nhập mã cấp độ'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Tên cấp độ *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => value?.trim().isEmpty == true
+                          ? 'Nhập tên cấp độ'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _sessionsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Số buổi học *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final count = int.tryParse(value?.trim() ?? '');
+                        return count == null || count <= 0
+                            ? 'Số buổi phải lớn hơn 0'
+                            : null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _feeController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Học phí chuẩn (VNĐ)',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final fee = double.tryParse(value?.trim() ?? '');
+                        return fee == null || fee < 0
+                            ? 'Học phí không hợp lệ'
+                            : null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _descriptionController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Mục tiêu đầu ra',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton(onPressed: _submit, child: const Text('Lưu cấp độ')),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditLevelForm extends StatefulWidget {
+  final CourseLevelModel level;
+  final ValueChanged<Map<String, dynamic>> onSubmit;
+
+  const _EditLevelForm({required this.level, required this.onSubmit});
+
+  @override
+  State<_EditLevelForm> createState() => _EditLevelFormState();
+}
+
+class _EditLevelFormState extends State<_EditLevelForm> {
+  final _formKey = GlobalKey<FormState>();
+  late final Map<String, TextEditingController> _fields;
+  bool _saving = false;
+
+  String _academicText(Map<String, dynamic>? value, String key) {
+    if (value == null) return '';
+    final field = value[key];
+    return field is String ? field : jsonEncode(value);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final level = widget.level;
+    _fields = {
+      'code': TextEditingController(text: level.code),
+      'name': TextEditingController(text: level.name),
+      'description': TextEditingController(text: level.description ?? ''),
+      'cefrLevel': TextEditingController(text: level.cefrLevel ?? ''),
+      'ieltsTargetBand': TextEditingController(
+        text: level.ieltsTargetBand?.toString() ?? '',
+      ),
+      'toeicTargetScore': TextEditingController(
+        text: level.toeicTargetScore?.toString() ?? '',
+      ),
+      'cambridgeQualification': TextEditingController(
+        text: level.cambridgeQualification ?? '',
+      ),
+      'entryRequirements': TextEditingController(
+        text: level.entryRequirements ?? '',
+      ),
+      'expectedOutcomes': TextEditingController(
+        text: _academicText(level.expectedOutcomes, 'summary'),
+      ),
+      'assessmentScheme': TextEditingController(
+        text: _academicText(level.assessmentScheme, 'components'),
+      ),
+      'completionCriteria': TextEditingController(
+        text: level.completionCriteria ?? '',
+      ),
+      'recommendedHours': TextEditingController(
+        text: level.recommendedHours?.toString() ?? '',
+      ),
+      'estimatedSessions': TextEditingController(
+        text: level.estimatedSessions.toString(),
+      ),
+    };
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _fields.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_saving || !_formKey.currentState!.validate()) return;
+    String? text(String key) {
+      final value = _fields[key]!.text.trim();
+      return value.isEmpty ? null : value;
+    }
+
+    setState(() => _saving = true);
+    widget.onSubmit({
+      'code': text('code'),
+      'name': text('name'),
+      'description': text('description'),
+      'cefrLevel': text('cefrLevel'),
+      'ieltsTargetBand': text('ieltsTargetBand') == null
+          ? null
+          : double.parse(text('ieltsTargetBand')!),
+      'toeicTargetScore': text('toeicTargetScore') == null
+          ? null
+          : int.parse(text('toeicTargetScore')!),
+      'cambridgeQualification': text('cambridgeQualification'),
+      'entryRequirements': text('entryRequirements'),
+      'expectedOutcomes': text('expectedOutcomes') == null
+          ? null
+          : text('expectedOutcomes') ==
+                _academicText(widget.level.expectedOutcomes, 'summary')
+          ? widget.level.expectedOutcomes
+          : {'summary': text('expectedOutcomes')},
+      'assessmentScheme': text('assessmentScheme') == null
+          ? null
+          : text('assessmentScheme') ==
+                _academicText(widget.level.assessmentScheme, 'components')
+          ? widget.level.assessmentScheme
+          : {'components': text('assessmentScheme')},
+      'completionCriteria': text('completionCriteria'),
+      'recommendedHours': text('recommendedHours') == null
+          ? null
+          : int.parse(text('recommendedHours')!),
+      'estimatedSessions': int.parse(text('estimatedSessions')!),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<CoursesBloc, CoursesState>(
+    listener: (context, state) {
+      if (!_saving) return;
+      if (state is CourseOperationSuccess) {
+        Navigator.pop(context);
+      } else if (state is CoursesError) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(state.message)));
+      }
+    },
+    child: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Sửa cấp độ học thuật',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Các mục tiêu khảo thí là tham khảo; cần rà soát trước khi công bố khóa.',
+                ),
+                const SizedBox(height: 16),
+                _field('code', 'Mã cấp độ', required: true),
+                _field('name', 'Tên cấp độ', required: true),
+                _field('description', 'Mục tiêu đầu ra', lines: 3),
+                _field('cefrLevel', 'CEFR (nếu áp dụng)'),
+                _field(
+                  'ieltsTargetBand',
+                  'IELTS target band (nếu áp dụng)',
+                  number: true,
+                ),
+                _field(
+                  'toeicTargetScore',
+                  'TOEIC target score (nếu áp dụng)',
+                  number: true,
+                ),
+                _field(
+                  'cambridgeQualification',
+                  'Cambridge qualification (nếu áp dụng)',
+                ),
+                _field('entryRequirements', 'Yêu cầu đầu vào', lines: 2),
+                _field(
+                  'expectedOutcomes',
+                  'Kết quả học tập mong đợi',
+                  lines: 3,
+                ),
+                _field('assessmentScheme', 'Phương án đánh giá', lines: 3),
+                _field('completionCriteria', 'Tiêu chí hoàn thành', lines: 2),
+                _field('recommendedHours', 'Giờ học tham khảo', number: true),
+                _field(
+                  'estimatedSessions',
+                  'Số buổi dự kiến',
+                  number: true,
+                  required: true,
+                ),
+                FilledButton(
+                  onPressed: _saving ? null : _submit,
+                  child: Text(_saving ? 'Đang lưu...' : 'Lưu cấp độ'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _field(
+    String key,
+    String label, {
+    bool required = false,
+    bool number = false,
+    int lines = 1,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: TextFormField(
+      controller: _fields[key],
+      maxLines: lines,
+      keyboardType: number
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: (value) {
+        final trimmed = value?.trim() ?? '';
+        if (required && trimmed.isEmpty) return 'Vui lòng nhập $label';
+        if (trimmed.isEmpty || !number) return null;
+        if (key == 'ieltsTargetBand') {
+          final band = double.tryParse(trimmed);
+          if (band == null || band < 0 || band > 9) {
+            return 'IELTS phải từ 0 đến 9';
+          }
+        } else {
+          final parsed = int.tryParse(trimmed);
+          if (parsed == null || parsed <= 0) {
+            return 'Vui lòng nhập số nguyên dương';
+          }
+          if (key == 'toeicTargetScore' && (parsed < 10 || parsed > 990)) {
+            return 'TOEIC phải từ 10 đến 990';
+          }
+        }
+        return null;
+      },
+    ),
+  );
+}
+
+class _CurriculumItemEditor extends StatefulWidget {
+  final ModuleModel? module;
+  final LessonModel? lesson;
+  final bool creatingLesson;
+  final int nextOrder;
+  final ValueChanged<Map<String, dynamic>> onSubmit;
+
+  const _CurriculumItemEditor({
+    this.module,
+    this.lesson,
+    this.creatingLesson = false,
+    this.nextOrder = 1,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_CurriculumItemEditor> createState() => _CurriculumItemEditorState();
+}
+
+class _CurriculumItemEditorState extends State<_CurriculumItemEditor> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _title;
+  late final TextEditingController _body;
+  late final TextEditingController _order;
+  late final TextEditingController _duration;
+  bool _saving = false;
+
+  bool get _isLesson => widget.lesson != null || widget.creatingLesson;
+  bool get _isNew => widget.lesson == null && widget.module == null;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = TextEditingController(
+      text: widget.lesson?.title ?? widget.module?.title ?? '',
+    );
+    _body = TextEditingController(
+      text: widget.lesson?.content ?? widget.module?.description ?? '',
+    );
+    _order = TextEditingController(
+      text: (widget.lesson?.order ?? widget.module?.order ?? widget.nextOrder)
+          .toString(),
+    );
+    _duration = TextEditingController(
+      text: widget.lesson?.durationMinutes.toString() ?? '90',
+    );
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _order.dispose();
+    _duration.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_saving || !_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    widget.onSubmit({
+      'title': _title.text.trim(),
+      'order': int.parse(_order.text.trim()),
+      if (_isLesson) ...{
+        'content': _body.text.trim(),
+        'durationMinutes': int.parse(_duration.text.trim()),
+      } else
+        'description': _body.text.trim(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<CoursesBloc, CoursesState>(
+    listener: (context, state) {
+      if (!_saving) return;
+      if (state is CourseOperationSuccess) {
+        Navigator.pop(context);
+      } else if (state is CoursesError) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(state.message)));
+      }
+    },
+    child: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${_isNew ? 'Thêm' : 'Sửa'} ${_isLesson ? 'bài học' : 'học phần'}',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _title,
+                  decoration: const InputDecoration(
+                    labelText: 'Tiêu đề *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tiêu đề'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _body,
+                  maxLines: _isLesson ? 6 : 3,
+                  decoration: InputDecoration(
+                    labelText: _isLesson
+                        ? 'Nội dung bài học'
+                        : 'Mô tả học phần',
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _order,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Thứ tự *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    final number = int.tryParse(value?.trim() ?? '');
+                    return number == null || number < 1
+                        ? 'Thứ tự phải từ 1'
+                        : null;
+                  },
+                ),
+                if (_isLesson) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _duration,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Thời lượng (phút) *',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      final number = int.tryParse(value?.trim() ?? '');
+                      return number == null || number < 15
+                          ? 'Thời lượng tối thiểu 15 phút'
+                          : null;
+                    },
+                  ),
+                ],
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _saving ? null : _submit,
+                  child: Text(
+                    _saving
+                        ? 'Đang lưu...'
+                        : _isNew
+                        ? 'Tạo ${_isLesson ? 'bài học' : 'học phần'}'
+                        : 'Lưu thay đổi',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _MaterialUploadSheet extends StatefulWidget {
+  final void Function(String title, String fileName, Uint8List bytes) onSubmit;
+
+  const _MaterialUploadSheet({required this.onSubmit});
+
+  @override
+  State<_MaterialUploadSheet> createState() => _MaterialUploadSheetState();
+}
+
+class _MaterialUploadSheetState extends State<_MaterialUploadSheet> {
+  final _title = TextEditingController();
+  String? _fileName;
+  Uint8List? _bytes;
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const [
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'txt',
+          'zip',
+          'rar',
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'mp3',
+          'm4a',
+          'wav',
+          'mp4',
+        ],
+      );
+      if (files.isEmpty || !mounted) return;
+      final chosen = files.first;
+      final bytes = await chosen.readAsBytes();
+      if (!mounted) return;
+      if (bytes.length > 50 * 1024 * 1024) {
+        setState(() => _error = 'Tệp phải nhỏ hơn 50 MB');
+        return;
+      }
+      setState(() {
+        _fileName = chosen.name;
+        _bytes = bytes;
+        _error = null;
+        if (_title.text.trim().isEmpty) _title.text = chosen.name;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = 'Không chọn được tệp: $error');
+    }
+  }
+
+  void _submit() {
+    if (_saving) return;
+    if (_title.text.trim().isEmpty || _bytes == null || _fileName == null) {
+      setState(() => _error = 'Nhập tên tài liệu và chọn tệp từ máy');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    widget.onSubmit(_title.text.trim(), _fileName!, _bytes!);
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<CoursesBloc, CoursesState>(
+    listener: (context, state) {
+      if (!_saving) return;
+      if (state is CourseOperationSuccess) {
+        Navigator.pop(context);
+      } else if (state is CoursesError) {
+        setState(() {
+          _saving = false;
+          _error = state.message;
+        });
+      }
+    },
+    child: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Thêm tài liệu bài học',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _title,
+                decoration: const InputDecoration(
+                  labelText: 'Tên tài liệu *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: Text(_fileName ?? 'Chọn tệp từ máy'),
+              ),
+              const Text(
+                'PDF, Office, TXT, ZIP/RAR, ảnh, âm thanh hoặc MP4 · tối đa 50 MB',
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: _saving ? null : _submit,
+                child: Text(_saving ? 'Đang tải lên...' : 'Lưu tài liệu'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}

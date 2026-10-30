@@ -13,6 +13,8 @@
 google-services.json
 GoogleService-Info.plist
 firebase-adminsdk*.json
+backend/secrets/*.json
+*.service-account.json
 
 # ------------------------------------------------------------------------------
 # Node.js & NestJS Backend
@@ -20,6 +22,9 @@ firebase-adminsdk*.json
 node_modules/
 backend/node_modules/
 backend/dist/
+backend/node-compile-cache/
+backend/uploads/
+backend/tsconfig.build.tsbuildinfo
 backend/.env
 backend/.env.*
 npm-debug.log*
@@ -103,8 +108,13 @@ Thumbs.db
 *.log
 *.pyc
 *.swp
+~$*.docx
 .atom/
 .build/
 .history
 .svn/
 migrate_working_dir/
+.agents/
+scratch/test.docx
+scratch/test_class.png
+scratch/test_mermaid.png

@@ -1,0 +1,828 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lms_trung_tam_ngoai_ngu/core/network/api_client.dart';
+import 'package:lms_trung_tam_ngoai_ngu/core/router/route_names.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/public/data/public_catalog_repository.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/public/presentation/public_home_view.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/public/presentation/public_site_screen.dart';
+
+class _FakeApiClient implements ApiClient {
+  final Map<String, dynamic> responses = {
+    '/public/programs': <Map<String, dynamic>>[],
+    '/public/courses': <Map<String, dynamic>>[],
+    '/public/classes': {
+      'items': <Map<String, dynamic>>[],
+      'total': 0,
+      'totalPages': 0,
+    },
+    '/my/registrations': <Map<String, dynamic>>[],
+  };
+  bool failLead = false;
+  bool failPublicGet = false;
+  Completer<dynamic>? pendingClasses;
+  int leadCalls = 0;
+  String? lastPostPath;
+  Map<String, dynamic>? leadData;
+  Map<String, dynamic>? lastClassQuery;
+
+  @override
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    dynamic options,
+  }) async {
+    if (failPublicGet && path.startsWith('/public/')) {
+      throw Exception('Mất kết nối');
+    }
+    if (path == '/public/classes') {
+      lastClassQuery = queryParameters;
+      if (pendingClasses != null) return pendingClasses!.future;
+    }
+    return responses[path];
+  }
+
+  @override
+  Future<dynamic> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    dynamic options,
+  }) async {
+    leadCalls++;
+    lastPostPath = path;
+    leadData = Map<String, dynamic>.from(data as Map);
+    if (failLead) throw Exception('Mất kết nối');
+    return {'id': 'lead-1'};
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+GoRouter _router(
+  PublicCatalogRepository repository,
+  String initialLocation, {
+  bool student = false,
+}) => GoRouter(
+  initialLocation: initialLocation,
+  routes: [
+    GoRoute(
+      path: RouteNames.publicHome,
+      builder: (_, _) =>
+          PublicSiteScreen(repository: repository, page: PublicPage.home),
+    ),
+    GoRoute(
+      path: RouteNames.publicPrograms,
+      builder: (_, _) =>
+          PublicSiteScreen(repository: repository, page: PublicPage.programs),
+    ),
+    GoRoute(
+      path: RouteNames.publicCourses,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.courses,
+        programSlug: state.uri.queryParameters['chuong-trinh'],
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicCourseDetail,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.courseDetail,
+        slug: state.pathParameters['slug'],
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicClasses,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.classes,
+        courseId: state.uri.queryParameters['khoa-hoc'],
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicConsultation,
+      builder: (_, _) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.consultation,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.publicRegistration,
+      builder: (_, state) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.registration,
+        classId: state.pathParameters['id'],
+        isStudent: student,
+        studentName: student ? 'Học viên An' : null,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.myRegistrations,
+      builder: (_, _) => PublicSiteScreen(
+        repository: repository,
+        page: PublicPage.myRegistrations,
+        isStudent: true,
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.login,
+      builder: (_, _) => const Scaffold(body: Text('Đăng nhập')),
+    ),
+  ],
+);
+
+void main() {
+  testWidgets('catalog can clear a program with no published courses', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-a',
+        'title': 'IELTS A',
+        'program': {'slug': 'ielts', 'nameVi': 'Luyện thi IELTS'},
+        'levels': <Map<String, dynamic>>[],
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      '${RouteNames.publicCourses}?chuong-trinh=general',
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Chương trình này chưa có khóa học được công bố.'),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.widgetWithText(DropdownButtonFormField<String>, 'Chương trình'),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tất cả chương trình').last);
+    await tester.pumpAndSettle();
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  for (final width in [320.0, 800.0, 1200.0]) {
+    testWidgets('public catalog filters real programs at $width px', (
+      tester,
+    ) async {
+      final api = _FakeApiClient();
+      api.responses['/public/courses'] = [
+        {
+          'slug': 'ielts-a',
+          'title': 'IELTS A',
+          'program': {'slug': 'ielts', 'nameVi': 'Luyện thi IELTS chuyên sâu'},
+          'levels': <Map<String, dynamic>>[],
+        },
+        {
+          'slug': 'general-a',
+          'title': 'General A',
+          'program': {'slug': 'general', 'nameVi': 'Tiếng Anh tổng quát'},
+          'levels': <Map<String, dynamic>>[],
+        },
+      ];
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicCourses,
+      );
+      await tester.binding.setSurfaceSize(Size(width, 850));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+      expect(find.text('IELTS A'), findsOneWidget);
+      expect(find.text('General A'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(DropdownButtonFormField<String>, 'Chương trình'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Luyện thi IELTS chuyên sâu').last);
+      await tester.pumpAndSettle();
+      expect(find.text('IELTS A'), findsOneWidget);
+      expect(find.text('General A'), findsNothing);
+      expect(tester.takeException(), isNull, reason: 'width $width');
+      router.dispose();
+    });
+  }
+
+  testWidgets('public catalog searches published API records on mobile', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-a',
+        'title': 'IELTS A',
+        'code': 'IELTS-A',
+        'levels': [],
+        'program': {'nameVi': 'Luyện thi IELTS'},
+      },
+      {
+        'slug': 'general-a',
+        'title': 'General A',
+        'code': 'GEN-A',
+        'levels': [],
+        'program': {'nameVi': 'Tiếng Anh tổng quát'},
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.publicCourses,
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(find.text('General A'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Tìm khóa học'),
+      'IELTS',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(find.text('General A'), findsNothing);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Tìm khóa học'),
+      'không có',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Không tìm thấy khóa học phù hợp.'), findsOneWidget);
+  });
+
+  testWidgets('course detail shows real curriculum and filters its classes', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses/general-a1'] = {
+      'id': 'course-1',
+      'title': 'General A1',
+      'publicDescription': 'Tiếng Anh sơ cấp',
+      'levels': [
+        {
+          'name': 'A1',
+          'cefrLevel': 'A1',
+          'expectedOutcomes': 'Giao tiếp cơ bản',
+          'modules': [
+            {
+              'title': 'Giao tiếp hằng ngày',
+              'lessons': [
+                {'title': 'Giới thiệu bản thân'},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    final router = _router(
+      PublicCatalogRepository(api),
+      '/khoa-hoc-cong-khai/general-a1',
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ExpansionTile).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Giao tiếp cơ bản'), findsOneWidget);
+    expect(find.text('• Giới thiệu bản thân'), findsOneWidget);
+    await tester.ensureVisible(find.text('Xem lớp đang mở'));
+    await tester.tap(find.text('Xem lớp đang mở'));
+    await tester.pumpAndSettle();
+    expect(api.lastClassQuery?['courseId'], 'course-1');
+  });
+
+  testWidgets('program listing and course listing use distinct destinations', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/programs'] = [
+      {'slug': 'ielts', 'nameVi': 'IELTS Preparation'},
+    ];
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-a',
+        'title': 'IELTS A',
+        'program': {'slug': 'ielts', 'nameVi': 'IELTS Preparation'},
+        'levels': <Map<String, dynamic>>[],
+      },
+      {
+        'slug': 'general-a',
+        'title': 'General A',
+        'program': {'slug': 'general', 'nameVi': 'General English'},
+        'levels': <Map<String, dynamic>>[],
+      },
+    ];
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Xem tất cả').first);
+    await tester.tap(find.text('Xem tất cả').first);
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicPrograms,
+    );
+    expect(find.text('IELTS Preparation'), findsWidgets);
+    await tester.tap(find.text('IELTS Preparation').last);
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicCourses,
+    );
+    expect(find.text('IELTS A'), findsOneWidget);
+    expect(find.text('General A'), findsNothing);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0, 1440.0]) {
+    testWidgets('homepage shows an eligible API class at $width px', (
+      tester,
+    ) async {
+      final api = _FakeApiClient();
+      const classId = 'class-eligible';
+      final offering = <String, dynamic>{
+        'id': classId,
+        'name': 'Lớp IELTS mục tiêu 6.5 - 01',
+        'startDate': '2026-11-06T00:00:00.000Z',
+        'startTime': '18:00',
+        'endTime': '19:30',
+        'remainingSeats': 20,
+        'tuitionFee': '4500000',
+        'course': {'title': 'IELTS mục tiêu 6.5'},
+        'branch': {'name': 'Chi nhánh Quận 1'},
+      };
+      api.responses['/public/classes'] = {
+        'items': [offering],
+        'total': 1,
+        'totalPages': 1,
+      };
+      api.responses['/public/classes/$classId'] = offering;
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicHome,
+      );
+      await tester.binding.setSurfaceSize(Size(width, 850));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lớp IELTS mục tiêu 6.5 - 01'), findsOneWidget);
+      expect(find.text('Hiện chưa có lớp mở đăng ký.'), findsNothing);
+      expect(api.lastClassQuery?['page'], 1);
+      await tester.ensureVisible(find.text('Đăng ký lớp'));
+      await tester.tap(find.text('Đăng ký lớp'));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/dang-ky-lop/$classId',
+      );
+      expect(find.text('Lớp IELTS mục tiêu 6.5 - 01'), findsWidgets);
+      expect(tester.takeException(), isNull, reason: 'width $width');
+      router.dispose();
+    });
+  }
+
+  testWidgets(
+    'public pages keep mobile navigation and empty state across widths',
+    (tester) async {
+      for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0, 1440.0]) {
+        final api = _FakeApiClient();
+        final router = _router(
+          PublicCatalogRepository(api),
+          RouteNames.publicHome,
+        );
+        await tester.binding.setSurfaceSize(Size(width, 850));
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Chương trình đang được chuẩn bị công bố.'),
+          findsOneWidget,
+        );
+        expect(
+          find.byType(PopupMenuButton<String>),
+          width < 1100 ? findsOneWidget : findsNothing,
+        );
+        expect(tester.takeException(), isNull, reason: 'width $width');
+        router.dispose();
+      }
+    },
+  );
+
+  testWidgets('mobile home hero opens real catalog and consultation routes', (
+    tester,
+  ) async {
+    final router = _router(
+      PublicCatalogRepository(_FakeApiClient()),
+      RouteNames.publicHome,
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 760));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Khám phá khóa học ↗'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicCourses,
+    );
+    router.go(RouteNames.publicHome);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nhận tư vấn miễn phí'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      RouteNames.publicConsultation,
+    );
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage shows loading then API records', (tester) async {
+    final api = _FakeApiClient()..pendingClasses = Completer<dynamic>();
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(393, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    api.pendingClasses!.complete(api.responses['/public/classes']);
+    await tester.pumpAndSettle();
+    expect(find.text('Hiện chưa có lớp mở đăng ký.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage API error offers a working retry', (tester) async {
+    final api = _FakeApiClient()..failPublicGet = true;
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(375, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('Không tải được nội dung'), findsOneWidget);
+    api.failPublicGet = false;
+    await tester.tap(find.text('Thử lại'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hiện chưa có lớp mở đăng ký.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage mobile menu reaches the real login route', (
+    tester,
+  ) async {
+    final router = _router(
+      PublicCatalogRepository(_FakeApiClient()),
+      RouteNames.publicHome,
+    );
+    await tester.binding.setSurfaceSize(const Size(393, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Mở menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đăng nhập').last);
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, RouteNames.login);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage course card opens the API course slug', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-foundation',
+        'title': 'IELTS Foundation',
+        'publicDescription': 'Lộ trình nền tảng',
+        'program': {'nameVi': 'Luyện thi IELTS'},
+      },
+    ];
+    api.responses['/public/courses/ielts-foundation'] = {
+      'slug': 'ielts-foundation',
+      'title': 'IELTS Foundation',
+      'levels': <Map<String, dynamic>>[],
+    };
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(393, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Xem khóa học ↗'));
+    await tester.tap(find.text('Xem khóa học ↗'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/khoa-hoc-cong-khai/ielts-foundation',
+    );
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets(
+    'homepage keeps its element tree across both breakpoint directions',
+    (tester) async {
+      final api = _FakeApiClient();
+      api.responses['/public/programs'] = [
+        {'slug': 'english', 'nameVi': 'English'},
+      ];
+      api.responses['/public/courses'] = [
+        {
+          'slug': 'english-a1',
+          'title': 'English A1',
+          'program': {'nameVi': 'English'},
+        },
+      ];
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicHome,
+      );
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      for (final size in [
+        const Size(1440, 900),
+        const Size(393, 852),
+        const Size(1200, 800),
+        const Size(320, 700),
+        const Size(800, 1024),
+        const Size(375, 812),
+        const Size(430, 932),
+        const Size(1200, 800),
+        const Size(393, 852),
+      ]) {
+        await tester.binding.setSurfaceSize(size);
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Học tiếng Anh.\nMở tương lai.'),
+          size.width < 768 ? findsOneWidget : findsNothing,
+        );
+        expect(tester.takeException(), isNull, reason: 'after $size');
+      }
+      router.dispose();
+    },
+  );
+
+  testWidgets('homepage grid never creates a negative width during resize', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 0,
+            child: PublicHomeView(
+              programs: const [
+                {'slug': 'english', 'nameVi': 'English'},
+              ],
+              courses: const [],
+              offerings: const [],
+              navigate: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'public routes return to mobile homepage without stale elements',
+    (tester) async {
+      final router = _router(
+        PublicCatalogRepository(_FakeApiClient()),
+        RouteNames.publicHome,
+      );
+      await tester.binding.setSurfaceSize(const Size(393, 852));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      for (final route in [
+        RouteNames.publicCourses,
+        RouteNames.publicPrograms,
+        RouteNames.publicClasses,
+        RouteNames.publicConsultation,
+      ]) {
+        router.go(route);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'opening $route');
+        router.go(RouteNames.publicHome);
+        await tester.pumpAndSettle();
+        expect(find.text('Học tiếng Anh.\nMở tương lai.'), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: 'returning from $route');
+      }
+      router.dispose();
+    },
+  );
+
+  testWidgets('public navigation survives breakpoint changes on one router', (
+    tester,
+  ) async {
+    final router = _router(
+      PublicCatalogRepository(_FakeApiClient()),
+      RouteNames.publicHome,
+    );
+    await tester.binding.setSurfaceSize(const Size(1200, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+
+    for (final (size, route) in [
+      (const Size(393, 852), RouteNames.publicCourses),
+      (const Size(1200, 800), RouteNames.publicPrograms),
+      (const Size(320, 700), RouteNames.publicClasses),
+      (const Size(800, 1024), RouteNames.publicConsultation),
+      (const Size(430, 932), RouteNames.publicHome),
+    ]) {
+      await tester.binding.setSurfaceSize(size);
+      router.go(route);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$route at $size');
+    }
+
+    router.dispose();
+  });
+
+  testWidgets('course list displays only backend results', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'english-a1',
+        'title': 'English A1',
+        'publicDescription': 'Chương trình tiếng Anh cơ bản',
+        'program': {'nameVi': 'Tiếng Anh giao tiếp'},
+        'levels': <Map<String, dynamic>>[],
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.publicCourses,
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('English A1'), findsOneWidget);
+    expect(find.textContaining('Tiếng Anh giao tiếp'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('consultation validates and submits once after API success', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.publicConsultation,
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.ensureVisible(find.text('Gửi yêu cầu tư vấn'));
+    await tester.tap(find.text('Gửi yêu cầu tư vấn'));
+    await tester.pump();
+    expect(find.text('Vui lòng nhập họ tên'), findsOneWidget);
+    expect(api.leadCalls, 0);
+    await tester.enterText(find.byType(TextFormField).at(0), 'Nguyễn Văn An');
+    await tester.enterText(find.byType(TextFormField).at(1), '0988776655');
+    tester.testTextInput.hide();
+    await tester.ensureVisible(find.text('Gửi yêu cầu tư vấn'));
+    await tester.tap(find.text('Gửi yêu cầu tư vấn'));
+    await tester.pumpAndSettle();
+    expect(api.leadCalls, 1);
+    expect(api.leadData?['source'], 'WEBSITE');
+    expect(find.text('Đã gửi yêu cầu tư vấn'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('consultation retains input on API failure', (tester) async {
+    final api = _FakeApiClient()..failLead = true;
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.publicConsultation,
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 750));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.enterText(find.byType(TextFormField).at(0), 'Nguyễn Văn An');
+    await tester.enterText(find.byType(TextFormField).at(1), '0988776655');
+    tester.testTextInput.hide();
+    await tester.ensureVisible(find.text('Gửi yêu cầu tư vấn'));
+    await tester.tap(find.text('Gửi yêu cầu tư vấn'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Mất kết nối'), findsOneWidget);
+    expect(find.text('Đã gửi yêu cầu tư vấn'), findsNothing);
+    expect(find.text('Nguyễn Văn An'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets(
+    'consultation submit stays reachable with mobile keyboard inset',
+    (tester) async {
+      final api = _FakeApiClient();
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicConsultation,
+      );
+      await tester.binding.setSurfaceSize(const Size(320, 700));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(() => tester.view.resetViewInsets());
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.enterText(find.byType(TextFormField).at(0), 'Nguyễn Văn An');
+      await tester.enterText(find.byType(TextFormField).at(1), '0988776655');
+      await tester.ensureVisible(find.text('Gửi yêu cầu tư vấn'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Gửi yêu cầu tư vấn'));
+      await tester.pumpAndSettle();
+      expect(api.leadCalls, 1);
+      router.dispose();
+    },
+  );
+
+  testWidgets('guest registration uses the selected class', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/public/classes/class-1'] = {
+      'id': 'class-1',
+      'name': 'English A1 K01',
+      'remainingSeats': 3,
+      'course': {'title': 'English A1'},
+      'branch': {'name': 'Quận 1'},
+    };
+    final router = _router(
+      PublicCatalogRepository(api),
+      '/dang-ky-lop/class-1',
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('English A1 K01'), findsOneWidget);
+    await tester.ensureVisible(find.text('Gửi đăng ký lớp'));
+    await tester.tap(find.text('Gửi đăng ký lớp'));
+    await tester.pump();
+    expect(api.leadCalls, 0);
+    await tester.enterText(find.byType(TextFormField).at(0), 'Nguyễn Văn An');
+    await tester.enterText(find.byType(TextFormField).at(1), '0988776655');
+    tester.testTextInput.hide();
+    await tester.ensureVisible(find.text('Gửi đăng ký lớp'));
+    await tester.tap(find.text('Gửi đăng ký lớp'));
+    await tester.pumpAndSettle();
+    expect(api.lastPostPath, '/public/registrations');
+    expect(api.leadData?['classId'], 'class-1');
+    expect(find.text('Đã tiếp nhận đăng ký'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('existing student registration sends only class and note', (
+    tester,
+  ) async {
+    final api = _FakeApiClient();
+    api.responses['/public/classes/class-1'] = {
+      'id': 'class-1',
+      'name': 'English A1 K01',
+      'remainingSeats': 3,
+      'course': {'title': 'English A1'},
+      'branch': {'name': 'Quận 1'},
+    };
+    final router = _router(
+      PublicCatalogRepository(api),
+      '/dang-ky-lop/class-1',
+      student: true,
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Học viên An'), findsOneWidget);
+    expect(find.byType(TextFormField), findsOneWidget);
+    await tester.ensureVisible(find.text('Gửi đăng ký lớp'));
+    await tester.tap(find.text('Gửi đăng ký lớp'));
+    await tester.pumpAndSettle();
+    expect(api.lastPostPath, '/my/registrations');
+    expect(api.leadData, {'classId': 'class-1'});
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('student sees registration status from API', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/my/registrations'] = [
+      {
+        'id': 'request-1',
+        'status': 'CONTACTED',
+        'class': {
+          'name': 'English A1 K01',
+          'course': {'title': 'English A1'},
+        },
+      },
+    ];
+    final router = _router(
+      PublicCatalogRepository(api),
+      RouteNames.myRegistrations,
+    );
+    await tester.binding.setSurfaceSize(const Size(375, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('English A1 K01'), findsOneWidget);
+    expect(find.text('Học vụ đã liên hệ'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+}
