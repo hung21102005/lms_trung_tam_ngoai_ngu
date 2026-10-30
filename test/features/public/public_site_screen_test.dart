@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lms_trung_tam_ngoai_ngu/core/network/api_client.dart';
 import 'package:lms_trung_tam_ngoai_ngu/core/router/route_names.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/public/data/public_catalog_repository.dart';
+import 'package:lms_trung_tam_ngoai_ngu/features/public/presentation/public_home_view.dart';
 import 'package:lms_trung_tam_ngoai_ngu/features/public/presentation/public_site_screen.dart';
 
 class _FakeApiClient implements ApiClient {
@@ -515,6 +516,127 @@ void main() {
       '/khoa-hoc-cong-khai/ielts-foundation',
     );
     expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets(
+    'homepage keeps its element tree across both breakpoint directions',
+    (tester) async {
+      final api = _FakeApiClient();
+      api.responses['/public/programs'] = [
+        {'slug': 'english', 'nameVi': 'English'},
+      ];
+      api.responses['/public/courses'] = [
+        {
+          'slug': 'english-a1',
+          'title': 'English A1',
+          'program': {'nameVi': 'English'},
+        },
+      ];
+      final router = _router(
+        PublicCatalogRepository(api),
+        RouteNames.publicHome,
+      );
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      for (final size in [
+        const Size(1440, 900),
+        const Size(393, 852),
+        const Size(1200, 800),
+        const Size(320, 700),
+        const Size(800, 1024),
+        const Size(375, 812),
+        const Size(430, 932),
+        const Size(1200, 800),
+        const Size(393, 852),
+      ]) {
+        await tester.binding.setSurfaceSize(size);
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Học tiếng Anh.\nMở tương lai.'),
+          size.width < 768 ? findsOneWidget : findsNothing,
+        );
+        expect(tester.takeException(), isNull, reason: 'after $size');
+      }
+      router.dispose();
+    },
+  );
+
+  testWidgets('homepage grid never creates a negative width during resize', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 0,
+            child: PublicHomeView(
+              programs: const [
+                {'slug': 'english', 'nameVi': 'English'},
+              ],
+              courses: const [],
+              offerings: const [],
+              navigate: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'public routes return to mobile homepage without stale elements',
+    (tester) async {
+      final router = _router(
+        PublicCatalogRepository(_FakeApiClient()),
+        RouteNames.publicHome,
+      );
+      await tester.binding.setSurfaceSize(const Size(393, 852));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      for (final route in [
+        RouteNames.publicCourses,
+        RouteNames.publicPrograms,
+        RouteNames.publicClasses,
+        RouteNames.publicConsultation,
+      ]) {
+        router.go(route);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'opening $route');
+        router.go(RouteNames.publicHome);
+        await tester.pumpAndSettle();
+        expect(find.text('Học tiếng Anh.\nMở tương lai.'), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: 'returning from $route');
+      }
+      router.dispose();
+    },
+  );
+
+  testWidgets('public navigation survives breakpoint changes on one router', (
+    tester,
+  ) async {
+    final router = _router(
+      PublicCatalogRepository(_FakeApiClient()),
+      RouteNames.publicHome,
+    );
+    await tester.binding.setSurfaceSize(const Size(1200, 800));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+
+    for (final (size, route) in [
+      (const Size(393, 852), RouteNames.publicCourses),
+      (const Size(1200, 800), RouteNames.publicPrograms),
+      (const Size(320, 700), RouteNames.publicClasses),
+      (const Size(800, 1024), RouteNames.publicConsultation),
+      (const Size(430, 932), RouteNames.publicHome),
+    ]) {
+      await tester.binding.setSurfaceSize(size);
+      router.go(route);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$route at $size');
+    }
+
     router.dispose();
   });
 

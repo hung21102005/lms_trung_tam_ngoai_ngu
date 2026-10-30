@@ -1113,10 +1113,11 @@ class PublicHomeView extends StatelessWidget {
     Widget Function(T item, int index) builder,
   ) => LayoutBuilder(
     builder: (context, constraints) {
-      final count = constraints.maxWidth < 600
-          ? (columns == 1 ? 1 : columns)
-          : columns;
       const gap = 14.0;
+      // A web viewport can briefly report zero width while device emulation
+      // changes its dimensions. Do not pass a negative card width to SizedBox.
+      if (constraints.maxWidth <= 0) return const SizedBox.shrink();
+      final count = constraints.maxWidth < gap * (columns - 1) ? 1 : columns;
       final width = (constraints.maxWidth - gap * (count - 1)) / count;
       return Wrap(
         spacing: gap,
