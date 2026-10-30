@@ -288,6 +288,12 @@ class MockClassesRepository implements ClassesRepository {
   Future<List<ClassSessionModel>> getClassSessions(String classId) async => [];
 
   @override
+  Future<void> deleteClass(String id) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
   Future<List<ClassSessionModel>> getMySchedule({
     String? fromDate,
     String? toDate,
@@ -402,8 +408,9 @@ void main() {
 
     final getIt = GetIt.instance;
     if (getIt.isRegistered<ClassesBloc>()) getIt.unregister<ClassesBloc>();
-    if (getIt.isRegistered<AttendanceBloc>())
+    if (getIt.isRegistered<AttendanceBloc>()) {
       getIt.unregister<AttendanceBloc>();
+    }
     if (getIt.isRegistered<ClassesRepository>()) getIt.unregister<ClassesRepository>();
     if (getIt.isRegistered<AttendanceRepository>()) getIt.unregister<AttendanceRepository>();
     if (getIt.isRegistered<AssignmentsRepository>()) getIt.unregister<AssignmentsRepository>();
@@ -419,8 +426,9 @@ void main() {
     attendanceBloc.close();
     final getIt = GetIt.instance;
     if (getIt.isRegistered<ClassesBloc>()) getIt.unregister<ClassesBloc>();
-    if (getIt.isRegistered<AttendanceBloc>())
+    if (getIt.isRegistered<AttendanceBloc>()) {
       getIt.unregister<AttendanceBloc>();
+    }
     if (getIt.isRegistered<ClassesRepository>()) getIt.unregister<ClassesRepository>();
     if (getIt.isRegistered<AttendanceRepository>()) getIt.unregister<AttendanceRepository>();
     if (getIt.isRegistered<AssignmentsRepository>()) getIt.unregister<AssignmentsRepository>();

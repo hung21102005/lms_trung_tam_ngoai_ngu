@@ -63,16 +63,38 @@ class AuthRepositoryImpl implements AuthRepository {
     String newPassword,
     String confirmPassword,
   ) async {
+    final previousUser = await getSavedUser();
     final response = await remoteDataSource.firstLoginSetup(
       newPassword,
       confirmPassword,
     );
 
-    await storageService.saveAccessToken(response.accessToken);
-    await storageService.saveRefreshToken(response.refreshToken);
-    await storageService.saveUserData(response.user.toJson());
+    if (response.accessToken.isNotEmpty) {
+      await storageService.saveAccessToken(response.accessToken);
+    }
+    if (response.refreshToken.isNotEmpty) {
+      await storageService.saveRefreshToken(response.refreshToken);
+    }
 
-    return response;
+    UserModel resolvedUser = response.user.mergeWithFallback(previousUser);
+    if (!resolvedUser.hasValidRole) {
+      try {
+        final freshUser = await remoteDataSource.getMe();
+        resolvedUser = freshUser.mergeWithFallback(resolvedUser);
+      } catch (_) {
+        // Nếu getMe không khả dụng (ví dụ trong môi trường test độc lập), giữ resolvedUser
+      }
+    }
+
+    await storageService.saveUserData(resolvedUser.toJson());
+
+    return LoginResponseModel(
+      message: response.message,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      requiresPasswordChange: false,
+      user: resolvedUser,
+    );
   }
 
   @override

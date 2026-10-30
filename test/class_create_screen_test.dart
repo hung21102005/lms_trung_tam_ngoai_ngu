@@ -115,6 +115,12 @@ class FakeClassesRepository implements ClassesRepository {
   Future<List<ClassModel>> getMyClasses() async => [];
 
   @override
+  Future<void> deleteClass(String id) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
   Future<List<ClassSessionModel>> getMySchedule({
     String? fromDate,
     String? toDate,

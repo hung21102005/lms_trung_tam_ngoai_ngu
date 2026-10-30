@@ -51,3 +51,32 @@ export class UpdateLeadDto {
   @IsString()
   assignedStaffId?: string;
 }
+
+export class CloseLeadDto {
+  @ApiPropertyOptional({ example: 'Không còn nhu cầu' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @ApiPropertyOptional({ example: 'Khách báo tạm hoãn kế hoạch học' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+export class ArchiveLeadDto {
+  @ApiPropertyOptional({ example: 'Lưu trữ hồ sơ đã kết thúc đợt tuyển sinh' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}

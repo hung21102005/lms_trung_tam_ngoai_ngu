@@ -10,6 +10,8 @@ import {
 export enum RegistrationReviewAction {
   CONTACTED = 'CONTACTED',
   REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+  REOPEN = 'REOPEN',
 }
 
 export class ReviewClassRegistrationDto {

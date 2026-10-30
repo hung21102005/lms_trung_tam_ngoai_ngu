@@ -53,23 +53,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _autoLockIdleWebSession = true;
   bool _biometricMobileEnabled = false;
 
-  // Real system stats from PostgreSQL
-  int _totalUsers = 5;
-  int _totalBranches = 1;
-  int _totalClasses = 2;
-  int _totalCourses = 2;
+  // Dữ liệu thống kê thực tế theo vai trò của tài khoản đang đăng nhập (Không dùng số giả định)
+  String? _statsLoadedForUserId;
+  int _teacherActiveClasses = 0;
+  int _teacherTotalClasses = 0;
+  int _teacherTotalStudents = 0;
+  int _studentActiveClasses = 0;
+  int _studentCompletedClasses = 0;
+  int _studentPendingRegistrations = 0;
+  String? _studentCurrentClassName;
+  int _parentLinkedChildren = 0;
+  int _parentChildrenActiveClasses = 0;
+  int _adminScopedUsers = 0;
+  int _adminScopedBranches = 0;
+  int _adminScopedClasses = 0;
+  int _adminScopedCourses = 0;
 
   @override
   void initState() {
     super.initState();
     context.read<ProfileBloc>().add(const LoadProfileEvent());
-    _fetchRealSystemCounts();
   }
 
   @override
   void reassemble() {
     super.reassemble();
-    _fetchRealSystemCounts();
+    _statsLoadedForUserId = null;
   }
 
   @override
@@ -97,30 +106,198 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return [];
   }
 
-  Future<void> _fetchRealSystemCounts() async {
-    try {
-      final results = await Future.wait([
-        _apiClient.get('/users', queryParameters: {'limit': 100}).catchError((_) => <String, dynamic>{}),
-        _apiClient.get('/branches').catchError((_) => <String, dynamic>{}),
-        _apiClient.get('/classes', queryParameters: {'limit': 100}).catchError((_) => <String, dynamic>{}),
-        _apiClient.get('/courses', queryParameters: {'limit': 100}).catchError((_) => <String, dynamic>{}),
-      ]);
+  int _intStat(Map<String, dynamic> stats, String key, int fallback) {
+    final val = stats[key];
+    if (val is int) return val;
+    if (val is num) return val.toInt();
+    if (val is String) return int.tryParse(val) ?? fallback;
+    return fallback;
+  }
 
-      final users = _extractList(results[0]);
-      final branches = _extractList(results[1]);
-      final classes = _extractList(results[2]);
-      final courses = _extractList(results[3]);
+  Future<void> _fetchRoleScopedStats(UserEntity user, {bool force = false}) async {
+    if (!force && _statsLoadedForUserId == user.id) return;
+    _statsLoadedForUserId = user.id;
 
+    final stats = user.linkedStats;
+    if (stats.isNotEmpty) {
       if (mounted) {
         setState(() {
-          if (users.isNotEmpty) _totalUsers = users.length;
-          if (branches.isNotEmpty) _totalBranches = branches.length;
-          if (classes.isNotEmpty) _totalClasses = classes.length;
-          if (courses.isNotEmpty) _totalCourses = courses.length;
+          _teacherActiveClasses = _intStat(stats, 'activeClassesCount', 0);
+          _teacherTotalClasses = _intStat(stats, 'totalClassesCount', 0);
+          _teacherTotalStudents = _intStat(stats, 'totalStudentsCount', 0);
+          _studentActiveClasses = _intStat(stats, 'activeClassesCount', 0);
+          _studentCompletedClasses = _intStat(stats, 'completedClassesCount', 0);
+          _studentPendingRegistrations =
+              _intStat(stats, 'pendingRegistrationsCount', 0);
+          _parentLinkedChildren = _intStat(stats, 'linkedChildrenCount', 0);
+          _parentChildrenActiveClasses =
+              _intStat(stats, 'childrenActiveClassesCount', 0);
+          _adminScopedUsers = _intStat(stats, 'scopedUsersCount', 0);
+          _adminScopedBranches = _intStat(stats, 'scopedBranchesCount', 0);
+          _adminScopedClasses = _intStat(stats, 'scopedClassesCount', 0);
+          _adminScopedCourses = _intStat(stats, 'scopedCoursesCount', 0);
         });
+      }
+    }
+
+    try {
+      if (user.isTeacher) {
+        final res = await _apiClient
+            .get('/classes/my-classes')
+            .catchError((_) => <String, dynamic>{});
+        final myClasses = _extractList(res).whereType<Map>().toList();
+        if (myClasses.isNotEmpty || stats.isEmpty) {
+          final active = myClasses.where((c) {
+            final st = c['status']?.toString().toUpperCase() ?? '';
+            return st == 'PLANNING' ||
+                st == 'OPEN_FOR_ENROLLMENT' ||
+                st == 'IN_PROGRESS';
+          }).length;
+          final nonCancelled = myClasses.where((c) {
+            final st = c['status']?.toString().toUpperCase() ?? '';
+            return st != 'CANCELLED';
+          }).length;
+          int studentsSum = 0;
+          for (final c in myClasses) {
+            final countObj = c['_count'];
+            if (countObj is Map && countObj['students'] is num) {
+              studentsSum += (countObj['students'] as num).toInt();
+            } else if (c['enrolledCount'] is num) {
+              studentsSum += (c['enrolledCount'] as num).toInt();
+            } else if (c['currentStudents'] is num) {
+              studentsSum += (c['currentStudents'] as num).toInt();
+            }
+          }
+          if (mounted) {
+            setState(() {
+              _teacherActiveClasses = stats.containsKey('activeClassesCount')
+                  ? _intStat(stats, 'activeClassesCount', active)
+                  : active;
+              _teacherTotalClasses = stats.containsKey('totalClassesCount')
+                  ? _intStat(stats, 'totalClassesCount', nonCancelled)
+                  : nonCancelled;
+              _teacherTotalStudents = stats.containsKey('totalStudentsCount')
+                  ? _intStat(stats, 'totalStudentsCount', studentsSum)
+                  : studentsSum;
+            });
+          }
+        }
+      } else if (user.isStudent) {
+        final res = await _apiClient
+            .get('/classes/my-classes')
+            .catchError((_) => <String, dynamic>{});
+        final myClasses = _extractList(res).whereType<Map>().toList();
+        if (myClasses.isNotEmpty || stats.isEmpty) {
+          final activeList = myClasses.where((c) {
+            final st = c['status']?.toString().toUpperCase() ?? '';
+            return st != 'CANCELLED' && st != 'COMPLETED';
+          }).toList();
+          final completedCount = myClasses.where((c) {
+            final st = c['status']?.toString().toUpperCase() ?? '';
+            return st == 'COMPLETED';
+          }).length;
+          if (mounted) {
+            setState(() {
+              _studentActiveClasses = stats.containsKey('activeClassesCount')
+                  ? _intStat(stats, 'activeClassesCount', activeList.length)
+                  : activeList.length;
+              _studentCompletedClasses =
+                  stats.containsKey('completedClassesCount')
+                      ? _intStat(stats, 'completedClassesCount', completedCount)
+                      : completedCount;
+              if (activeList.isNotEmpty) {
+                _studentCurrentClassName = activeList.first['name']?.toString();
+              }
+            });
+          }
+        }
+      } else if (user.isSuperAdmin ||
+          user.isBranchAdmin ||
+          user.isAcademicStaff ||
+          user.isCashier) {
+        if (stats.isEmpty) {
+          final results = await Future.wait([
+            _apiClient
+                .get('/users', queryParameters: {'limit': 100})
+                .catchError((_) => <String, dynamic>{}),
+            _apiClient.get('/branches').catchError((_) => <String, dynamic>{}),
+            _apiClient
+                .get('/classes', queryParameters: {'limit': 100})
+                .catchError((_) => <String, dynamic>{}),
+            _apiClient
+                .get('/courses', queryParameters: {'limit': 100})
+                .catchError((_) => <String, dynamic>{}),
+          ]);
+          final users = _extractList(results[0]);
+          final branches = _extractList(results[1]);
+          final classes = _extractList(results[2]);
+          final courses = _extractList(results[3]);
+          if (mounted) {
+            setState(() {
+              _adminScopedUsers = users.length;
+              _adminScopedBranches = branches.length;
+              _adminScopedClasses = classes.length;
+              _adminScopedCourses = courses.length;
+            });
+          }
+        }
       }
     } catch (_) {}
   }
+
+  String _getBranchDisplayName(UserEntity user) {
+    final name = user.branchName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    if (user.isSuperAdmin || user.isTeacher) {
+      return 'Liên cơ sở (Toàn hệ thống)';
+    }
+    return 'Chưa phân bổ chi nhánh cố định';
+  }
+
+  int _getTeacherActiveClasses(UserEntity user) =>
+      _intStat(user.linkedStats, 'activeClassesCount', _teacherActiveClasses);
+
+  int _getTeacherTotalClasses(UserEntity user) =>
+      _intStat(user.linkedStats, 'totalClassesCount', _teacherTotalClasses);
+
+  int _getTeacherTotalStudents(UserEntity user) =>
+      _intStat(user.linkedStats, 'totalStudentsCount', _teacherTotalStudents);
+
+  int _getStudentActiveClasses(UserEntity user) =>
+      _intStat(user.linkedStats, 'activeClassesCount', _studentActiveClasses);
+
+  int _getStudentCompletedClasses(UserEntity user) => _intStat(
+        user.linkedStats,
+        'completedClassesCount',
+        _studentCompletedClasses,
+      );
+
+  int _getStudentPendingRegistrations(UserEntity user) => _intStat(
+        user.linkedStats,
+        'pendingRegistrationsCount',
+        _studentPendingRegistrations,
+      );
+
+  int _getParentLinkedChildren(UserEntity user) =>
+      _intStat(user.linkedStats, 'linkedChildrenCount', _parentLinkedChildren);
+
+  int _getParentChildrenActiveClasses(UserEntity user) => _intStat(
+        user.linkedStats,
+        'childrenActiveClassesCount',
+        _parentChildrenActiveClasses,
+      );
+
+  int _getAdminUsers(UserEntity user) =>
+      _intStat(user.linkedStats, 'scopedUsersCount', _adminScopedUsers);
+
+  int _getAdminBranches(UserEntity user) =>
+      _intStat(user.linkedStats, 'scopedBranchesCount', _adminScopedBranches);
+
+  int _getAdminClasses(UserEntity user) =>
+      _intStat(user.linkedStats, 'scopedClassesCount', _adminScopedClasses);
+
+  int _getAdminCourses(UserEntity user) =>
+      _intStat(user.linkedStats, 'scopedCoursesCount', _adminScopedCourses);
 
   void _syncControllersWithUser(UserEntity user) {
     if (_populatedUserId != user.id) {
@@ -165,14 +342,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user.isSuperAdmin) {
       return 'Ban Quản trị Hệ thống • Toàn quyền điều hành CSDL';
     }
-    if (user.isBranchAdmin || user.isAcademicStaff) {
-      return 'Phòng Quản lý Học vụ • ${user.branchName ?? "Chi nhánh Quận 1 - Hồ Chí Minh"}';
+    if (user.isBranchAdmin || user.isAcademicStaff || user.isCashier) {
+      return 'Phòng Quản lý Học vụ • ${_getBranchDisplayName(user)}';
     }
     if (user.isTeacher) {
-      return 'Khoa Đào tạo Ngoại ngữ • Phụ trách $_totalClasses lớp học';
+      final activeCount = _getTeacherActiveClasses(user);
+      final totalCount = _getTeacherTotalClasses(user);
+      if (activeCount == 0 && totalCount == 0) {
+        return 'Khoa Đào tạo Ngoại ngữ • Phụ trách 0 lớp học (Chưa phân công lớp)';
+      }
+      return 'Khoa Đào tạo Ngoại ngữ • Phụ trách $activeCount lớp hoạt động (Tổng $totalCount lớp)';
     }
-    return user.currentClass != null
-        ? 'Lớp đang học: ${user.currentClass}'
+    if (user.isParent) {
+      final childrenCount = _getParentLinkedChildren(user);
+      return 'Phụ huynh học viên • Liên kết $childrenCount học viên';
+    }
+    final activeClass = user.currentClass ?? _studentCurrentClassName;
+    return activeClass != null && activeClass.isNotEmpty
+        ? 'Lớp đang học: $activeClass'
         : 'Chưa xếp lớp cố định';
   }
 
@@ -320,6 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         _syncControllersWithUser(user);
+        _fetchRoleScopedStats(user);
 
         if (isDesktop) {
           return _buildWebDesktopScaffold(context, user, state);
@@ -354,12 +542,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: () {
                     if (context.canPop()) {
                       context.pop();
-                    } else if (user.isSuperAdmin || user.isBranchAdmin || user.isAcademicStaff) {
-                      context.go(RouteNames.adminHome);
-                    } else if (user.isTeacher) {
-                      context.go(RouteNames.teacherHome);
                     } else {
-                      context.go(RouteNames.studentHome);
+                      context.go(user.dashboardRoute ?? RouteNames.login);
                     }
                   },
                   icon: const Icon(Icons.arrow_back_rounded, size: 17, color: Color(0xFF0F172A)),
@@ -407,7 +591,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 IconButton(
                   onPressed: () {
                     context.read<ProfileBloc>().add(const LoadProfileEvent());
-                    _fetchRealSystemCounts();
+                    _fetchRoleScopedStats(user, force: true);
                   },
                   icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B)),
                   tooltip: 'Làm mới dữ liệu hồ sơ',
@@ -527,7 +711,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildWebLeftColumn(BuildContext context, UserEntity user) {
-    final branchTitle = user.branchName ?? 'Chi nhánh Quận 1 - Hồ Chí Minh';
+    final branchTitle = _getBranchDisplayName(user);
+    final rolesCount = user.roles.isNotEmpty ? user.roles.length : 1;
+
+    late final String stat1Label;
+    late final String stat1Value;
+    late final IconData stat1Icon;
+    late final String stat2Label;
+    late final String stat2Value;
+    late final IconData stat2Icon;
+    late final String stat3Label;
+    late final String stat3Value;
+    late final IconData stat3Icon;
+
+    if (user.isTeacher) {
+      stat1Label = 'Lớp đang phụ trách';
+      stat1Value = '${_getTeacherActiveClasses(user)} lớp';
+      stat1Icon = Icons.class_rounded;
+      stat2Label = 'Tổng lớp giảng dạy';
+      stat2Value = '${_getTeacherTotalClasses(user)} lớp';
+      stat2Icon = Icons.fact_check_rounded;
+      stat3Label = 'Học viên phụ trách';
+      stat3Value = '${_getTeacherTotalStudents(user)} HV';
+      stat3Icon = Icons.groups_rounded;
+    } else if (user.isStudent) {
+      stat1Label = 'Lớp đang theo học';
+      stat1Value = '${_getStudentActiveClasses(user)} lớp';
+      stat1Icon = Icons.school_rounded;
+      stat2Label = 'Lớp đã hoàn thành';
+      stat2Value = '${_getStudentCompletedClasses(user)} lớp';
+      stat2Icon = Icons.task_alt_rounded;
+      stat3Label = 'Đăng ký chờ duyệt';
+      stat3Value = '${_getStudentPendingRegistrations(user)} ĐK';
+      stat3Icon = Icons.pending_actions_rounded;
+    } else if (user.isParent) {
+      stat1Label = 'Học viên liên kết';
+      stat1Value = '${_getParentLinkedChildren(user)} HV';
+      stat1Icon = Icons.family_restroom_rounded;
+      stat2Label = 'Lớp con đang học';
+      stat2Value = '${_getParentChildrenActiveClasses(user)} lớp';
+      stat2Icon = Icons.class_rounded;
+      stat3Label = 'Cơ sở theo học';
+      stat3Value = user.branchName != null ? '1 cơ sở' : 'Liên cơ sở';
+      stat3Icon = Icons.domain_rounded;
+    } else {
+      stat1Label = 'Người dùng phạm vi';
+      stat1Value = '${_getAdminUsers(user)} TK';
+      stat1Icon = Icons.groups_rounded;
+      stat2Label = 'Cơ sở hoạt động';
+      stat2Value = '${_getAdminBranches(user)} cơ sở';
+      stat2Icon = Icons.domain_rounded;
+      stat3Label = 'Lớp trong phạm vi';
+      stat3Value = '${_getAdminClasses(user)} lớp';
+      stat3Icon = Icons.class_rounded;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -686,18 +923,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Expanded(
                     child: _buildMiniStatBox(
-                      label: user.isStudent ? 'Khóa đang mở' : 'Tổng người dùng',
-                      value: user.isStudent ? '$_totalCourses khóa' : '$_totalUsers TK',
-                      icon: Icons.groups_rounded,
+                      label: stat1Label,
+                      value: stat1Value,
+                      icon: stat1Icon,
                       color: const Color(0xFF003FB1),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMiniStatBox(
-                      label: 'Cơ sở hoạt động',
-                      value: '$_totalBranches cơ sở',
-                      icon: Icons.domain_rounded,
+                      label: stat2Label,
+                      value: stat2Value,
+                      icon: stat2Icon,
                       color: const Color(0xFF047857),
                     ),
                   ),
@@ -708,9 +945,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Expanded(
                     child: _buildMiniStatBox(
-                      label: 'Lớp trong hệ thống',
-                      value: '$_totalClasses lớp',
-                      icon: Icons.class_rounded,
+                      label: stat3Label,
+                      value: stat3Value,
+                      icon: stat3Icon,
                       color: const Color(0xFF7C3AED),
                     ),
                   ),
@@ -718,7 +955,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: _buildMiniStatBox(
                       label: 'Vai trò đảm nhiệm',
-                      value: '${user.roles.isNotEmpty ? user.roles.length : 1} vai trò',
+                      value: '$rolesCount vai trò',
                       icon: Icons.shield_outlined,
                       color: const Color(0xFFD97706),
                     ),
@@ -1045,7 +1282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 flex: 3,
                 child: TextFormField(
-                  initialValue: user.branchName ?? 'Chi nhánh Quận 1 - Hồ Chí Minh',
+                  initialValue: _getBranchDisplayName(user),
                   enabled: false,
                   decoration: const InputDecoration(
                     labelText: 'Cơ sở đào tạo / Công tác',
@@ -1402,7 +1639,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.domain_rounded,
                     iconColor: Colors.deepPurple,
                     title: 'Cơ sở trực thuộc',
-                    subtitle: user.branchName ?? 'Chi nhánh Quận 1 - Hồ Chí Minh',
+                    subtitle: _getBranchDisplayName(user),
                     onTap: () {},
                   ),
                 ],
@@ -1637,7 +1874,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             runSpacing: 4,
             children: [
               Text(
-                'Cơ sở: ${user.branchName ?? "Chi nhánh Quận 1 - Hồ Chí Minh"}',
+                'Cơ sở: ${_getBranchDisplayName(user)}',
                 style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
               const Text(
@@ -1652,6 +1889,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMobileStatsRow(BuildContext context, UserEntity user) {
+    late final String col1Val;
+    late final String col1Label;
+    late final IconData col1Icon;
+    late final String col2Val;
+    late final String col2Label;
+    late final IconData col2Icon;
+    late final String col3Val;
+    late final String col3Label;
+    late final IconData col3Icon;
+
+    if (user.isTeacher) {
+      col1Val = '${_getTeacherActiveClasses(user)}';
+      col1Label = 'Lớp phụ trách';
+      col1Icon = Icons.class_rounded;
+      col2Val = '${_getTeacherTotalStudents(user)}';
+      col2Label = 'Học viên';
+      col2Icon = Icons.groups_rounded;
+      col3Val = '${_getTeacherTotalClasses(user)}';
+      col3Label = 'Tổng lớp dạy';
+      col3Icon = Icons.fact_check_rounded;
+    } else if (user.isStudent) {
+      col1Val = '${_getStudentActiveClasses(user)}';
+      col1Label = 'Lớp đang học';
+      col1Icon = Icons.school_rounded;
+      col2Val = '${_getStudentCompletedClasses(user)}';
+      col2Label = 'Đã hoàn thành';
+      col2Icon = Icons.task_alt_rounded;
+      col3Val = '${_getStudentPendingRegistrations(user)}';
+      col3Label = 'Chờ xếp lớp';
+      col3Icon = Icons.pending_actions_rounded;
+    } else if (user.isParent) {
+      col1Val = '${_getParentLinkedChildren(user)}';
+      col1Label = 'Con liên kết';
+      col1Icon = Icons.family_restroom_rounded;
+      col2Val = '${_getParentChildrenActiveClasses(user)}';
+      col2Label = 'Lớp đang học';
+      col2Icon = Icons.class_rounded;
+      col3Val = '${user.roles.isNotEmpty ? user.roles.length : 1}';
+      col3Label = 'Vai trò';
+      col3Icon = Icons.shield_outlined;
+    } else {
+      col1Val = '${_getAdminCourses(user)}';
+      col1Label = 'Khóa đào tạo';
+      col1Icon = Icons.menu_book_rounded;
+      col2Val = '${_getAdminClasses(user)}';
+      col2Label = 'Lớp hoạt động';
+      col2Icon = Icons.fact_check_rounded;
+      col3Val = '${_getAdminBranches(user)}';
+      col3Label = 'Chi nhánh';
+      col3Icon = Icons.apartment_rounded;
+    }
+
     return AppCard(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       child: Row(
@@ -1660,9 +1949,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: _buildStatColumn(
               context,
-              '$_totalCourses',
-              'Khóa đào tạo',
-              Icons.menu_book_rounded,
+              col1Val,
+              col1Label,
+              col1Icon,
               AppColors.primary,
             ),
           ),
@@ -1670,9 +1959,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: _buildStatColumn(
               context,
-              '$_totalClasses',
-              'Lớp hoạt động',
-              Icons.fact_check_rounded,
+              col2Val,
+              col2Label,
+              col2Icon,
               AppColors.success,
             ),
           ),
@@ -1680,9 +1969,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: _buildStatColumn(
               context,
-              '$_totalBranches',
-              'Chi nhánh',
-              Icons.apartment_rounded,
+              col3Val,
+              col3Label,
+              col3Icon,
               AppColors.warning,
             ),
           ),

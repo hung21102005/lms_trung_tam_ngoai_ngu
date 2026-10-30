@@ -39,6 +39,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
   ApiClient get _apiClient => getIt<ApiClient>();
   late TabController _tabController;
   int _mobileSection = 0;
+  ClassModel? _classDetail;
   String? _curriculumLevelId;
   Future<List<Map<String, dynamic>>>? _curriculumFuture;
   final NumberFormat _currencyFormat = NumberFormat.currency(
@@ -274,7 +275,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                                 error = null;
                               });
                               try {
-                                await bloc.repository.updateClass(
+                                await bloc.updateClassAndSync(
                                   classObj.id,
                                   name: name.trim(),
                                   maxCapacity: int.parse(capacityText.trim()),
@@ -405,7 +406,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
     if (confirmed == true && mounted) {
       final bloc = context.read<ClassesBloc>();
       try {
-        await bloc.repository.deleteClass(classObj.id);
+        await bloc.deleteClassAndSync(classObj.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -582,9 +583,14 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
   }
 
   Future<void> _showEnrollStudentDialog() async {
-    final classState = context.read<ClassesBloc>().state;
-    if (classState is! ClassDetailLoaded) return;
-    final classDetail = classState.classDetail;
+    final bloc = context.read<ClassesBloc>();
+    final classState = bloc.state;
+    final classDetail =
+        _classDetail ??
+        (classState is ClassDetailLoaded
+            ? classState.classDetail
+            : bloc.getCachedDetail(widget.classId));
+    if (classDetail == null) return;
     final enrolledIds = classDetail.students
         .map((student) => student.studentId)
         .toSet();
@@ -718,9 +724,15 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
   }
 
   Future<void> _showEditSessionDialog(ClassSessionModel session) async {
-    final classState = context.read<ClassesBloc>().state;
-    if (classState is! ClassDetailLoaded) return;
-    final branchId = classState.classDetail.branchId;
+    final bloc = context.read<ClassesBloc>();
+    final classState = bloc.state;
+    final classDetail =
+        _classDetail ??
+        (classState is ClassDetailLoaded
+            ? classState.classDetail
+            : bloc.getCachedDetail(widget.classId));
+    if (classDetail == null) return;
+    final branchId = classDetail.branchId;
     final roomOptions = <EntityOption>[];
     final teacherOptions = <EntityOption>[];
     try {
@@ -949,9 +961,15 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
           if (_canManageEnrollment)
             IconButton(
               onPressed: () {
-                final state = context.read<ClassesBloc>().state;
-                if (state is ClassDetailLoaded) {
-                  _showEditClassDialog(state.classDetail);
+                final bloc = context.read<ClassesBloc>();
+                final state = bloc.state;
+                final detail =
+                    _classDetail ??
+                    (state is ClassDetailLoaded
+                        ? state.classDetail
+                        : bloc.getCachedDetail(widget.classId));
+                if (detail != null) {
+                  _showEditClassDialog(detail);
                 }
               },
               icon: const Icon(Icons.edit_outlined),
@@ -960,13 +978,19 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
           if (_canManageEnrollment)
             BlocBuilder<ClassesBloc, ClassesState>(
               builder: (context, state) {
-                if (state is! ClassDetailLoaded ||
-                    state.classDetail.status != 'PLANNING' ||
-                    state.classDetail.students.isNotEmpty) {
+                final detail = state is ClassDetailLoaded
+                    ? state.classDetail
+                    : _classDetail ??
+                          context.read<ClassesBloc>().getCachedDetail(
+                            widget.classId,
+                          );
+                if (detail == null ||
+                    detail.status != 'PLANNING' ||
+                    detail.students.isNotEmpty) {
                   return const SizedBox.shrink();
                 }
                 return IconButton(
-                  onPressed: () => _showDeleteClass(state.classDetail),
+                  onPressed: () => _showDeleteClass(detail),
                   icon: const Icon(
                     Icons.delete_outline_rounded,
                     color: AppColors.error,
@@ -1004,7 +1028,18 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
       ),
       body: BlocConsumer<ClassesBloc, ClassesState>(
         listener: (context, state) {
-          if (state is ClassOperationSuccess) {
+          if (state is ClassDetailLoaded &&
+              state.classDetail.id == widget.classId) {
+            setState(() {
+              _classDetail = state.classDetail;
+            });
+          } else if (state is ClassOperationSuccess) {
+            if (state.data is ClassModel &&
+                (state.data as ClassModel).id == widget.classId) {
+              setState(() {
+                _classDetail = state.data as ClassModel;
+              });
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -1023,11 +1058,23 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
           }
         },
         builder: (context, state) {
-          if (state is ClassDetailLoading) {
+          final bloc = context.read<ClassesBloc>();
+          if (state is ClassDetailLoaded &&
+              state.classDetail.id == widget.classId) {
+            _classDetail = state.classDetail;
+          } else if (state is ClassOperationSuccess &&
+              state.data is ClassModel &&
+              (state.data as ClassModel).id == widget.classId) {
+            _classDetail = state.data as ClassModel;
+          }
+          final effectiveDetail =
+              _classDetail ?? bloc.getCachedDetail(widget.classId);
+
+          if (state is ClassDetailLoading && effectiveDetail == null) {
             return const LoadingWidget(
               message: 'Đang tải thông tin chi tiết lớp học...',
             );
-          } else if (state is ClassesError) {
+          } else if (state is ClassesError && effectiveDetail == null) {
             return AppErrorWidget(
               message: state.message,
               onRetry: () {
@@ -1036,8 +1083,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                 );
               },
             );
-          } else if (state is ClassDetailLoaded) {
-            final classObj = state.classDetail;
+          } else if (effectiveDetail != null) {
+            final classObj = effectiveDetail;
             if (isMobile) return _buildMobileClassDetail(classObj);
             return NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) {

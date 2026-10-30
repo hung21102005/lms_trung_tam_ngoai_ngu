@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection.dart';
@@ -16,13 +17,19 @@ import '../bloc/classes_event.dart';
 import '../bloc/classes_state.dart';
 
 class ClassCreateScreen extends StatefulWidget {
-  const ClassCreateScreen({super.key, this.catalogFetch});
-
+  final String? initialCourseId;
+  final String? initialLevelId;
   final Future<dynamic> Function(
     String path, {
     Map<String, dynamic>? queryParameters,
-  })?
-  catalogFetch;
+  })? catalogFetch;
+
+  const ClassCreateScreen({
+    super.key,
+    this.initialCourseId,
+    this.initialLevelId,
+    this.catalogFetch,
+  });
 
   @override
   State<ClassCreateScreen> createState() => _ClassCreateScreenState();
@@ -47,6 +54,10 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
   List<EntityOption> _teachers = [];
   String? _lookupError;
   bool _loadingLookups = true;
+  bool _isSubmitting = false;
+
+  Map<String, Map<String, dynamic>> _courseDataMap = {};
+  Map<String, Map<String, dynamic>> _levelDataMap = {};
 
   final _codeController = TextEditingController();
   final _nameController = TextEditingController();
@@ -83,8 +94,29 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
   @override
   void initState() {
     super.initState();
+    _totalSessionsController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadLookups();
   }
+
+  Map<String, dynamic>? get _selectedCourseData =>
+      _courseIdController.text.isNotEmpty
+          ? _courseDataMap[_courseIdController.text]
+          : null;
+
+  bool get _isCourseEligible {
+    final data = _selectedCourseData;
+    if (data == null) return true;
+    final pubStatus = data['publicationStatus']?.toString().toUpperCase();
+    final isActive = data['isActive'] == true;
+    return pubStatus == 'PUBLISHED' && isActive;
+  }
+
+  Map<String, dynamic>? get _selectedLevelData =>
+      _levelIdController.text.isNotEmpty
+          ? _levelDataMap[_levelIdController.text]
+          : null;
 
   List<dynamic> _items(dynamic response) {
     final data = response is Map ? response['data'] ?? response : response;
@@ -141,11 +173,44 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         _getCatalog('/branches'),
       ]);
       if (!mounted) return;
+      final rawCourses = results[0] as List<dynamic>;
+      _courseDataMap = {
+        for (final c in rawCourses)
+          if (c is Map && c['id'] != null)
+            c['id'].toString(): {
+              'id': c['id'].toString(),
+              'title': c['title']?.toString() ?? '',
+              'code': c['code']?.toString() ?? '',
+              'publicationStatus':
+                  c['publicationStatus']?.toString().toUpperCase() ?? 'DRAFT',
+              'isActive': c['isActive'] != false,
+            },
+      };
+
       setState(() {
-        _courses = _options(results[0] as List<dynamic>, 'title', 'code');
+        _courses = rawCourses.whereType<Map>().map((c) {
+          final id = c['id']?.toString() ?? '';
+          final name = c['title']?.toString() ?? '';
+          final code = c['code']?.toString() ?? '';
+          final pubStatus =
+              c['publicationStatus']?.toString().toUpperCase() ?? 'DRAFT';
+          final isActive = c['isActive'] != false;
+          final isEligible = pubStatus == 'PUBLISHED' && isActive;
+          final statusTag = isEligible ? '' : ' [Chưa duyệt/Tạm ngưng]';
+          return EntityOption(
+            id: id,
+            label: code.isEmpty ? '$name$statusTag' : '$name ($code)$statusTag',
+          );
+        }).toList();
         _branches = _options(_items(results[1]), 'name', 'code');
         _loadingLookups = false;
       });
+
+      if (widget.initialCourseId != null &&
+          widget.initialCourseId!.isNotEmpty &&
+          _courseDataMap.containsKey(widget.initialCourseId)) {
+        await _selectCourse(widget.initialCourseId);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -161,12 +226,34 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
       _courseIdController.text = id ?? '';
       _levelIdController.clear();
       _levels = [];
+      _levelDataMap = {};
     });
     if (id == null) return;
     try {
       final response = await _getCatalog('/courses/$id/levels');
       if (mounted && _courseIdController.text == id) {
-        setState(() => _levels = _options(_items(response), 'name', 'code'));
+        final rawLevels = _items(response);
+        _levelDataMap = {
+          for (final lvl in rawLevels)
+            if (lvl is Map && lvl['id'] != null)
+              lvl['id'].toString(): {
+                'id': lvl['id'].toString(),
+                'name': lvl['name']?.toString() ?? '',
+                'code': lvl['code']?.toString() ?? '',
+                'estimatedSessions':
+                    int.tryParse('${lvl['estimatedSessions']}') ?? 24,
+                'tuitionFee':
+                    double.tryParse('${lvl['tuitionFee']}') ?? 0.0,
+              },
+        };
+        setState(() {
+          _levels = _options(rawLevels, 'name', 'code');
+        });
+
+        if (widget.initialLevelId != null &&
+            _levelDataMap.containsKey(widget.initialLevelId)) {
+          _selectLevel(widget.initialLevelId);
+        }
       }
     } catch (error) {
       if (mounted) {
@@ -175,6 +262,84 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         );
       }
     }
+  }
+
+  void _selectLevel(String? id) {
+    setState(() {
+      _levelIdController.text = id ?? '';
+      if (id != null && _levelDataMap.containsKey(id)) {
+        final lvl = _levelDataMap[id]!;
+        final sessions = lvl['estimatedSessions'];
+        final fee = lvl['tuitionFee'];
+        if (sessions != null && sessions > 0) {
+          _totalSessionsController.text = '$sessions';
+        }
+        if (fee != null && fee > 0) {
+          _tuitionFeeController.text = (fee as num).toInt().toString();
+        }
+      }
+    });
+  }
+
+  final Set<String> _unassignedTeacherIds = <String>{};
+
+  bool _isUserTeacher(Map item) {
+    if (item['roleCode'] == 'teacher' ||
+        item['roleCode'] == 'teaching_assistant') {
+      return true;
+    }
+    if (item['roles'] is List) {
+      for (final r in item['roles'] as List) {
+        if (r == 'teacher' || r == 'teaching_assistant') return true;
+        if (r is Map) {
+          final code = r['code']?.toString().toLowerCase() ?? '';
+          if (code == 'teacher' || code == 'teaching_assistant') return true;
+        }
+      }
+    }
+    if (item['userRoles'] is List) {
+      for (final ur in item['userRoles'] as List) {
+        if (ur is Map && ur['role'] is Map) {
+          final code = ur['role']['code']?.toString().toLowerCase() ?? '';
+          if (code == 'teacher' || code == 'teaching_assistant') return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  List<EntityOption> _teacherOptions(List<dynamic> items) {
+    _unassignedTeacherIds.clear();
+    return items
+        .whereType<Map>()
+        .map((item) {
+          final id = item['id']?.toString() ?? '';
+          final name = item['fullName']?.toString() ?? '';
+          final code = item['userCode']?.toString() ?? '';
+          final branchId =
+              (item['branch'] is Map
+                  ? item['branch']['id']?.toString()
+                  : null) ??
+              item['branchId']?.toString();
+          if (id.isNotEmpty && (branchId == null || branchId.isEmpty)) {
+            _unassignedTeacherIds.add(id);
+          }
+          final rawTp = item['teacherProfile'] is Map
+              ? item['teacherProfile'] as Map
+              : null;
+          final specialties =
+              (item['specialties']?.toString() ??
+                      rawTp?['specialties']?.toString() ??
+                      '')
+                  .trim();
+          final baseLabel = code.isEmpty ? name : '$name ($code)';
+          final label = specialties.isNotEmpty
+              ? '$baseLabel • $specialties'
+              : baseLabel;
+          return EntityOption(id: id, label: label);
+        })
+        .where((option) => option.id.isNotEmpty)
+        .toList();
   }
 
   Future<void> _selectBranch(String? id) async {
@@ -187,17 +352,42 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
     });
     if (id == null) return;
     try {
-      final results = await Future.wait([
+      final futures = <Future<dynamic>>[
         _getCatalog('/branches/$id/rooms'),
         _getCatalog(
           '/users/teachers/lookup',
           queryParameters: {'branchId': id},
         ),
-      ]);
+        if (widget.catalogFetch == null && getIt.isRegistered<ApiClient>())
+          getIt<ApiClient>()
+              .get('/users', queryParameters: {'limit': 100})
+              .catchError((_) => <String, dynamic>{}),
+      ];
+      final results = await Future.wait(futures);
+      final lookupTeachers = _items(results[1]).whereType<Map>().toList();
+      final mergedById = <String, Map>{
+        for (final t in lookupTeachers)
+          if (t['id'] != null) t['id'].toString(): t,
+      };
+      if (results.length > 2) {
+        final allUsers = _items(results[2]).whereType<Map>();
+        for (final u in allUsers) {
+          final uid = u['id']?.toString() ?? '';
+          if (uid.isEmpty || mergedById.containsKey(uid)) continue;
+          final status = u['status']?.toString().toUpperCase() ?? 'ACTIVE';
+          if (status != 'ACTIVE' || !_isUserTeacher(u)) continue;
+          final uBranchId =
+              (u['branch'] is Map ? u['branch']['id']?.toString() : null) ??
+              u['branchId']?.toString();
+          if (uBranchId == null || uBranchId.isEmpty || uBranchId == id) {
+            mergedById[uid] = u;
+          }
+        }
+      }
       if (mounted && _branchIdController.text == id) {
         setState(() {
           _rooms = _options(_items(results[0]), 'name', 'code');
-          _teachers = _options(_items(results[1]), 'fullName', 'userCode');
+          _teachers = _teacherOptions(mergedById.values.toList());
         });
       }
     } catch (error) {
@@ -295,7 +485,11 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
+    final bloc = context.read<ClassesBloc>();
+    if (_isSubmitting || bloc.isCreatingClass || bloc.state is ClassesLoading) {
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_courseIdController.text.isEmpty ||
         _levelIdController.text.isEmpty ||
@@ -309,6 +503,20 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
       );
       return;
     }
+
+    if (!_isCourseEligible) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Khóa học này chưa được Duyệt & Công bố (PUBLISHED) hoặc đang Tạm ngưng. Vui lòng duyệt khóa học trước khi mở lớp.',
+          ),
+          backgroundColor: AppColors.error,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     if (_selectedDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -329,12 +537,29 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
       return;
     }
 
+    setState(() => _isSubmitting = true);
+
     final totalSessions =
         int.tryParse(_totalSessionsController.text.trim()) ?? 24;
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 20;
     final fee = double.tryParse(_tuitionFeeController.text.trim());
+    final selectedTeacherId = _teacherIdController.text.trim();
+    final selectedBranchId = _branchIdController.text.trim();
 
-    context.read<ClassesBloc>().add(
+    if (selectedTeacherId.isNotEmpty &&
+        _unassignedTeacherIds.contains(selectedTeacherId) &&
+        getIt.isRegistered<ApiClient>()) {
+      try {
+        await getIt<ApiClient>().patch(
+          '/users/$selectedTeacherId',
+          data: {'branchId': selectedBranchId},
+        );
+        _unassignedTeacherIds.remove(selectedTeacherId);
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    bloc.add(
       CreateClassEvent(
         code: _codeController.text.trim().toUpperCase(),
         name: _nameController.text.trim(),
@@ -372,6 +597,7 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
   }) => isMobile
       ? Column(children: [first, const SizedBox(height: 12), second])
       : Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: first),
             const SizedBox(width: 12),
@@ -445,6 +671,13 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
     final primaryColor = Theme.of(context).primaryColor;
     final isMobile = MediaQuery.sizeOf(context).width < 600;
 
+    final parsedSessions = int.tryParse(_totalSessionsController.text.trim());
+    final levelSessions = _selectedLevelData?['estimatedSessions'] as int?;
+    final hasSessionMismatch =
+        levelSessions != null &&
+        parsedSessions != null &&
+        parsedSessions != levelSessions;
+
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDark
@@ -464,6 +697,9 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
       body: BlocListener<ClassesBloc, ClassesState>(
         listener: (context, state) {
           if (state is ClassOperationSuccess) {
+            if (mounted) {
+              setState(() => _isSubmitting = false);
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -471,8 +707,11 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(state.data ?? true);
           } else if (state is ClassesError) {
+            if (mounted) {
+              setState(() => _isSubmitting = false);
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -552,11 +791,79 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                         selectedId: _levelIdController.text.isEmpty
                             ? null
                             : _levelIdController.text,
-                        onSelected: (id) =>
-                            setState(() => _levelIdController.text = id ?? ''),
+                        onSelected: _selectLevel,
                         enabled: _courseIdController.text.isNotEmpty,
                       ),
                     ),
+                    if (_selectedCourseData != null && !_isCourseEligible) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: AppColors.error,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Khóa học chưa được duyệt và kích hoạt để mở lớp!',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.error,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Trạng thái: ${_selectedCourseData!['publicationStatus'] ?? 'DRAFT'} · Vận hành: ${_selectedCourseData!['isActive'] == true ? 'Đang hoạt động' : 'Tạm ngưng'}.\nBackend bắt buộc khóa học phải đạt trạng thái ĐÃ CÔNG BỐ (PUBLISHED) và ĐANG HOẠT ĐỘNG trước khi mở lớp.',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF991B1B),
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  InkWell(
+                                    onTap: () async {
+                                      final cid = _courseIdController.text;
+                                      await context.push('/courses/$cid');
+                                      if (mounted) {
+                                        await _loadLookups();
+                                        if (cid.isNotEmpty &&
+                                            _courseDataMap.containsKey(cid)) {
+                                          await _selectCourse(cid);
+                                        }
+                                      }
+                                    },
+                                    child: const Text(
+                                      '👉 Bấm vào đây để mở màn hình Duyệt & Kích hoạt khóa học',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     _fieldPair(
                       isMobile: isMobile,
@@ -591,6 +898,18 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                           setState(() => _teacherIdController.text = id ?? ''),
                       enabled: _branchIdController.text.isNotEmpty,
                     ),
+                    if (_branchIdController.text.isNotEmpty &&
+                        _teachers.isEmpty &&
+                        !_loadingLookups) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Chưa có giảng viên hoạt động thuộc chi nhánh này (hoặc liên cơ sở). Hãy kiểm tra chi nhánh của giảng viên tại Quản lý Người dùng.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                     if (_lookupError != null) ...[
                       const SizedBox(height: 8),
                       TextButton(
@@ -731,7 +1050,7 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Capacity & Tuition Fee Card
+              // Registration window
               AppCard(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -775,11 +1094,28 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                     const SizedBox(height: 16),
                     _fieldPair(
                       isMobile: isMobile,
-                      first: AppTextField(
-                        label: 'Tổng số buổi học',
-                        hintText: '24',
-                        keyboardType: TextInputType.number,
-                        controller: _totalSessionsController,
+                      first: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppTextField(
+                            label: 'Tổng số buổi học',
+                            hintText: '24',
+                            keyboardType: TextInputType.number,
+                            controller: _totalSessionsController,
+                          ),
+                          if (hasSessionMismatch)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '⚠️ Cấp độ thiết kế $levelSessions buổi. Lớp đang đặt $parsedSessions buổi.',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: Color(0xFFD97706),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       second: AppTextField(
                         label: 'Sĩ số tối đa',
@@ -817,10 +1153,13 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
   }
 
   Widget _submitButton() => BlocBuilder<ClassesBloc, ClassesState>(
-    builder: (context, state) => AppButton(
-      text: 'Tạo Lớp & Tự Động Sinh Buổi Học',
-      isLoading: state is ClassesLoading,
-      onPressed: _submitForm,
-    ),
+    builder: (context, state) {
+      final loading = _isSubmitting || state is ClassesLoading;
+      return AppButton(
+        text: 'Tạo Lớp & Tự Động Sinh Buổi Học',
+        isLoading: loading,
+        onPressed: loading ? null : _submitForm,
+      );
+    },
   );
 }

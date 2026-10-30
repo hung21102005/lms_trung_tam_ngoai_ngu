@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../classes/data/models/class_model.dart';
 import '../../../classes/domain/repositories/classes_repository.dart';
+import '../../../dashboard/presentation/views/student_course_discovery_view.dart';
 
 /// Read-only curriculum for classes in which the current student is enrolled.
 class StudentCoursesScreen extends StatefulWidget {
@@ -73,7 +74,43 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
         }
         final classes = snapshot.data!;
         if (classes.isEmpty) {
-          return _message('Bạn chưa được ghi danh vào lớp học nào.');
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.school_outlined, size: 56, color: Color(0xFF94A3B8)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Bạn chưa được ghi danh vào lớp học nào.',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Khám phá danh mục khóa học chuẩn quốc tế và đăng ký lớp phù hợp với bạn.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondaryLight),
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => Scaffold(
+                            appBar: AppBar(title: const Text('Khám phá & Đăng ký')),
+                            body: const SafeArea(child: StudentCourseDiscoveryView()),
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.explore_rounded),
+                    label: const Text('Khám phá khóa học ngay'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
         if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
             AdaptiveSize.mobile) {
@@ -100,6 +137,63 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
             const SizedBox(height: 4),
             Text('${classes.length} lớp đang hoặc đã tham gia'),
             const SizedBox(height: 16),
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF2563EB), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bạn muốn học tiếp cấp độ nâng cao?',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E3A8A)),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Khám phá lộ trình tiếp theo, các lớp mở và đăng ký 1-chạm.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => Scaffold(
+                            appBar: AppBar(title: const Text('Khám phá & Đăng ký')),
+                            body: const SafeArea(child: StudentCourseDiscoveryView()),
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Khám phá ngay'),
+                  ),
+                ],
+              ),
+            ),
             ...classes.map(
               (classItem) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -201,6 +295,56 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
           Text(
             '${classes.length} lớp bạn đang hoặc đã tham gia',
             style: const TextStyle(color: AppColors.neutral600),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: Color(0xFF2563EB), size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Đăng ký khóa học / ca học tiếp theo',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Khám phá lộ trình phát triển và các lớp sắp mở.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF)),
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => Scaffold(
+                          appBar: AppBar(title: const Text('Khám phá & Đăng ký')),
+                          body: const SafeArea(child: StudentCourseDiscoveryView()),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  label: const Text('Khám phá ngay'),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: MobileTokens.sectionGap),
           for (final classItem in classes)

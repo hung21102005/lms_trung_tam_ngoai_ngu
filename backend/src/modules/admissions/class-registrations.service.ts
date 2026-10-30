@@ -62,7 +62,19 @@ export class ClassRegistrationsService {
     const existing = await this.prisma.classRegistration.findUnique({
       where: { classId_applicantKey: { classId: dto.classId, applicantKey } },
     });
-    if (existing) return accepted;
+    if (existing) {
+      if (existing.status === RegistrationStatus.REJECTED) {
+        throw new ConflictException(
+          'Yêu cầu đăng ký lớp này đã bị từ chối trước đó. Vui lòng liên hệ bộ phận Tuyển sinh để được hỗ trợ mở lại hồ sơ.',
+        );
+      }
+      if (existing.status === RegistrationStatus.APPROVED) {
+        throw new ConflictException(
+          'Số điện thoại này đã được xác nhận nhập học vào lớp.',
+        );
+      }
+      return accepted;
+    }
     const offering = await this.assertOffering(dto.classId);
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -143,13 +155,27 @@ export class ClassRegistrationsService {
       },
       select: { id: true, classId: true, status: true, createdAt: true },
     });
-    if (guestRequest) return guestRequest;
+    if (guestRequest) {
+      if (guestRequest.status === RegistrationStatus.REJECTED) {
+        throw new ConflictException(
+          'Yêu cầu đăng ký lớp này đã bị từ chối trước đó. Vui lòng liên hệ Học vụ nếu bạn cần mở lại hồ sơ đăng ký.',
+        );
+      }
+      return guestRequest;
+    }
     const applicantKey = `user:${actor.id}`;
     const existingRequest = await this.prisma.classRegistration.findUnique({
       where: { classId_applicantKey: { classId: dto.classId, applicantKey } },
       select: { id: true, classId: true, status: true, createdAt: true },
     });
-    if (existingRequest) return existingRequest;
+    if (existingRequest) {
+      if (existingRequest.status === RegistrationStatus.REJECTED) {
+        throw new ConflictException(
+          'Yêu cầu đăng ký lớp này đã bị từ chối trước đó. Vui lòng liên hệ Học vụ nếu bạn cần mở lại hồ sơ đăng ký.',
+        );
+      }
+      return existingRequest;
+    }
     await this.assertOffering(dto.classId);
     try {
       return await this.prisma.classRegistration.upsert({
@@ -204,16 +230,24 @@ export class ClassRegistrationsService {
     });
   }
 
-  listForStaff(
+  async listForStaff(
     actor: { roles: string[]; branchId?: string | null },
     classId?: string,
+    status?: string,
   ) {
     const superAdmin = actor.roles.includes('super_admin');
     if (!superAdmin && !actor.branchId)
       throw new ForbiddenException('Tài khoản không có chi nhánh');
-    return this.prisma.classRegistration.findMany({
+    const validStatuses = Object.values(RegistrationStatus) as string[];
+    const statusFilter =
+      status && validStatuses.includes(status)
+        ? (status as RegistrationStatus)
+        : undefined;
+
+    const rows = await this.prisma.classRegistration.findMany({
       where: {
         ...(classId ? { classId } : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
         ...(!superAdmin ? { class: { branchId: actor.branchId! } } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -224,13 +258,106 @@ export class ClassRegistrationsService {
         phone: true,
         email: true,
         status: true,
+        notes: true,
         studentId: true,
         leadId: true,
-        lead: { select: { convertedUserId: true } },
+        lead: { select: { id: true, status: true, convertedUserId: true } },
         createdAt: true,
-        class: { select: { name: true, code: true, branchId: true } },
+        updatedAt: true,
+        class: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            branchId: true,
+            status: true,
+            maxCapacity: true,
+            startTime: true,
+            endTime: true,
+            scheduleDays: true,
+            course: { select: { id: true, code: true, title: true } },
+            branch: { select: { id: true, code: true, name: true } },
+            room: { select: { id: true, code: true, name: true } },
+            _count: {
+              select: {
+                students: { where: { status: EnrollmentStatus.ENROLLED } },
+              },
+            },
+          },
+        },
       },
     });
+
+    return rows.map((row) => ({
+      ...row,
+      isActiveDependency:
+        row.status === RegistrationStatus.PENDING ||
+        row.status === RegistrationStatus.CONTACTED ||
+        row.status === RegistrationStatus.APPROVED,
+      isHistoricalRecord:
+        row.status === RegistrationStatus.REJECTED ||
+        row.status === RegistrationStatus.CANCELLED,
+      canDelete:
+        (row.status === RegistrationStatus.REJECTED ||
+          row.status === RegistrationStatus.CANCELLED) &&
+        !row.studentId &&
+        !row.lead?.convertedUserId,
+      class: row.class
+        ? {
+            ...row.class,
+            enrolledCount: row.class._count.students,
+            remainingSeats: Math.max(
+              0,
+              row.class.maxCapacity - row.class._count.students,
+            ),
+          }
+        : null,
+    }));
+  }
+
+  async summaryForStaff(
+    actor: { roles: string[]; branchId?: string | null },
+    classId?: string,
+  ) {
+    const superAdmin = actor.roles.includes('super_admin');
+    if (!superAdmin && !actor.branchId)
+      throw new ForbiddenException('Tài khoản không có chi nhánh');
+    const baseWhere: Prisma.ClassRegistrationWhereInput = {
+      ...(classId ? { classId } : {}),
+      ...(!superAdmin ? { class: { branchId: actor.branchId! } } : {}),
+    };
+    const grouped = await this.prisma.classRegistration.groupBy({
+      by: ['status'],
+      where: baseWhere,
+      _count: { _all: true },
+    });
+    const counts: Record<string, number> = {
+      PENDING: 0,
+      CONTACTED: 0,
+      APPROVED: 0,
+      REJECTED: 0,
+      CANCELLED: 0,
+    };
+    for (const item of grouped) {
+      counts[item.status] = item._count._all;
+    }
+    const total =
+      counts.PENDING +
+      counts.CONTACTED +
+      counts.APPROVED +
+      counts.REJECTED +
+      counts.CANCELLED;
+    return {
+      total,
+      pending: counts.PENDING,
+      contacted: counts.CONTACTED,
+      inProgress: counts.PENDING + counts.CONTACTED,
+      approved: counts.APPROVED,
+      rejected: counts.REJECTED,
+      cancelled: counts.CANCELLED,
+      activeCount: counts.PENDING + counts.CONTACTED + counts.APPROVED,
+      historicalCount: counts.REJECTED + counts.CANCELLED,
+    };
   }
 
   private assertStaffBranch(
@@ -252,27 +379,121 @@ export class ClassRegistrationsService {
   async review(
     id: string,
     dto: ReviewClassRegistrationDto,
-    actor: { roles: string[]; branchId?: string | null },
+    actor: { id?: string; roles: string[]; branchId?: string | null },
   ) {
     return this.prisma.$transaction(async (tx) => {
       const request = await tx.classRegistration.findUnique({
         where: { id },
-        include: { class: { select: { branchId: true } } },
+        include: {
+          class: {
+            select: {
+              id: true,
+              branchId: true,
+              status: true,
+              maxCapacity: true,
+              _count: {
+                select: {
+                  students: { where: { status: EnrollmentStatus.ENROLLED } },
+                },
+              },
+            },
+          },
+        },
       });
       if (!request) throw new NotFoundException('Không tìm thấy đơn đăng ký');
       this.assertStaffBranch(actor, request.class.branchId);
+
+      const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      const noteInput = dto.notes?.trim();
+
+      if (dto.status === RegistrationReviewAction.REOPEN) {
+        if (
+          request.status !== RegistrationStatus.REJECTED &&
+          request.status !== RegistrationStatus.CANCELLED
+        ) {
+          throw new ConflictException(
+            'Chỉ đơn đã từ chối hoặc đã hủy mới có thể mở lại',
+          );
+        }
+        if (request.class.status === ClassStatus.CANCELLED) {
+          throw new ConflictException(
+            'Lớp học đã hủy, không thể mở lại đơn đăng ký của lớp này',
+          );
+        }
+        if (request.class._count.students >= request.class.maxCapacity) {
+          throw new ConflictException(
+            'Lớp học hiện đã đủ sĩ số, không thể mở lại đơn đăng ký',
+          );
+        }
+        const reopenAudit = `[Mở lại đơn ${timestamp}]${noteInput ? `: ${noteInput}` : ''}`;
+        const combinedNotes = [request.notes, reopenAudit]
+          .filter((part) => part && part.trim().length > 0)
+          .join('\n');
+        const reopened = await tx.classRegistration.updateMany({
+          where: {
+            id,
+            status: {
+              in: [RegistrationStatus.REJECTED, RegistrationStatus.CANCELLED],
+            },
+          },
+          data: {
+            status: RegistrationStatus.PENDING,
+            notes: combinedNotes,
+          },
+        });
+        if (reopened.count !== 1) {
+          throw new ConflictException('Đơn đã được thay đổi bởi người khác');
+        }
+        if (request.leadId) {
+          await tx.admissionLead.updateMany({
+            where: {
+              id: request.leadId,
+              convertedUserId: null,
+              status: LeadStatus.CANCELLED,
+            },
+            data: { status: LeadStatus.CONTACTED },
+          });
+        }
+        return {
+          id,
+          status: RegistrationStatus.PENDING,
+          notes: combinedNotes,
+        };
+      }
+
       if (
         request.status !== RegistrationStatus.PENDING &&
         request.status !== RegistrationStatus.CONTACTED
       ) {
         throw new ConflictException(
-          'Đơn đã được xử lý và không thể đổi trạng thái',
+          'Đơn đã ở trạng thái kết thúc và không thể đổi trạng thái trực tiếp',
         );
       }
+
       const next =
         dto.status === RegistrationReviewAction.CONTACTED
           ? RegistrationStatus.CONTACTED
-          : RegistrationStatus.REJECTED;
+          : dto.status === RegistrationReviewAction.CANCELLED
+            ? RegistrationStatus.CANCELLED
+            : RegistrationStatus.REJECTED;
+
+      let updatedNotes = request.notes ?? null;
+      if (
+        next === RegistrationStatus.REJECTED ||
+        next === RegistrationStatus.CANCELLED
+      ) {
+        const tag =
+          next === RegistrationStatus.REJECTED ? 'Từ chối đơn' : 'Hủy đơn';
+        const auditLine = `[${tag} ${timestamp}]${noteInput ? `: ${noteInput}` : ''}`;
+        updatedNotes = [request.notes, auditLine]
+          .filter((part) => part && part.trim().length > 0)
+          .join('\n');
+      } else if (noteInput) {
+        updatedNotes = [request.notes, `[Liên hệ ${timestamp}]: ${noteInput}`]
+          .filter((part) => part && part.trim().length > 0)
+          .join('\n');
+      }
+
       const updated = await tx.classRegistration.updateMany({
         where: {
           id,
@@ -280,7 +501,7 @@ export class ClassRegistrationsService {
             in: [RegistrationStatus.PENDING, RegistrationStatus.CONTACTED],
           },
         },
-        data: { status: next, notes: dto.notes?.trim() ?? request.notes },
+        data: { status: next, notes: updatedNotes },
       });
       if (updated.count !== 1)
         throw new ConflictException('Đơn đã được xử lý bởi người khác');
@@ -293,13 +514,111 @@ export class ClassRegistrationsService {
           },
           data: {
             status:
-              next === RegistrationStatus.CONTACTED
-                ? LeadStatus.CONTACTED
-                : LeadStatus.CANCELLED,
+                next === RegistrationStatus.CONTACTED
+                  ? LeadStatus.CONTACTED
+                  : LeadStatus.CANCELLED,
           },
         });
       }
-      return { id, status: next };
+      return { id, status: next, notes: updatedNotes };
+    });
+  }
+
+  async deleteRegistration(
+    id: string,
+    actor: { id?: string; roles: string[]; branchId?: string | null },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.classRegistration.findUnique({
+        where: { id },
+        include: {
+          class: { select: { id: true, branchId: true, code: true, name: true } },
+          lead: { select: { id: true, convertedUserId: true } },
+        },
+      });
+      if (!request) throw new NotFoundException('Không tìm thấy đơn đăng ký');
+      this.assertStaffBranch(actor, request.class.branchId);
+
+      if (request.status === RegistrationStatus.APPROVED) {
+        throw new ConflictException(
+          'Không thể xóa đơn đăng ký đã được duyệt nhập học. Lịch sử ghi danh phải được bảo toàn.',
+        );
+      }
+      if (
+        request.status === RegistrationStatus.PENDING ||
+        request.status === RegistrationStatus.CONTACTED
+      ) {
+        throw new BadRequestException(
+          'Đơn đăng ký đang trong quá trình xử lý. Vui lòng Từ chối hoặc Hủy đơn trước khi xóa bản ghi thử nghiệm.',
+        );
+      }
+
+      const linkedStudentId =
+        request.studentId ?? request.lead?.convertedUserId ?? null;
+      if (linkedStudentId) {
+        const [enrollment, invoice] = await Promise.all([
+          tx.classStudent.findUnique({
+            where: {
+              classId_studentId: {
+                classId: request.classId,
+                studentId: linkedStudentId,
+              },
+            },
+          }),
+          tx.invoice.findFirst({
+            where: {
+              classId: request.classId,
+              studentId: linkedStudentId,
+              status: { not: InvoiceStatus.CANCELLED },
+            },
+          }),
+        ]);
+        if (enrollment) {
+          throw new ConflictException(
+            'Học viên của đơn này đã có dữ liệu ghi danh trong lớp, không thể xóa đơn lịch sử.',
+          );
+        }
+        if (invoice) {
+          throw new ConflictException(
+            'Học viên của đơn này đã có hóa đơn học phí liên kết với lớp học, không thể xóa đơn lịch sử.',
+          );
+        }
+      }
+
+      await tx.classRegistration.delete({ where: { id } });
+
+      const [activeRegistrationsCount, historicalRegistrationsCount] =
+        await Promise.all([
+          tx.classRegistration.count({
+            where: {
+              classId: request.classId,
+              status: {
+                in: [
+                  RegistrationStatus.PENDING,
+                  RegistrationStatus.CONTACTED,
+                  RegistrationStatus.APPROVED,
+                ],
+              },
+            },
+          }),
+          tx.classRegistration.count({
+            where: {
+              classId: request.classId,
+              status: {
+                in: [RegistrationStatus.REJECTED, RegistrationStatus.CANCELLED],
+              },
+            },
+          }),
+        ]);
+
+      return {
+        success: true,
+        id,
+        classId: request.classId,
+        activeRegistrationsCount,
+        historicalRegistrationsCount,
+        message: 'Đã xóa bản ghi đơn đăng ký đã kết thúc khỏi lịch sử lớp học.',
+      };
     });
   }
 

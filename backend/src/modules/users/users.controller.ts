@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -330,6 +331,29 @@ export class UsersController {
   ) {
     await this.usersService.assertBranchAccess(actor, id);
     return this.usersService.updateUserStatus(id, dto);
+  }
+
+  // --------------------------------------------------------------------------
+  // 8b. DELETE /users/:id — Xóa vĩnh viễn tài khoản chưa phát sinh dữ liệu
+  // --------------------------------------------------------------------------
+  @Roles('super_admin')
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Xóa vĩnh viễn tài khoản chưa phát sinh dữ liệu (Chỉ Super Admin)',
+  })
+  @ApiResponse({ status: 200, description: 'Xóa tài khoản thành công' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Không thể xóa tài khoản đã có lịch sử học tập, giảng dạy hoặc hóa đơn',
+  })
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+    @CurrentUser() actor: { roles: string[]; branchId?: string | null },
+  ) {
+    await this.usersService.assertBranchAccess(actor, id);
+    return this.usersService.deleteUser(id, actorId);
   }
 
   // --------------------------------------------------------------------------

@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/di/injection.dart';
@@ -133,6 +135,7 @@ class _CoursePublicPreview extends StatelessWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   bool _openingEditor = false;
+  CourseModel? _course;
 
   Future<void> _editCourse() async {
     if (_openingEditor || !widget.canEditAcademicLevel) return;
@@ -161,23 +164,381 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   void _showPublicPreview() {
-    final state = context.read<CoursesBloc>().state;
-    if (state is! CourseDetailLoaded) return;
+    final course = _course;
+    if (course == null) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => _CoursePublicPreview(course: state.course),
+      builder: (_) => _CoursePublicPreview(course: course),
     );
   }
 
   bool get _canEditCurriculum {
-    final state = context.read<CoursesBloc>().state;
+    final course = _course;
+    if (course == null) return false;
     return widget.canEditAcademicLevel &&
-        state is CourseDetailLoaded &&
-        state.course.publicationStatus != 'ARCHIVED' &&
-        state.course.publicationStatus != 'PUBLISHED';
+        course.publicationStatus != 'ARCHIVED' &&
+        course.publicationStatus != 'PUBLISHED';
+  }
+
+  Future<void> _deleteCourse(CourseModel course) async {
+    final codeCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Xóa vĩnh viễn khóa học'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Khóa học "${course.title}" và toàn bộ đề cương, bài học sẽ bị xóa vĩnh viễn.',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Thao tác này không thể khôi phục. Vui lòng nhập mã khóa học để xác nhận:',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  course.code,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Nhập lại mã khóa học',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => setDlgState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy bỏ'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: codeCtrl.text.trim() == course.code.trim()
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              child: const Text('Xác nhận xóa'),
+            ),
+          ],
+        ),
+      ),
+    );
+    codeCtrl.dispose();
+    if (confirmed == true && mounted) {
+      context.read<CoursesBloc>().add(DeleteCourseEvent(course.id));
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _archiveCourse(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Lưu trữ khóa học'),
+        content: Text(
+          'Lưu trữ khóa học "${course.title}"? Khóa học sẽ không còn mở tuyển sinh mới nhưng vẫn bảo toàn toàn bộ dữ liệu lịch sử.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF475569)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Lưu trữ'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'ARCHIVED',
+        ),
+      );
+    }
+  }
+
+  Map<String, dynamic>? _publicationCheck;
+  bool _loadingCheck = false;
+
+  Future<void> _runPublicationCheck() async {
+    setState(() => _loadingCheck = true);
+    try {
+      final repository =
+          widget.catalogRepository ??
+          ProgramCatalogRepository(getIt<ApiClient>());
+      final result =
+          await repository.validateCoursePublication(widget.courseId);
+      if (mounted) {
+        setState(() {
+          _publicationCheck = result;
+          _loadingCheck = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingCheck = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không kiểm tra được điều kiện: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _submitForReview(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gửi duyệt học thuật'),
+        content: Text(
+          'Bạn có chắc chắn muốn gửi khóa học "${course.title}" (${course.code}) để Trưởng bộ môn / Academic Staff phê duyệt?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Gửi duyệt'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'IN_REVIEW',
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmAcademicReview(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận rà soát học thuật'),
+        content: Text(
+          'Xác nhận nội dung đề cương, cấp độ, bài học và tiêu chí đánh giá của khóa học "${course.title}" đã được rà soát đạt chuẩn theo khung khảo thí?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF4F46E5),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận đạt chuẩn'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ConfirmCourseAcademicReviewEvent(course.id),
+      );
+      Future.delayed(const Duration(milliseconds: 600), _runPublicationCheck);
+    }
+  }
+
+  Future<void> _publishCourse(CourseModel course) async {
+    await _runPublicationCheck();
+    if (!mounted) return;
+    final blockers = (_publicationCheck?['blockers'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    if (blockers.isNotEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Chưa đủ điều kiện công bố'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Khóa học còn các tiêu chí chưa hoàn tất:'),
+              const SizedBox(height: 10),
+              for (final b in blockers)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '• ',
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(b, style: const TextStyle(fontSize: 13)),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Phê duyệt & Công bố khóa học'),
+        content: Text(
+          'Khóa học "${course.title}" đã hoàn tất mọi tiêu chí học thuật. Bạn có chắc chắn muốn công bố lên website công khai và cho phép tuyển sinh mở lớp?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Công bố khóa học'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'PUBLISHED',
+        ),
+      );
+    }
+  }
+
+  Future<void> _requestChanges(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yêu cầu chỉnh sửa khóa học'),
+        content: Text(
+          'Chuyển khóa học "${course.title}" trở lại trạng thái Bản nháp (DRAFT) để học vụ/giảng viên tiếp tục hoàn thiện đề cương?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yêu cầu sửa'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'DRAFT',
+        ),
+      );
+    }
+  }
+
+  Future<void> _unpublishCourse(CourseModel course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ngừng công bố khóa học'),
+        content: Text(
+          'Khóa học "${course.title}" sẽ được gỡ khỏi website công khai và chuyển về Bản nháp.\nLưu ý: Không được ngừng công bố nếu có lớp học đang mở tuyển sinh hoặc đang diễn ra.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ngừng công bố'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      context.read<CoursesBloc>().add(
+        ChangeCoursePublicationStatusEvent(
+          courseId: course.id,
+          status: 'DRAFT',
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleActive(CourseModel course) async {
+    final newActive = !course.isActive;
+    context.read<CoursesBloc>().add(
+      ToggleCourseActiveEvent(courseId: course.id, isActive: newActive),
+    );
+  }
+
+  void _openClassForCourse(CourseModel course) {
+    context.push('${RouteNames.classCreate}?courseId=${course.id}');
   }
 
   final NumberFormat _currencyFormat = NumberFormat.currency(
@@ -494,7 +855,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Chi tiết Khóa học'),
+        title: Text(_course != null ? _course!.title : 'Chi tiết Khóa học'),
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         foregroundColor: isDark ? Colors.white : AppColors.textPrimaryLight,
@@ -511,6 +872,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Chỉnh sửa khóa học',
             ),
+          if (_course != null &&
+              _course!.publicationStatus == 'DRAFT' &&
+              _course!.classesCount == 0)
+            IconButton(
+              onPressed: () => _deleteCourse(_course!),
+              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+              tooltip: 'Xóa vĩnh viễn khóa học',
+            ),
+          if (_course != null && _course!.publicationStatus != 'ARCHIVED')
+            IconButton(
+              onPressed: () => _archiveCourse(_course!),
+              icon: const Icon(Icons.archive_outlined),
+              tooltip: 'Lưu trữ khóa học',
+            ),
           IconButton(
             onPressed: () {
               context.read<CoursesBloc>().add(
@@ -525,7 +900,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       ),
       body: BlocConsumer<CoursesBloc, CoursesState>(
         listener: (context, state) {
-          if (state is CourseOperationSuccess) {
+          if (state is CourseDetailLoaded) {
+            setState(() {
+              _course = state.course;
+            });
+          } else if (state is CourseOperationSuccess) {
+            if (state.course != null) {
+              setState(() {
+                _course = state.course;
+              });
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -544,11 +928,24 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           }
         },
         builder: (context, state) {
-          if (state is CourseDetailLoading) {
+          if (state is CourseDetailLoaded &&
+              state.course.id == widget.courseId) {
+            _course = state.course;
+          } else if (state is CourseOperationSuccess &&
+              state.course != null &&
+              state.course!.id == widget.courseId) {
+            _course = state.course;
+          } else {
+            _course ??= context.read<CoursesBloc>().getCachedCourseDetail(
+              widget.courseId,
+            );
+          }
+
+          if (state is CourseDetailLoading && _course == null) {
             return const LoadingWidget(
               message: 'Đang tải thông tin chi tiết khóa học...',
             );
-          } else if (state is CoursesError) {
+          } else if (state is CoursesError && _course == null) {
             if (MediaQuery.sizeOf(context).width < 1024) {
               return Center(
                 child: Padding(
@@ -589,8 +986,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 );
               },
             );
-          } else if (state is CourseDetailLoaded) {
-            final course = state.course;
+          } else if (_course != null) {
+            final course = _course!;
             if (MediaQuery.sizeOf(context).width < 1024) {
               return _buildMobileDetail(course);
             }
@@ -599,6 +996,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               children: [
                 // Header Info Card
                 _buildCourseHeader(context, course),
+                const SizedBox(height: 16),
+
+                // Review & Publication Process Card
+                _buildReviewAndPublicationCard(context, course),
                 const SizedBox(height: 20),
 
                 // Levels Section Header
@@ -644,7 +1045,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ],
             );
           }
-          return const SizedBox.shrink();
+          return const LoadingWidget(
+            message: 'Đang tải thông tin chi tiết...',
+          );
         },
       ),
     );
@@ -714,6 +1117,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ],
             ),
           ),
+          const SizedBox(height: MobileTokens.sectionGap),
+          _buildReviewAndPublicationCard(context, course, isMobile: true),
           const SizedBox(height: MobileTokens.sectionGap),
           Text(
             'Lộ trình học tập',
@@ -871,6 +1276,401 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ),
                 ],
               ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewAndPublicationCard(
+    BuildContext context,
+    CourseModel course, {
+    bool isMobile = false,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canOpenClass =
+        course.publicationStatus == 'PUBLISHED' && course.isActive;
+
+    final pubStatusConfig = switch (course.publicationStatus) {
+      'PUBLISHED' => (
+        'ĐÃ CÔNG BỐ (PUBLISHED)',
+        'Khóa học đang hiển thị công khai trên Website và sẵn sàng mở lớp tuyển sinh.',
+        AppColors.success,
+        Icons.check_circle_outline,
+      ),
+      'IN_REVIEW' => (
+        'CHỜ DUYỆT (IN_REVIEW)',
+        'Khóa học đã gửi duyệt, đang chờ Trưởng bộ môn kiểm định và phê duyệt.',
+        const Color(0xFFD97706),
+        Icons.pending_actions_outlined,
+      ),
+      'ARCHIVED' => (
+        'ĐÃ LƯU TRỮ (ARCHIVED)',
+        'Khóa học đã lưu trữ, không còn tiếp nhận tuyển sinh hoặc đào tạo mới.',
+        const Color(0xFF64748B),
+        Icons.archive_outlined,
+      ),
+      _ => (
+        'BẢN NHÁP (DRAFT)',
+        'Khóa học đang trong giai đoạn soạn thảo đề cương, chưa được gửi duyệt học thuật.',
+        const Color(0xFF64748B),
+        Icons.edit_note_outlined,
+      ),
+    };
+
+    final blockers = (_publicationCheck?['blockers'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.verified_user_outlined,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'QUY TRÌNH HỌC THUẬT & CÔNG BỐ KHÓA HỌC',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .5,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      'Kiểm định đề cương, chuẩn đầu ra, phê duyệt và kích hoạt mở lớp',
+                      style: AppTextStyles.caption(context),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 28),
+
+          // Status & Operational Overview
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: pubStatusConfig.$3.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: pubStatusConfig.$3.withAlpha(80)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(pubStatusConfig.$4,
+                        size: 16, color: pubStatusConfig.$3),
+                    const SizedBox(width: 6),
+                    Text(
+                      pubStatusConfig.$1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: pubStatusConfig.$3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (course.isActive ? AppColors.success : AppColors.error)
+                      .withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color:
+                        (course.isActive ? AppColors.success : AppColors.error)
+                            .withAlpha(80),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      course.isActive
+                          ? Icons.power_rounded
+                          : Icons.power_off_rounded,
+                      size: 16,
+                      color:
+                          course.isActive ? AppColors.success : AppColors.error,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      course.isActive
+                          ? 'VẬN HÀNH: ĐANG HOẠT ĐỘNG'
+                          : 'VẬN HÀNH: TẠM NGƯNG',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: course.isActive
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            pubStatusConfig.$2,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white70 : const Color(0xFF475569),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Class Opening Eligibility Banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: canOpenClass
+                  ? const Color(0xFFECFDF5)
+                  : const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: canOpenClass
+                    ? const Color(0xFFA7F3D0)
+                    : const Color(0xFFFDE68A),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  canOpenClass
+                      ? Icons.check_circle_rounded
+                      : Icons.info_outline_rounded,
+                  color: canOpenClass
+                      ? const Color(0xFF047857)
+                      : const Color(0xFFD97706),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    canOpenClass
+                        ? 'Khóa học đã được Phê duyệt & Kích hoạt. ĐỦ ĐIỀU KIỆN MỞ LỚP VẬN HÀNH.'
+                        : 'CHƯA ĐỦ ĐIỀU KIỆN MỞ LỚP: Backend yêu cầu khóa học phải được Duyệt & Công bố (PUBLISHED) và Kích hoạt (ACTIVE).',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: canOpenClass
+                          ? const Color(0xFF047857)
+                          : const Color(0xFFB45309),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Academic Readiness Checklist Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'DANH MỤC KIỂM TRA ĐIỀU KIỆN DUYỆT (ACADEMIC READINESS)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _loadingCheck ? null : _runPublicationCheck,
+                icon: _loadingCheck
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.rule_folder_outlined, size: 16),
+                label: Text(
+                  _loadingCheck ? 'Đang kiểm tra...' : 'Kiểm tra điều kiện',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          if (_publicationCheck != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color:
+                    isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: blockers.isEmpty
+                      ? AppColors.success.withAlpha(120)
+                      : AppColors.error.withAlpha(120),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (blockers.isEmpty)
+                    const Row(
+                      children: [
+                        Icon(Icons.check_circle,
+                            color: AppColors.success, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tất cả tiêu chí học thuật, bài học, cấp độ và chương trình đã đạt chuẩn công bố!',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.cancel,
+                            color: AppColors.error, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Còn ${blockers.length} tiêu chí chưa hoàn tất:',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    for (final b in blockers)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 26, bottom: 4),
+                        child:
+                            Text('• $b', style: const TextStyle(fontSize: 13)),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          // Action Buttons
+          if (widget.canEditAcademicLevel) ...[
+            const Divider(height: 24),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                if (course.publicationStatus == 'DRAFT') ...[
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                    ),
+                    onPressed: () => _submitForReview(course),
+                    icon: const Icon(Icons.send_rounded, size: 16),
+                    label: const Text('Gửi duyệt học thuật'),
+                  ),
+                ],
+                if (course.publicationStatus == 'IN_REVIEW') ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => _confirmAcademicReview(course),
+                    icon: const Icon(Icons.fact_check_outlined, size: 16),
+                    label: const Text('Xác nhận rà soát học thuật'),
+                  ),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success),
+                    onPressed: () => _publishCourse(course),
+                    icon: const Icon(Icons.publish_rounded, size: 16),
+                    label: const Text('Phê duyệt & Công bố'),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFD97706),
+                    ),
+                    onPressed: () => _requestChanges(course),
+                    icon: const Icon(Icons.undo_rounded, size: 16),
+                    label: const Text('Yêu cầu sửa (Về nháp)'),
+                  ),
+                ],
+                if (course.publicationStatus == 'PUBLISHED') ...[
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF003FB1),
+                    ),
+                    onPressed: () => _openClassForCourse(course),
+                    icon:
+                        const Icon(Icons.add_circle_outline_rounded, size: 16),
+                    label: const Text('Mở Lớp Học Mới'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _showPublicPreview,
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text('Xem trang công khai'),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                    ),
+                    onPressed: () => _unpublishCourse(course),
+                    icon: const Icon(Icons.unpublished_outlined, size: 16),
+                    label: const Text('Ngừng công bố'),
+                  ),
+                ],
+                OutlinedButton.icon(
+                  onPressed: () => _toggleActive(course),
+                  icon: Icon(
+                    course.isActive
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.play_circle_outline_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    course.isActive
+                        ? 'Tạm dừng vận hành'
+                        : 'Kích hoạt vận hành',
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

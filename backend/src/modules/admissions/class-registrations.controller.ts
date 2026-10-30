@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -65,20 +66,50 @@ export class ClassRegistrationsController {
   listForStaff(
     @CurrentUser() user: { roles: string[]; branchId?: string | null },
     @Query('classId') classId?: string,
+    @Query('status') status?: string,
   ) {
-    return this.service.listForStaff(user, classId);
+    return this.service.listForStaff(user, classId, status);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Get('admissions/registrations/summary')
+  @ApiOperation({ summary: 'Thống kê số lượng đơn đăng ký lớp theo trạng thái' })
+  summaryForStaff(
+    @CurrentUser() user: { roles: string[]; branchId?: string | null },
+    @Query('classId') classId?: string,
+  ) {
+    return this.service.summaryForStaff(user, classId);
   }
 
   @UseGuards(RolesGuard)
   @Roles('super_admin', 'branch_admin', 'academic_staff')
   @Patch('admissions/registrations/:id/review')
-  @ApiOperation({ summary: 'Học vụ đánh dấu đã liên hệ hoặc từ chối đơn' })
+  @ApiOperation({
+    summary: 'Học vụ đánh dấu đã liên hệ, từ chối, hủy hoặc mở lại đơn',
+  })
   review(
     @Param('id') id: string,
     @Body() dto: ReviewClassRegistrationDto,
-    @CurrentUser() user: { roles: string[]; branchId?: string | null },
+    @CurrentUser()
+    user: { id?: string; roles: string[]; branchId?: string | null },
   ) {
     return this.service.review(id, dto, user);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @Delete('admissions/registrations/:id')
+  @ApiOperation({
+    summary:
+      'Xóa đơn đăng ký thử nghiệm đã kết thúc (REJECTED/CANCELLED) và chưa phát sinh ghi danh',
+  })
+  deleteRegistration(
+    @Param('id') id: string,
+    @CurrentUser()
+    user: { id?: string; roles: string[]; branchId?: string | null },
+  ) {
+    return this.service.deleteRegistration(id, user);
   }
 
   @UseGuards(RolesGuard)

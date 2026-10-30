@@ -21,6 +21,8 @@ class InvoiceDetailScreen extends StatefulWidget {
 }
 
 class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
+  InvoiceModel? _cachedInvoice;
+
   bool get _canManageInvoice {
     final state = context.read<AuthBloc?>()?.state;
     if (state is! AuthenticatedState) return false;
@@ -31,7 +33,17 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _cachedInvoice = context.read<FinanceBloc>().getCachedInvoiceDetail(
+      widget.invoiceId,
+    );
     context.read<FinanceBloc>().add(FetchInvoiceDetailEvent(widget.invoiceId));
+  }
+
+  Future<void> _openRecordPayment(String invoiceId) async {
+    await context.push('/invoices/$invoiceId/record-payment');
+    if (mounted) {
+      context.read<FinanceBloc>().add(FetchInvoiceDetailEvent(widget.invoiceId));
+    }
   }
 
   @override
@@ -40,6 +52,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       appBar: AppBar(title: const Text('Chi tiết Hóa đơn')),
       body: BlocConsumer<FinanceBloc, FinanceState>(
         listener: (context, state) {
+          if (state is InvoiceDetailLoadedState &&
+              state.invoice.id == widget.invoiceId) {
+            _cachedInvoice = state.invoice;
+          }
           if (state is FinanceActionSuccessState) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -50,14 +66,26 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
             context.read<FinanceBloc>().add(
               FetchInvoiceDetailEvent(widget.invoiceId),
             );
+          } else if (state is PaymentRecordedSuccessState) {
+            context.read<FinanceBloc>().add(
+              FetchInvoiceDetailEvent(widget.invoiceId),
+            );
           }
         },
         builder: (context, state) {
-          if (state is FinanceLoadingState) {
+          final inv = (state is InvoiceDetailLoadedState &&
+                  state.invoice.id == widget.invoiceId)
+              ? state.invoice
+              : (_cachedInvoice ??
+                  context.read<FinanceBloc>().getCachedInvoiceDetail(
+                    widget.invoiceId,
+                  ));
+
+          if (state is FinanceLoadingState && inv == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is FinanceErrorState) {
+          if (state is FinanceErrorState && inv == null) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -86,8 +114,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
             );
           }
 
-          if (state is InvoiceDetailLoadedState) {
-            final inv = state.invoice;
+          if (inv != null) {
             if (AdaptiveBreakpoints.fromWidth(
                   MediaQuery.sizeOf(context).width,
                 ) ==
@@ -237,8 +264,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   const SizedBox(height: 12),
                   if (canPay)
                     OutlinedButton.icon(
-                      onPressed: () =>
-                          context.push('/invoices/${inv.id}/record-payment'),
+                      onPressed: () => _openRecordPayment(inv.id),
                       icon: const Icon(Icons.point_of_sale),
                       label: const Text('Ghi nhận thu tiền'),
                     ),
@@ -474,9 +500,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                 if (_canManageInvoice)
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        context.push('/invoices/${inv.id}/record-payment');
-                      },
+                      onPressed: () => _openRecordPayment(inv.id),
                       icon: const Icon(Icons.point_of_sale, size: 20),
                       label: const Text('Thu tiền mặt / CK'),
                       style: ElevatedButton.styleFrom(

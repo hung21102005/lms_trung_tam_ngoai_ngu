@@ -14,6 +14,7 @@ import '../bloc/classes_event.dart';
 import '../bloc/classes_state.dart';
 import '../class_deletion_message.dart';
 import '../../data/models/class_model.dart';
+import '../../../dashboard/presentation/views/class_registrations_admin_screen.dart';
 import 'schedule_screen.dart';
 
 class ClassListScreen extends StatefulWidget {
@@ -49,8 +50,93 @@ class _ClassListScreenState extends State<ClassListScreen> {
     super.dispose();
   }
 
-  void _showCreateClassDialog() {
-    context.push(RouteNames.classCreate);
+  bool _matchesShift(String startTime, String shiftFilter) {
+    if (shiftFilter == 'ALL') return true;
+    final hour = int.tryParse(startTime.split(':').first) ?? -1;
+    if (hour < 0) return true;
+    return switch (shiftFilter) {
+      'MORNING' => hour < 12,
+      'AFTERNOON' => hour >= 12 && hour < 17,
+      'EVENING' => hour >= 17,
+      _ => true,
+    };
+  }
+
+  bool _matchesActiveFilters(ClassModel classItem) {
+    final query = _searchController.text.trim().toLowerCase();
+    final matchesQuery =
+        query.isEmpty ||
+        classItem.code.toLowerCase().contains(query) ||
+        classItem.name.toLowerCase().contains(query) ||
+        (classItem.mainTeacherName ?? '').toLowerCase().contains(query) ||
+        (classItem.courseTitle ?? '').toLowerCase().contains(query) ||
+        (classItem.roomName ?? '').toLowerCase().contains(query);
+    if (_selectedStatus == 'ARCHIVED') {
+      final matchesBranch =
+          _selectedBranch == 'ALL' || classItem.branchId == _selectedBranch;
+      final matchesShift =
+          _selectedShift == 'ALL' ||
+          _matchesShift(classItem.startTime, _selectedShift);
+      return classItem.effectiveIsArchived &&
+          matchesQuery &&
+          matchesBranch &&
+          matchesShift;
+    }
+    if (classItem.effectiveIsArchived) {
+      return false;
+    }
+    final matchesStatus =
+        _selectedStatus == 'ALL' ||
+        (_selectedStatus == 'UPCOMING'
+            ? (classItem.status == 'PLANNING' ||
+                  classItem.status == 'OPEN_FOR_ENROLLMENT')
+            : classItem.status == _selectedStatus);
+    final matchesBranch =
+        _selectedBranch == 'ALL' || classItem.branchId == _selectedBranch;
+    final matchesShift =
+        _selectedShift == 'ALL' ||
+        _matchesShift(classItem.startTime, _selectedShift);
+    return matchesQuery && matchesStatus && matchesBranch && matchesShift;
+  }
+
+  Future<void> _openClassDetail(String classId) async {
+    if (classId.isEmpty) return;
+    await context.push(
+      RouteNames.classDetail.replaceFirst(':id', classId),
+    );
+    if (mounted) {
+      context.read<ClassesBloc>().add(const FetchClasses(refresh: true));
+    }
+  }
+
+  Future<void> _showCreateClassDialog() async {
+    final result = await context.push(RouteNames.classCreate);
+    if (!mounted || result == null) return;
+    context.read<ClassesBloc>().add(const FetchClasses(refresh: true));
+    if (result is ClassModel && !_matchesActiveFilters(result)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Lớp "${result.name}" (${result.code}) đã được tạo nhưng đang nằm ngoài bộ lọc hiện tại.',
+          ),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Xem lớp',
+            onPressed: () {
+              setState(() {
+                _selectedBranch = 'ALL';
+                _selectedShift = 'ALL';
+                _selectedStatus = 'ALL';
+                _searchController.clear();
+              });
+              if (result.id.isNotEmpty) {
+                _openClassDetail(result.id);
+              }
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _showChangeStatusDialog(
@@ -127,7 +213,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        await bloc.repository.updateClass(classId, status: selectedStatus);
+        await bloc.updateClassAndSync(classId, status: selectedStatus);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -135,7 +221,6 @@ class _ClassListScreenState extends State<ClassListScreen> {
               backgroundColor: Color(0xFF047857),
             ),
           );
-          bloc.add(const FetchClasses(refresh: true));
         }
       } catch (e) {
         if (mounted) {
@@ -150,11 +235,224 @@ class _ClassListScreenState extends State<ClassListScreen> {
     }
   }
 
+  ClassModel? _findClassById(String classId) {
+    final bloc = context.read<ClassesBloc>();
+    final state = bloc.state;
+    final list = state is ClassesLoaded ? state.classes : bloc.cachedClasses;
+    for (final c in list) {
+      if (c.id == classId) return c;
+    }
+    return bloc.getCachedDetail(classId);
+  }
+
+  Future<void> _archiveClass(
+    String classId,
+    String className, {
+    String? currentNotes,
+  }) async {
+    final bloc = context.read<ClassesBloc>();
+    final cls = _findClassById(classId);
+    final rawNotes = currentNotes ?? cls?.notes ?? '';
+    final dateTag = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final nextNotes = rawNotes.contains('[ARCHIVED')
+        ? rawNotes
+        : '[ARCHIVED:$dateTag] ${rawNotes.trim()}'.trim();
+    try {
+      await bloc.updateClassAndSync(classId, notes: nextNotes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã lưu trữ lớp "$className". Lớp đã được ẩn khỏi danh sách đang hoạt động.',
+            ),
+            backgroundColor: const Color(0xFF047857),
+            action: SnackBarAction(
+              label: 'Xem đã lưu trữ',
+              textColor: Colors.white,
+              onPressed: () {
+                if (mounted) {
+                  setState(() => _selectedStatus = 'ARCHIVED');
+                }
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể lưu trữ lớp: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _unarchiveClass(
+    String classId,
+    String className, {
+    String? currentNotes,
+  }) async {
+    final bloc = context.read<ClassesBloc>();
+    final cls = _findClassById(classId);
+    final rawNotes = currentNotes ?? cls?.notes ?? '';
+    final cleanedNotes = rawNotes
+        .replaceAll(RegExp(r'\[ARCHIVED[^\]]*\]\s*'), '')
+        .trim();
+    try {
+      await bloc.updateClassAndSync(classId, notes: cleanedNotes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã khôi phục lớp "$className" khỏi mục lưu trữ.'),
+            backgroundColor: const Color(0xFF047857),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể khôi phục lớp: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showDeleteDependencyDialog({
+    required String classId,
+    required String className,
+    required String classCode,
+    required String message,
+  }) async {
+    final cls = _findClassById(classId);
+    final hasRegistrations =
+        (cls != null &&
+            (cls.activeRegistrationsCount > 0 ||
+                cls.historicalRegistrationsCount > 0)) ||
+        message.toLowerCase().contains('đơn đăng ký');
+    final canOfferCancel = cls == null || !cls.isCancelled;
+    final canOfferArchive = cls == null || !cls.effectiveIsArchived;
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (errorCtx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: Color(0xFFD97706)),
+            SizedBox(width: 8),
+            Expanded(child: Text('Không thể xóa lớp')),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              if (hasRegistrations) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.history_edu_rounded,
+                        size: 18,
+                        color: Color(0xFFB45309),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Mẹo quản trị: Bạn có thể Lưu trữ lớp để ẩn khỏi danh sách hoạt động, Hủy lớp, hoặc mở Hàng chờ Đăng ký để xóa đơn thử nghiệm đã từ chối.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF92400E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          if (hasRegistrations)
+            TextButton.icon(
+              onPressed: () => Navigator.pop(errorCtx, 'view_registrations'),
+              icon: const Icon(Icons.assignment_outlined, size: 16),
+              label: const Text('Xem đơn liên quan'),
+            ),
+          if (canOfferCancel && hasRegistrations)
+            OutlinedButton(
+              onPressed: () => Navigator.pop(errorCtx, 'cancel'),
+              child: const Text('Hủy lớp'),
+            ),
+          if (canOfferArchive && hasRegistrations)
+            FilledButton.tonal(
+              onPressed: () => Navigator.pop(errorCtx, 'archive'),
+              child: const Text('Lưu trữ lớp'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(errorCtx, 'dismiss'),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || action == null || action == 'dismiss') return;
+    if (action == 'view_registrations') {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const ClassRegistrationsAdminScreen(),
+        ),
+      );
+      if (mounted) {
+        context.read<ClassesBloc>().add(const FetchClasses());
+      }
+    } else if (action == 'archive') {
+      await _archiveClass(classId, className, currentNotes: cls?.notes);
+    } else if (action == 'cancel') {
+      await _showCancelClassDialog(classId, className, classCode);
+    }
+  }
+
   Future<void> _showDeleteClassDialog(
     String classId,
     String className,
     String classCode,
   ) async {
+    final cls = _findClassById(classId);
+    if (cls != null && cls.hasHistoricalRegistrationsOnly) {
+      final histCount = cls.historicalRegistrationsCount;
+      final rejCount = cls.rejectedRegistrationsCount;
+      final detailLabel = rejCount > 0 && rejCount == histCount
+          ? '$rejCount đơn đăng ký đã từ chối'
+          : '$histCount đơn đăng ký đã từ chối/đã hủy';
+      await _showDeleteDependencyDialog(
+        classId: classId,
+        className: className,
+        classCode: classCode,
+        message:
+            'Lớp học có $detailLabel được lưu trong lịch sử. Không thể xóa vĩnh viễn khi cần bảo toàn hồ sơ. Bạn có thể lưu trữ lớp hoặc hủy lớp.',
+      );
+      return;
+    }
+
     final codeCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
@@ -229,7 +527,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
     if (confirmed == true && mounted) {
       final bloc = context.read<ClassesBloc>();
       try {
-        await bloc.repository.deleteClass(classId);
+        await bloc.deleteClassAndSync(classId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -237,7 +535,79 @@ class _ClassListScreenState extends State<ClassListScreen> {
               backgroundColor: Color(0xFF047857),
             ),
           );
-          bloc.add(const FetchClasses(refresh: true));
+        }
+      } catch (e) {
+        if (mounted) {
+          await _showDeleteDependencyDialog(
+            classId: classId,
+            className: className,
+            classCode: classCode,
+            message: classDeletionMessage(e),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showCancelClassDialog(
+    String classId,
+    String className,
+    String classCode,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706)),
+            SizedBox(width: 8),
+            Text('Xác nhận hủy lớp học'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bạn có chắc chắn muốn hủy lớp "$className" ($classCode)?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Lớp học sẽ chuyển sang trạng thái "ĐÃ HỦY". Toàn bộ lịch sử danh sách học viên, học phí, điểm danh và dữ liệu liên quan sẽ được lưu trữ an toàn trong hệ thống.',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Bỏ qua'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận hủy lớp'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final bloc = context.read<ClassesBloc>();
+      try {
+        await bloc.updateClassAndSync(classId, status: 'CANCELLED');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Đã hủy lớp học thành công (dữ liệu học vụ đã được lưu trữ).',
+              ),
+              backgroundColor: Color(0xFF047857),
+            ),
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -248,10 +618,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 children: [
                   Icon(Icons.info_outline_rounded, color: Color(0xFFD97706)),
                   SizedBox(width: 8),
-                  Text('Không thể xóa lớp'),
+                  Text('Không thể hủy lớp'),
                 ],
               ),
-              content: Text(classDeletionMessage(e)),
+              content: Text('Không thể hủy lớp này: $e'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(errorCtx),
@@ -293,22 +663,25 @@ class _ClassListScreenState extends State<ClassListScreen> {
           : null,
       body: BlocBuilder<ClassesBloc, ClassesState>(
         builder: (context, state) {
-          List<ClassModel> liveClasses = [];
-          if (state is ClassesLoaded) {
-            liveClasses = state.classes;
-          }
+          final bloc = context.read<ClassesBloc>();
+          final List<ClassModel> liveClasses = state is ClassesLoaded
+              ? state.classes
+              : bloc.cachedClasses;
 
-          final displayClasses = _buildDisplayClasses(liveClasses);
-          final query = _searchController.text.trim().toLowerCase();
-          final filteredClasses = displayClasses.where((c) {
-            if (query.isEmpty) return true;
-            final code = (c['code'] ?? '').toString().toLowerCase();
-            final name = (c['name'] ?? '').toString().toLowerCase();
-            final teacher = (c['teacher'] ?? '').toString().toLowerCase();
-            return code.contains(query) ||
-                name.contains(query) ||
-                teacher.contains(query);
-          }).toList();
+          final branchNames = <String, String>{
+            for (final classItem in liveClasses)
+              if (classItem.branchId.isNotEmpty)
+                classItem.branchId:
+                    classItem.branchName ?? classItem.branchId,
+          };
+          final activeBranchFilter =
+              _selectedBranch == 'ALL' ||
+                  branchNames.containsKey(_selectedBranch)
+              ? _selectedBranch
+              : 'ALL';
+
+          final filteredModels = liveClasses.where(_matchesActiveFilters).toList();
+          final filteredClasses = _buildDisplayClasses(filteredModels);
 
           return SingleChildScrollView(
             padding: EdgeInsets.all(isDesktop ? 24 : 16),
@@ -779,23 +1152,20 @@ class _ClassListScreenState extends State<ClassListScreen> {
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 isExpanded: true,
-                                value: _selectedBranch,
-                                items: const [
-                                  DropdownMenuItem(
+                                value: activeBranchFilter,
+                                items: [
+                                  const DropdownMenuItem(
                                     value: 'ALL',
                                     child: Text('Chi nhánh: Tất cả chi nhánh'),
                                   ),
-                                  DropdownMenuItem(
-                                    value: 'CN1',
-                                    child: Text('CN 1: Quận 1, TP.HCM'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'CN2',
-                                    child: Text('CN 2: Bình Thạnh, TP.HCM'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'CN3',
-                                    child: Text('CN 3: Cầu Giấy, Hà Nội'),
+                                  ...branchNames.entries.map(
+                                    (entry) => DropdownMenuItem(
+                                      value: entry.key,
+                                      child: Text(
+                                        'Chi nhánh: ${entry.value}',
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
                                   ),
                                 ],
                                 onChanged: (v) {
@@ -868,12 +1238,28 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                     child: Text('Đang học'),
                                   ),
                                   DropdownMenuItem(
+                                    value: 'OPEN_FOR_ENROLLMENT',
+                                    child: Text('Đang mở tuyển sinh'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'PLANNING',
+                                    child: Text('Đang lập kế hoạch'),
+                                  ),
+                                  DropdownMenuItem(
                                     value: 'UPCOMING',
                                     child: Text('Sắp khai giảng'),
                                   ),
                                   DropdownMenuItem(
                                     value: 'COMPLETED',
                                     child: Text('Đã kết thúc'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'CANCELLED',
+                                    child: Text('Đã hủy'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'ARCHIVED',
+                                    child: Text('Đã lưu trữ'),
                                   ),
                                 ],
                                 onChanged: (v) {
@@ -892,7 +1278,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 const SizedBox(height: 24),
 
                 // 4. DATA PRESENTATION AREA
-                if (state is ClassesLoading)
+                if (state is ClassesLoading && liveClasses.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
                     child: LoadingWidget(
@@ -900,7 +1286,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           'Đang tải danh sách lớp học và thời khóa biểu...',
                     ),
                   )
-                else if (state is ClassesError)
+                else if (state is ClassesError && liveClasses.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     child: AppErrorWidget(
@@ -938,26 +1324,17 @@ class _ClassListScreenState extends State<ClassListScreen> {
           : null,
       body: BlocBuilder<ClassesBloc, ClassesState>(
         builder: (context, state) {
+          final bloc = context.read<ClassesBloc>();
           final classes = state is ClassesLoaded
               ? state.classes
-              : <ClassModel>[];
+              : bloc.cachedClasses;
           final query = _searchController.text.trim().toLowerCase();
           final branchNames = <String, String>{
             for (final classItem in classes)
-              classItem.branchId: classItem.branchName ?? classItem.branchId,
+              if (classItem.branchId.isNotEmpty)
+                classItem.branchId: classItem.branchName ?? classItem.branchId,
           };
-          final filtered = classes.where((classItem) {
-            final matchesQuery =
-                query.isEmpty ||
-                classItem.code.toLowerCase().contains(query) ||
-                classItem.name.toLowerCase().contains(query) ||
-                (classItem.mainTeacherName ?? '').toLowerCase().contains(query);
-            return matchesQuery &&
-                (_selectedStatus == 'ALL' ||
-                    classItem.status == _selectedStatus) &&
-                (_selectedBranch == 'ALL' ||
-                    classItem.branchId == _selectedBranch);
-          }).toList();
+          final filtered = classes.where(_matchesActiveFilters).toList();
           final activeCount = classes
               .where((item) => item.status == 'IN_PROGRESS')
               .length;
@@ -1057,6 +1434,8 @@ class _ClassListScreenState extends State<ClassListScreen> {
                               ('OPEN_FOR_ENROLLMENT', 'Đang tuyển'),
                               ('PLANNING', 'Sắp mở'),
                               ('COMPLETED', 'Đã kết thúc'),
+                              ('CANCELLED', 'Đã hủy'),
+                              ('ARCHIVED', 'Đã lưu trữ'),
                             ]
                             .map(
                               (entry) => Padding(
@@ -1106,9 +1485,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                   ),
                 ],
                 const SizedBox(height: MobileTokens.sectionGap),
-                if (state is ClassesLoading)
+                if (state is ClassesLoading && classes.isEmpty)
                   const LoadingWidget(message: 'Đang tải danh sách lớp...')
-                else if (state is ClassesError)
+                else if (state is ClassesError && classes.isEmpty)
                   MobileSectionCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1219,15 +1598,13 @@ class _ClassListScreenState extends State<ClassListScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => context.push(
-                      RouteNames.classDetail.replaceFirst(':id', classItem.id),
-                    ),
+                    onPressed: () => _openClassDetail(classItem.id),
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                    label: const Text('Xem lớp & Điểm danh'),
+                    label: const Text('Xem lớp học và điểm danh'),
                   ),
                 ),
                 const SizedBox(width: 8),
-                if (classItem.status == 'PLANNING' && classItem.studentsCount == 0) ...[
+                if (classItem.status == 'PLANNING' && classItem.studentsCount == 0 && classItem.activeRegistrationsCount == 0) ...[
                   IconButton.outlined(
                     tooltip: 'Xóa lớp học',
                     icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFDC2626)),
@@ -1235,6 +1612,40 @@ class _ClassListScreenState extends State<ClassListScreen> {
                       classItem.id,
                       classItem.name,
                       classItem.code,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ] else if (classItem.status != 'CANCELLED' && classItem.status != 'COMPLETED') ...[
+                  IconButton.outlined(
+                    tooltip: 'Hủy lớp học',
+                    icon: const Icon(Icons.cancel_outlined, size: 18, color: Color(0xFFD97706)),
+                    onPressed: () => _showCancelClassDialog(
+                      classItem.id,
+                      classItem.name,
+                      classItem.code,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (classItem.effectiveIsArchived) ...[
+                  IconButton.outlined(
+                    tooltip: 'Khôi phục lớp khỏi lưu trữ',
+                    icon: const Icon(Icons.unarchive_outlined, size: 18, color: Color(0xFF003FB1)),
+                    onPressed: () => _unarchiveClass(
+                      classItem.id,
+                      classItem.name,
+                      currentNotes: classItem.notes,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ] else if (classItem.canArchive) ...[
+                  IconButton.outlined(
+                    tooltip: 'Lưu trữ lớp học',
+                    icon: const Icon(Icons.archive_outlined, size: 18, color: Color(0xFF475569)),
+                    onPressed: () => _archiveClass(
+                      classItem.id,
+                      classItem.name,
+                      currentNotes: classItem.notes,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1567,9 +1978,12 @@ class _ClassListScreenState extends State<ClassListScreen> {
                       final days = c['days'] ?? 'T2 - T4 - T6';
                       final shift = c['shift'] ?? '08:00 - 09:30';
                       final room = c['room'] ?? 'Phòng học';
-                      final enrolled = c['enrolled'] ?? 16;
-                      final maxCap = c['capacity'] ?? 18;
-                      final ratio = (enrolled / maxCap).clamp(0.0, 1.0);
+                      final enrolled =
+                          (c['enrolled'] as num?)?.toInt() ?? 0;
+                      final maxCap = (c['capacity'] as num?)?.toInt() ?? 18;
+                      final ratio = maxCap > 0
+                          ? (enrolled / maxCap).clamp(0.0, 1.0)
+                          : 0.0;
                       final classStatus =
                           c['status']?.toString() ?? 'IN_PROGRESS';
                       final statusConfig = switch (classStatus) {
@@ -1729,9 +2143,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       color: Color(0xFF0F172A),
                                     ),
                                   ),
-                                  const Text(
-                                    'CN 1: Quận 1',
-                                    style: TextStyle(
+                                  Text(
+                                    c['branchName']?.toString() ??
+                                        'Chi nhánh trung tâm',
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       color: Color(0xFF94A3B8),
                                     ),
@@ -1792,15 +2207,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   ElevatedButton(
-                                    onPressed: () {
-                                      if (classId.isEmpty) return;
-                                      context.push(
-                                        RouteNames.classDetail.replaceFirst(
-                                          ':id',
-                                          classId,
-                                        ),
-                                      );
-                                    },
+                                    onPressed: () => _openClassDetail(classId),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF003FB1),
                                       foregroundColor: Colors.white,
@@ -1828,12 +2235,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       if (classId.isEmpty) return;
                                       switch (value) {
                                         case 'detail':
-                                          context.push(
-                                            RouteNames.classDetail.replaceFirst(
-                                              ':id',
-                                              classId,
-                                            ),
-                                          );
+                                          await _openClassDetail(classId);
                                           break;
                                         case 'schedule':
                                           context.push(RouteNames.schedule);
@@ -1845,11 +2247,34 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                             code,
                                           );
                                           break;
+                                        case 'cancel':
+                                          _showCancelClassDialog(
+                                            classId,
+                                            name,
+                                            code,
+                                          );
+                                          break;
                                         case 'status':
                                           _showChangeStatusDialog(
                                             classId,
                                             name,
                                             classStatus,
+                                          );
+                                          break;
+                                        case 'archive':
+                                          await _archiveClass(
+                                            classId,
+                                            name,
+                                            currentNotes:
+                                                c['notes']?.toString(),
+                                          );
+                                          break;
+                                        case 'unarchive':
+                                          await _unarchiveClass(
+                                            classId,
+                                            name,
+                                            currentNotes:
+                                                c['notes']?.toString(),
                                           );
                                           break;
                                       }
@@ -1894,24 +2319,82 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                           ],
                                         ),
                                       ),
-                                      if (classStatus == 'PLANNING' && enrolled == 0)
+                                      if (c['isArchived'] == true)
+                                        const PopupMenuItem(
+                                          value: 'unarchive',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.unarchive_outlined,
+                                                size: 16,
+                                                color: Color(0xFF003FB1),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Khôi phục khỏi lưu trữ',
+                                                style: TextStyle(
+                                                  color: Color(0xFF003FB1),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      else if (c['canArchive'] == true)
+                                        const PopupMenuItem(
+                                          value: 'archive',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.archive_outlined,
+                                                size: 16,
+                                                color: Color(0xFF475569),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Lưu trữ lớp học'),
+                                            ],
+                                          ),
+                                        ),
+                                      if (classStatus == 'PLANNING' &&
+                                          enrolled == 0 &&
+                                          ((c['activeRegistrationsCount'] as int?) ?? 0) == 0)
                                         const PopupMenuItem(
                                           value: 'delete',
                                           child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.delete_outline_rounded,
-                                              size: 16,
-                                              color: Color(0xFFDC2626),
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Xóa lớp học',
-                                              style: TextStyle(
+                                            children: [
+                                              Icon(
+                                                Icons.delete_outline_rounded,
+                                                size: 16,
                                                 color: Color(0xFFDC2626),
                                               ),
-                                            ),
-                                          ],
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Xóa lớp học',
+                                                style: TextStyle(
+                                                  color: Color(0xFFDC2626),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      else if (classStatus != 'CANCELLED' &&
+                                          classStatus != 'COMPLETED')
+                                        const PopupMenuItem(
+                                          value: 'cancel',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.cancel_outlined,
+                                                size: 16,
+                                                color: Color(0xFFD97706),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Hủy lớp học',
+                                                style: TextStyle(
+                                                  color: Color(0xFFD97706),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                     ],
@@ -1970,6 +2453,8 @@ class _ClassListScreenState extends State<ClassListScreen> {
         'code': lc.code,
         'name': lc.name,
         'courseTitle': lc.courseTitle ?? 'Khóa học',
+        'branchId': lc.branchId,
+        'branchName': lc.branchName ?? 'Chi nhánh trung tâm',
         'teacher': lc.mainTeacherName ?? 'Chưa phân công',
         'days': lc.scheduleDays.isNotEmpty
             ? lc.scheduleDays.join(' - ')
@@ -1979,6 +2464,12 @@ class _ClassListScreenState extends State<ClassListScreen> {
         'enrolled': lc.studentsCount,
         'capacity': lc.maxCapacity,
         'status': lc.status,
+        'notes': lc.notes,
+        'isArchived': lc.effectiveIsArchived,
+        'canArchive': lc.canArchive,
+        'activeRegistrationsCount': lc.activeRegistrationsCount,
+        'historicalRegistrationsCount': lc.historicalRegistrationsCount,
+        'rejectedRegistrationsCount': lc.rejectedRegistrationsCount,
       };
     }).toList();
   }

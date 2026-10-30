@@ -594,6 +594,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
+  String _mapStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return 'Đã hoàn thành';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      case 'RESCHEDULED':
+        return 'Dời lịch';
+      case 'PLANNING':
+      case 'SCHEDULED':
+        return 'Đang lên lịch';
+      case 'IN_PROGRESS':
+        return 'Đang diễn ra';
+      default:
+        return status;
+    }
+  }
+
   void _showMobileSession(ClassSessionModel session, bool isTeacher) {
     showModalBottomSheet<void>(
       context: context,
@@ -620,11 +638,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 '${DateFormat('dd/MM/yyyy').format(_day(session))} · '
                 '${session.startTime}–${session.endTime}',
               ),
-              if (session.roomName != null || session.roomCode != null)
-                Text('Phòng: ${session.roomName ?? session.roomCode}'),
-              if (!isTeacher && session.teacherName != null)
-                Text('Giảng viên: ${session.teacherName}'),
-              Text('Trạng thái: ${session.status}'),
+              Text(
+                'Phòng: ${session.roomName ?? session.roomCode ?? "Chưa xếp phòng"}',
+              ),
+              if (!isTeacher)
+                Text('Giảng viên: ${session.teacherName ?? "Chưa gán GV"}'),
+              Text('Trạng thái: ${_mapStatus(session.status)}'),
               if (isTeacher && session.status != 'CANCELLED') ...[
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -916,19 +935,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-            if (room != null)
+            Text(
+              room != null ? 'Phòng: $room' : 'Chưa xếp phòng',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (!isTeacher)
               Text(
-                'Phòng: $room',
+                teacher != null ? 'Giáo viên: $teacher' : 'Chưa gán GV',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            if (!isTeacher && teacher != null)
-              Text(
-                'Giáo viên: $teacher',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            Text(session.status, style: const TextStyle(color: Colors.grey)),
+            Text(_mapStatus(session.status), style: const TextStyle(color: Colors.grey)),
             if (isTeacher && session.status != 'CANCELLED')
               TextButton.icon(
                 onPressed: () => context.push(

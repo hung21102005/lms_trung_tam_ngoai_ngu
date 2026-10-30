@@ -62,8 +62,21 @@ import '../../features/reports/presentation/screens/debts_report_screen.dart';
 import '../../features/reports/presentation/screens/teacher_dashboard_live_screen.dart';
 import '../../features/public/data/public_catalog_repository.dart';
 import '../../features/public/presentation/public_site_screen.dart';
+import '../storage/secure_storage_service.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
+PublicCatalogRepository _resolvePublicCatalogRepository() {
+  if (getIt.isRegistered<PublicCatalogRepository>()) {
+    return getIt<PublicCatalogRepository>();
+  }
+  if (getIt.isRegistered<ApiClient>()) {
+    return PublicCatalogRepository(getIt<ApiClient>());
+  }
+  return PublicCatalogRepository(
+    ApiClient(storageService: SecureStorageService()),
+  );
+}
 
 String? _publicDashboardRoute(BuildContext context) {
   final auth = context.watch<AuthBloc>().state;
@@ -73,18 +86,7 @@ String? _publicDashboardRoute(BuildContext context) {
   if (auth.requiresPasswordChange) {
     return RouteNames.firstLoginSetup;
   }
-  if (auth.user.isSuperAdmin ||
-      auth.user.isBranchAdmin ||
-      auth.user.isAcademicStaff) {
-    return RouteNames.adminHome;
-  }
-  if (auth.user.isTeacher) {
-    return RouteNames.teacherHome;
-  }
-  if (auth.user.isParent) {
-    return RouteNames.parentHome;
-  }
-  return RouteNames.studentHome;
+  return auth.user.dashboardRoute;
 }
 
 final GoRouter appRouter = GoRouter(
@@ -94,7 +96,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.splash,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.home,
         dashboardRoute: _publicDashboardRoute(context),
       ),
@@ -114,7 +116,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.publicHome,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.home,
         dashboardRoute: _publicDashboardRoute(context),
       ),
@@ -122,7 +124,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.publicPrograms,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.programs,
         dashboardRoute: _publicDashboardRoute(context),
       ),
@@ -130,7 +132,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.publicCourses,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.courses,
         dashboardRoute: _publicDashboardRoute(context),
         programSlug: state.uri.queryParameters['chuong-trinh'],
@@ -139,7 +141,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.publicCourseDetail,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.courseDetail,
         dashboardRoute: _publicDashboardRoute(context),
         slug: state.pathParameters['slug'],
@@ -148,7 +150,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.publicClasses,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.classes,
         dashboardRoute: _publicDashboardRoute(context),
         courseId: state.uri.queryParameters['khoa-hoc'],
@@ -157,7 +159,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.publicConsultation,
       builder: (context, state) => PublicSiteScreen(
-        repository: PublicCatalogRepository(getIt<ApiClient>()),
+        repository: _resolvePublicCatalogRepository(),
         page: PublicPage.consultation,
         dashboardRoute: _publicDashboardRoute(context),
         targetCourse: state.uri.queryParameters['khoa-hoc'],
@@ -168,7 +170,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final auth = context.read<AuthBloc>().state;
         return PublicSiteScreen(
-          repository: PublicCatalogRepository(getIt<ApiClient>()),
+          repository: _resolvePublicCatalogRepository(),
           page: PublicPage.registration,
           dashboardRoute: _publicDashboardRoute(context),
           classId: state.pathParameters['id'],
@@ -189,7 +191,7 @@ final GoRouter appRouter = GoRouter(
           );
         }
         return PublicSiteScreen(
-          repository: PublicCatalogRepository(getIt<ApiClient>()),
+          repository: _resolvePublicCatalogRepository(),
           page: PublicPage.myRegistrations,
           isStudent: true,
           studentName: auth.user.fullName,
@@ -215,22 +217,25 @@ final GoRouter appRouter = GoRouter(
     // Profile Routes
     GoRoute(
       path: RouteNames.profile,
-      builder: (context, state) => BlocProvider<ProfileBloc>(
-        create: (_) => getIt<ProfileBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ProfileBloc>(
+        context,
+        create: () => getIt<ProfileBloc>(),
         child: const ProfileScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.editProfile,
-      builder: (context, state) => BlocProvider<ProfileBloc>(
-        create: (_) => getIt<ProfileBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ProfileBloc>(
+        context,
+        create: () => getIt<ProfileBloc>(),
         child: const EditProfileScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.changePassword,
-      builder: (context, state) => BlocProvider<ProfileBloc>(
-        create: (_) => getIt<ProfileBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ProfileBloc>(
+        context,
+        create: () => getIt<ProfileBloc>(),
         child: const ChangePasswordScreen(),
       ),
     ),
@@ -260,8 +265,9 @@ final GoRouter appRouter = GoRouter(
         if (auth is AuthenticatedState && auth.user.isStudent) {
           return const StudentCoursesScreen(showAppBar: true);
         }
-        return BlocProvider<CoursesBloc>(
-          create: (_) => getIt<CoursesBloc>(),
+        return _provideExistingOrCreate<CoursesBloc>(
+          context,
+          create: () => getIt<CoursesBloc>(),
           child: CourseListScreen(
             canManage:
                 auth is AuthenticatedState &&
@@ -278,8 +284,9 @@ final GoRouter appRouter = GoRouter(
           return const StudentCoursesScreen(showAppBar: true);
         }
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<CoursesBloc>(
-          create: (_) => getIt<CoursesBloc>(),
+        return _provideExistingOrCreate<CoursesBloc>(
+          context,
+          create: () => getIt<CoursesBloc>(),
           child: CourseDetailScreen(
             courseId: id,
             canEditAcademicLevel:
@@ -292,32 +299,39 @@ final GoRouter appRouter = GoRouter(
     // Classes & Scheduling Routes
     GoRoute(
       path: RouteNames.classes,
-      builder: (context, state) => BlocProvider<ClassesBloc>(
-        create: (_) => getIt<ClassesBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ClassesBloc>(
+        context,
+        create: () => getIt<ClassesBloc>(),
         child: const ClassListScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.classCreate,
-      builder: (context, state) => BlocProvider<ClassesBloc>(
-        create: (_) => getIt<ClassesBloc>(),
-        child: const ClassCreateScreen(),
+      builder: (context, state) => _provideExistingOrCreate<ClassesBloc>(
+        context,
+        create: () => getIt<ClassesBloc>(),
+        child: ClassCreateScreen(
+          initialCourseId: state.uri.queryParameters['courseId'],
+          initialLevelId: state.uri.queryParameters['levelId'],
+        ),
       ),
     ),
     GoRoute(
       path: RouteNames.classDetail,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<ClassesBloc>(
-          create: (_) => getIt<ClassesBloc>(),
+        return _provideExistingOrCreate<ClassesBloc>(
+          context,
+          create: () => getIt<ClassesBloc>(),
           child: ClassDetailScreen(classId: id),
         );
       },
     ),
     GoRoute(
       path: RouteNames.schedule,
-      builder: (context, state) => BlocProvider<ClassesBloc>(
-        create: (_) => getIt<ClassesBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ClassesBloc>(
+        context,
+        create: () => getIt<ClassesBloc>(),
         child: const ScheduleScreen(),
       ),
     ),
@@ -326,8 +340,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.attendanceMark,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<AttendanceBloc>(
-          create: (_) => getIt<AttendanceBloc>(),
+        return _provideExistingOrCreate<AttendanceBloc>(
+          context,
+          create: () => getIt<AttendanceBloc>(),
           child: AttendanceMarkScreen(sessionId: id),
         );
       },
@@ -336,8 +351,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.myAttendance,
       builder: (context, state) {
         final studentId = state.extra as String? ?? '';
-        return BlocProvider<AttendanceBloc>(
-          create: (_) => getIt<AttendanceBloc>(),
+        return _provideExistingOrCreate<AttendanceBloc>(
+          context,
+          create: () => getIt<AttendanceBloc>(),
           child: MyAttendanceScreen(studentId: studentId),
         );
       },
@@ -354,8 +370,9 @@ final GoRouter appRouter = GoRouter(
         final classId = state.extra as String? ?? '';
         final auth = context.read<AuthBloc>().state;
         final isTeacher = auth is AuthenticatedState && auth.user.isTeacher;
-        return BlocProvider<AssignmentsBloc>(
-          create: (_) => getIt<AssignmentsBloc>(),
+        return _provideExistingOrCreate<AssignmentsBloc>(
+          context,
+          create: () => getIt<AssignmentsBloc>(),
           child: AssignmentListScreen(classId: classId, isTeacher: isTeacher),
         );
       },
@@ -368,8 +385,9 @@ final GoRouter appRouter = GoRouter(
         final isTeacher =
             state.extra as bool? ??
             (auth is AuthenticatedState && auth.user.isTeacher);
-        return BlocProvider<AssignmentsBloc>(
-          create: (_) => getIt<AssignmentsBloc>(),
+        return _provideExistingOrCreate<AssignmentsBloc>(
+          context,
+          create: () => getIt<AssignmentsBloc>(),
           child: AssignmentListScreen(classId: classId, isTeacher: isTeacher),
         );
       },
@@ -378,8 +396,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.createAssignment,
       builder: (context, state) {
         final classId = state.pathParameters['classId'] ?? '';
-        return BlocProvider<AssignmentsBloc>(
-          create: (_) => getIt<AssignmentsBloc>(),
+        return _provideExistingOrCreate<AssignmentsBloc>(
+          context,
+          create: () => getIt<AssignmentsBloc>(),
           child: CreateAssignmentScreen(classId: classId),
         );
       },
@@ -391,16 +410,18 @@ final GoRouter appRouter = GoRouter(
         final isTeacher =
             state.extra as bool? ??
             state.uri.queryParameters['teacher'] == 'true';
-        return BlocProvider<AssignmentsBloc>(
-          create: (_) => getIt<AssignmentsBloc>(),
+        return _provideExistingOrCreate<AssignmentsBloc>(
+          context,
+          create: () => getIt<AssignmentsBloc>(),
           child: AssignmentDetailScreen(assignmentId: id, isTeacher: isTeacher),
         );
       },
     ),
     GoRoute(
       path: RouteNames.editAssignment,
-      builder: (context, state) => BlocProvider<AssignmentsBloc>(
-        create: (_) => getIt<AssignmentsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<AssignmentsBloc>(
+        context,
+        create: () => getIt<AssignmentsBloc>(),
         child: CreateAssignmentScreen(
           classId: '',
           assignmentId: state.pathParameters['id'] ?? '',
@@ -411,8 +432,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.submitAssignment,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<AssignmentsBloc>(
-          create: (_) => getIt<AssignmentsBloc>(),
+        return _provideExistingOrCreate<AssignmentsBloc>(
+          context,
+          create: () => getIt<AssignmentsBloc>(),
           child: SubmitAssignmentScreen(assignmentId: id),
         );
       },
@@ -421,16 +443,18 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.gradeSubmissions,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<AssignmentsBloc>(
-          create: (_) => getIt<AssignmentsBloc>(),
+        return _provideExistingOrCreate<AssignmentsBloc>(
+          context,
+          create: () => getIt<AssignmentsBloc>(),
           child: GradeSubmissionScreen(assignmentId: id),
         );
       },
     ),
     GoRoute(
       path: RouteNames.reviewSubmission,
-      builder: (context, state) => BlocProvider<AssignmentsBloc>(
-        create: (_) => getIt<AssignmentsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<AssignmentsBloc>(
+        context,
+        create: () => getIt<AssignmentsBloc>(),
         child: SubmissionReviewScreen(
           assignmentId: state.pathParameters['id'] ?? '',
           studentId: state.pathParameters['studentId'] ?? '',
@@ -450,8 +474,9 @@ final GoRouter appRouter = GoRouter(
             user?.isAcademicStaff == true ||
             user?.isBranchAdmin == true ||
             user?.isSuperAdmin == true;
-        return BlocProvider<ExamsBloc>(
-          create: (_) => getIt<ExamsBloc>(),
+        return _provideExistingOrCreate<ExamsBloc>(
+          context,
+          create: () => getIt<ExamsBloc>(),
           child: ExamListScreen(classId: classId, isTeacher: canManageExams),
         );
       },
@@ -460,8 +485,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.createExam,
       builder: (context, state) {
         final classId = state.extra as String?;
-        return BlocProvider<ExamsBloc>(
-          create: (_) => getIt<ExamsBloc>(),
+        return _provideExistingOrCreate<ExamsBloc>(
+          context,
+          create: () => getIt<ExamsBloc>(),
           child: CreateExamScreen(classId: classId),
         );
       },
@@ -470,8 +496,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.takeExam,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<ExamsBloc>(
-          create: (_) => getIt<ExamsBloc>(),
+        return _provideExistingOrCreate<ExamsBloc>(
+          context,
+          create: () => getIt<ExamsBloc>(),
           child: TakeExamScreen(examId: id),
         );
       },
@@ -480,23 +507,26 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.examResults,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<ExamsBloc>(
-          create: (_) => getIt<ExamsBloc>(),
+        return _provideExistingOrCreate<ExamsBloc>(
+          context,
+          create: () => getIt<ExamsBloc>(),
           child: ExamResultScreen(examId: id),
         );
       },
     ),
     GoRoute(
       path: RouteNames.myExamResults,
-      builder: (context, state) => BlocProvider<ExamsBloc>(
-        create: (_) => getIt<ExamsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ExamsBloc>(
+        context,
+        create: () => getIt<ExamsBloc>(),
         child: const MyExamResultsScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.questionBanks,
-      builder: (context, state) => BlocProvider<ExamsBloc>(
-        create: (_) => getIt<ExamsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ExamsBloc>(
+        context,
+        create: () => getIt<ExamsBloc>(),
         child: const QuestionBankListScreen(),
       ),
     ),
@@ -511,15 +541,17 @@ final GoRouter appRouter = GoRouter(
     // Finance Routes
     GoRoute(
       path: RouteNames.invoices,
-      builder: (context, state) => BlocProvider<FinanceBloc>(
-        create: (_) => getIt<FinanceBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<FinanceBloc>(
+        context,
+        create: () => getIt<FinanceBloc>(),
         child: const InvoiceListScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.myInvoices,
-      builder: (context, state) => BlocProvider<FinanceBloc>(
-        create: (_) => getIt<FinanceBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<FinanceBloc>(
+        context,
+        create: () => getIt<FinanceBloc>(),
         child: const MyInvoicesScreen(),
       ),
     ),
@@ -527,8 +559,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.invoiceDetail,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<FinanceBloc>(
-          create: (_) => getIt<FinanceBloc>(),
+        return _provideExistingOrCreate<FinanceBloc>(
+          context,
+          create: () => getIt<FinanceBloc>(),
           child: InvoiceDetailScreen(invoiceId: id),
         );
       },
@@ -537,8 +570,9 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.recordPayment,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<FinanceBloc>(
-          create: (_) => getIt<FinanceBloc>(),
+        return _provideExistingOrCreate<FinanceBloc>(
+          context,
+          create: () => getIt<FinanceBloc>(),
           child: RecordPaymentScreen(invoiceId: id),
         );
       },
@@ -547,39 +581,57 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.payOnline,
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
-        return BlocProvider<FinanceBloc>(
-          create: (_) => getIt<FinanceBloc>(),
+        return _provideExistingOrCreate<FinanceBloc>(
+          context,
+          create: () => getIt<FinanceBloc>(),
           child: PayOnlineScreen(invoiceId: id),
         );
       },
     ),
     GoRoute(
       path: RouteNames.adminDashboard,
-      builder: (context, state) => BlocProvider<ReportsBloc>(
-        create: (_) => getIt<ReportsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ReportsBloc>(
+        context,
+        create: () => getIt<ReportsBloc>(),
         child: const AdminDashboardScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.reportsOverview,
-      builder: (context, state) => BlocProvider<ReportsBloc>(
-        create: (_) => getIt<ReportsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ReportsBloc>(
+        context,
+        create: () => getIt<ReportsBloc>(),
         child: const ReportsOverviewScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.debtsReport,
-      builder: (context, state) => BlocProvider<ReportsBloc>(
-        create: (_) => getIt<ReportsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ReportsBloc>(
+        context,
+        create: () => getIt<ReportsBloc>(),
         child: const DebtsReportScreen(),
       ),
     ),
     GoRoute(
       path: RouteNames.teacherDashboard,
-      builder: (context, state) => BlocProvider<ReportsBloc>(
-        create: (_) => getIt<ReportsBloc>(),
+      builder: (context, state) => _provideExistingOrCreate<ReportsBloc>(
+        context,
+        create: () => getIt<ReportsBloc>(),
         child: const TeacherDashboardLiveScreen(),
       ),
     ),
   ],
 );
+
+Widget _provideExistingOrCreate<B extends StateStreamableSource<Object?>>(
+  BuildContext context, {
+  required B Function() create,
+  required Widget child,
+}) {
+  try {
+    final existing = BlocProvider.of<B>(context, listen: false);
+    return BlocProvider<B>.value(value: existing, child: child);
+  } catch (_) {
+    return BlocProvider<B>(create: (_) => create(), child: child);
+  }
+}

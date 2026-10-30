@@ -34,6 +34,12 @@ class ClassModel extends Equatable {
   final String? notes;
   final int studentsCount;
   final int sessionsCount;
+  final int activeRegistrationsCount;
+  final int historicalRegistrationsCount;
+  final int rejectedRegistrationsCount;
+  final int cancelledRegistrationsCount;
+  final int invoicesCount;
+  final bool isArchived;
   final List<ClassStudentModel> students;
   final List<ClassSessionModel> sessions;
 
@@ -71,9 +77,38 @@ class ClassModel extends Equatable {
     this.notes,
     this.studentsCount = 0,
     this.sessionsCount = 0,
+    this.activeRegistrationsCount = 0,
+    this.historicalRegistrationsCount = 0,
+    this.rejectedRegistrationsCount = 0,
+    this.cancelledRegistrationsCount = 0,
+    this.invoicesCount = 0,
+    this.isArchived = false,
     this.students = const [],
     this.sessions = const [],
   });
+
+  bool get isPlanned => status == 'PLANNING';
+  bool get isCancelled => status == 'CANCELLED';
+  bool get isCompleted => status == 'COMPLETED';
+  bool get effectiveIsArchived =>
+      isArchived || (notes != null && notes!.contains('[ARCHIVED'));
+
+  bool get canHardDelete =>
+      isPlanned &&
+      studentsCount == 0 &&
+      activeRegistrationsCount == 0 &&
+      historicalRegistrationsCount == 0 &&
+      invoicesCount == 0;
+
+  bool get hasHistoricalRegistrationsOnly =>
+      isPlanned &&
+      studentsCount == 0 &&
+      activeRegistrationsCount == 0 &&
+      historicalRegistrationsCount > 0;
+
+  bool get canArchive =>
+      (isCompleted || isCancelled || hasHistoricalRegistrationsOnly) &&
+      !effectiveIsArchived;
 
   factory ClassModel.fromJson(Map<String, dynamic> json) {
     final course = json['course'] as Map<String, dynamic>?;
@@ -140,10 +175,124 @@ class ClassModel extends Equatable {
       registrationCloseAt: json['registrationCloseAt'] != null
           ? DateTime.tryParse(json['registrationCloseAt'].toString()) : null,
       notes: json['notes'] as String?,
-      studentsCount: parsedStudents.isNotEmpty ? parsedStudents.length : sCount,
-      sessionsCount: parsedSessions.isNotEmpty ? parsedSessions.length : sessCount,
+      studentsCount: parsedStudents.isNotEmpty
+          ? parsedStudents.length
+          : (json['studentsCount'] as int? ?? sCount),
+      sessionsCount: parsedSessions.isNotEmpty
+          ? parsedSessions.length
+          : (json['sessionsCount'] as int? ?? sessCount),
+      activeRegistrationsCount:
+          json['activeRegistrationsCount'] as int? ?? 0,
+      historicalRegistrationsCount:
+          json['historicalRegistrationsCount'] as int? ?? 0,
+      rejectedRegistrationsCount:
+          json['rejectedRegistrationsCount'] as int? ?? 0,
+      cancelledRegistrationsCount:
+          json['cancelledRegistrationsCount'] as int? ?? 0,
+      invoicesCount:
+          json['invoicesCount'] as int? ?? (counts?['invoices'] as int? ?? 0),
+      isArchived:
+          json['isArchived'] == true ||
+          ((json['notes'] as String?)?.contains('[ARCHIVED') ?? false),
       students: parsedStudents,
       sessions: parsedSessions,
+    );
+  }
+
+  ClassModel copyWith({
+    String? id,
+    String? code,
+    String? name,
+    String? courseId,
+    String? courseTitle,
+    String? courseCode,
+    String? levelId,
+    String? levelName,
+    String? branchId,
+    String? branchName,
+    String? roomId,
+    String? roomName,
+    int? roomCapacity,
+    String? mainTeacherId,
+    String? mainTeacherName,
+    String? mainTeacherCode,
+    String? mainTeacherAvatar,
+    String? assistantTeacherId,
+    String? assistantTeacherName,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    List<String>? scheduleDays,
+    String? startTime,
+    String? endTime,
+    int? totalSessions,
+    int? maxCapacity,
+    double? tuitionFee,
+    DateTime? registrationOpenAt,
+    DateTime? registrationCloseAt,
+    String? notes,
+    int? studentsCount,
+    int? sessionsCount,
+    int? activeRegistrationsCount,
+    int? historicalRegistrationsCount,
+    int? rejectedRegistrationsCount,
+    int? cancelledRegistrationsCount,
+    int? invoicesCount,
+    bool? isArchived,
+    List<ClassStudentModel>? students,
+    List<ClassSessionModel>? sessions,
+  }) {
+    final nextNotes = notes ?? this.notes;
+    return ClassModel(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      name: name ?? this.name,
+      courseId: courseId ?? this.courseId,
+      courseTitle: courseTitle ?? this.courseTitle,
+      courseCode: courseCode ?? this.courseCode,
+      levelId: levelId ?? this.levelId,
+      levelName: levelName ?? this.levelName,
+      branchId: branchId ?? this.branchId,
+      branchName: branchName ?? this.branchName,
+      roomId: roomId ?? this.roomId,
+      roomName: roomName ?? this.roomName,
+      roomCapacity: roomCapacity ?? this.roomCapacity,
+      mainTeacherId: mainTeacherId ?? this.mainTeacherId,
+      mainTeacherName: mainTeacherName ?? this.mainTeacherName,
+      mainTeacherCode: mainTeacherCode ?? this.mainTeacherCode,
+      mainTeacherAvatar: mainTeacherAvatar ?? this.mainTeacherAvatar,
+      assistantTeacherId: assistantTeacherId ?? this.assistantTeacherId,
+      assistantTeacherName: assistantTeacherName ?? this.assistantTeacherName,
+      status: status ?? this.status,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      scheduleDays: scheduleDays ?? this.scheduleDays,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      totalSessions: totalSessions ?? this.totalSessions,
+      maxCapacity: maxCapacity ?? this.maxCapacity,
+      tuitionFee: tuitionFee ?? this.tuitionFee,
+      registrationOpenAt: registrationOpenAt ?? this.registrationOpenAt,
+      registrationCloseAt: registrationCloseAt ?? this.registrationCloseAt,
+      notes: nextNotes,
+      studentsCount: studentsCount ?? this.studentsCount,
+      sessionsCount: sessionsCount ?? this.sessionsCount,
+      activeRegistrationsCount:
+          activeRegistrationsCount ?? this.activeRegistrationsCount,
+      historicalRegistrationsCount:
+          historicalRegistrationsCount ?? this.historicalRegistrationsCount,
+      rejectedRegistrationsCount:
+          rejectedRegistrationsCount ?? this.rejectedRegistrationsCount,
+      cancelledRegistrationsCount:
+          cancelledRegistrationsCount ?? this.cancelledRegistrationsCount,
+      invoicesCount: invoicesCount ?? this.invoicesCount,
+      isArchived:
+          isArchived ??
+          (nextNotes != null && nextNotes.contains('[ARCHIVED')
+              ? true
+              : (notes != null ? false : this.isArchived)),
+      students: students ?? this.students,
+      sessions: sessions ?? this.sessions,
     );
   }
 
@@ -153,10 +302,20 @@ class ClassModel extends Equatable {
         code,
         name,
         courseId,
+        courseTitle,
+        courseCode,
         levelId,
+        levelName,
         branchId,
+        branchName,
         roomId,
+        roomName,
+        roomCapacity,
         mainTeacherId,
+        mainTeacherName,
+        mainTeacherCode,
+        assistantTeacherId,
+        assistantTeacherName,
         status,
         startDate,
         endDate,
@@ -168,8 +327,17 @@ class ClassModel extends Equatable {
         tuitionFee,
         registrationOpenAt,
         registrationCloseAt,
+        notes,
         studentsCount,
         sessionsCount,
+        activeRegistrationsCount,
+        historicalRegistrationsCount,
+        rejectedRegistrationsCount,
+        cancelledRegistrationsCount,
+        invoicesCount,
+        isArchived,
+        students,
+        sessions,
       ];
 }
 
@@ -318,13 +486,20 @@ class ClassSessionModel extends Equatable {
   List<Object?> get props => [
         id,
         classId,
+        lessonId,
+        lessonTitle,
         sessionNumber,
         title,
         date,
         startTime,
         endTime,
         roomId,
+        roomName,
+        roomCode,
         teacherId,
+        teacherName,
+        teacherCode,
         status,
+        notes,
       ];
 }

@@ -210,16 +210,54 @@ export class UsersService {
     return XLSX.write(book, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
   }
 
-  async findTeacherOptions(branchId: string) {
-    return this.prisma.user.findMany({
+  async findTeacherOptions(branchId?: string) {
+    const teachers = await this.prisma.user.findMany({
       where: {
-        branchId,
         status: UserStatus.ACTIVE,
-        userRoles: { some: { role: { code: 'teacher' } } },
+        userRoles: {
+          some: {
+            role: {
+              code: { in: ['teacher', 'teaching_assistant'] },
+            },
+          },
+        },
+        ...(branchId
+          ? {
+              OR: [{ branchId }, { branchId: null }],
+            }
+          : {}),
       },
-      select: { id: true, userCode: true, fullName: true },
+      include: {
+        branch: { select: { id: true, code: true, name: true } },
+        teacherProfile: {
+          select: { id: true, degrees: true, specialties: true },
+        },
+      },
       orderBy: { fullName: 'asc' },
     });
+
+    // Ưu tiên giảng viên thuộc đúng branchId lên đầu, sau đó là giảng viên liên cơ sở (branchId = null)
+    const sorted = teachers.sort((a, b) => {
+      if (branchId) {
+        const aExact = a.branchId === branchId ? 0 : 1;
+        const bExact = b.branchId === branchId ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+      }
+      return a.fullName.localeCompare(b.fullName, 'vi');
+    });
+
+    return sorted.map((t) => ({
+      id: t.id,
+      userCode: t.userCode,
+      fullName: t.fullName,
+      email: t.email,
+      phone: t.phone,
+      branchId: t.branchId,
+      branchName: t.branch?.name ?? null,
+      teacherProfileId: t.teacherProfile?.id ?? null,
+      degrees: t.teacherProfile?.degrees ?? null,
+      specialties: t.teacherProfile?.specialties ?? null,
+    }));
   }
 
   // --------------------------------------------------------------------------
@@ -704,17 +742,35 @@ export class UsersService {
         });
       }
 
-      // 3. Cập nhật TeacherProfile nếu có
+      // 3. Cập nhật hoặc khởi tạo TeacherProfile nếu là giáo viên/trợ giảng hoặc có dữ liệu chuyên môn
+      const isTeacherRole = user.userRoles.some(
+        (ur) =>
+          ur.role.code === 'teacher' || ur.role.code === 'teaching_assistant',
+      );
       if (
-        user.teacherProfile &&
-        (dto.degrees !== undefined ||
-          dto.specialties !== undefined ||
-          dto.bio !== undefined ||
-          dto.hourlyRate !== undefined)
+        isTeacherRole ||
+        user.teacherProfile ||
+        dto.degrees !== undefined ||
+        dto.specialties !== undefined ||
+        dto.bio !== undefined ||
+        dto.hourlyRate !== undefined
       ) {
-        await tx.teacherProfile.update({
+        await tx.teacherProfile.upsert({
           where: { userId: id },
-          data: {
+          update: {
+            degrees: dto.degrees !== undefined ? dto.degrees?.trim() : undefined,
+            specialties:
+                dto.specialties !== undefined
+                    ? dto.specialties?.trim()
+                    : undefined,
+            bio: dto.bio !== undefined ? dto.bio?.trim() : undefined,
+            hourlyRate:
+              dto.hourlyRate !== undefined
+                ? new Prisma.Decimal(dto.hourlyRate)
+                : undefined,
+          },
+          create: {
+            userId: id,
             degrees: dto.degrees?.trim(),
             specialties: dto.specialties?.trim(),
             bio: dto.bio?.trim(),
@@ -786,6 +842,97 @@ export class UsersService {
       message: `Đã cập nhật trạng thái tài khoản sang ${dto.status}.`,
       user: updated,
     };
+  }
+
+  async deleteUser(id: string, actorId: string) {
+    if (id === actorId) {
+      throw new BadRequestException(
+        'Bạn không thể tự xóa tài khoản đang đăng nhập của chính mình.',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { userRoles: { include: { role: true } } },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy người dùng này.');
+    }
+
+    const isSuperAdmin = user.userRoles.some(
+      (ur) => ur.role.code === 'super_admin',
+    );
+    if (isSuperAdmin) {
+      const activeSuperAdminCount = await this.prisma.user.count({
+        where: {
+          status: UserStatus.ACTIVE,
+          userRoles: { some: { role: { code: 'super_admin' } } },
+        },
+      });
+      if (activeSuperAdminCount <= 1) {
+        throw new BadRequestException(
+          'Không thể xóa Super Admin duy nhất đang hoạt động của hệ thống.',
+        );
+      }
+    }
+
+    const [
+      enrollmentCount,
+      invoiceCount,
+      createdInvoiceCount,
+      attendanceCount,
+      submissionCount,
+      examAttemptCount,
+      taughtClassCount,
+      sessionTeacherCount,
+    ] = await Promise.all([
+      this.prisma.classStudent.count({ where: { studentId: id } }),
+      this.prisma.invoice.count({ where: { studentId: id } }),
+      this.prisma.invoice.count({ where: { createdById: id } }),
+      this.prisma.attendance.count({ where: { studentId: id } }),
+      this.prisma.submission.count({ where: { studentId: id } }),
+      this.prisma.examAttempt.count({ where: { studentId: id } }),
+      this.prisma.class.count({
+        where: {
+          OR: [{ mainTeacherId: id }, { assistantTeacherId: id }],
+        },
+      }),
+      this.prisma.classSession.count({ where: { teacherId: id } }),
+    ]);
+
+    const totalHistory =
+      enrollmentCount +
+      invoiceCount +
+      createdInvoiceCount +
+      attendanceCount +
+      submissionCount +
+      examAttemptCount +
+      taughtClassCount +
+      sessionTeacherCount;
+
+    if (totalHistory > 0) {
+      throw new BadRequestException(
+        `Tài khoản '${user.userCode}' (${user.fullName}) đã có lịch sử vận hành (${enrollmentCount} lớp đã học, ${invoiceCount + createdInvoiceCount} hóa đơn, ${attendanceCount} điểm danh, ${taughtClassCount + sessionTeacherCount} buổi dạy). Để bảo toàn lịch sử và dữ liệu học vụ, không thể xóa vĩnh viễn. Vui lòng chọn VÔ HIỆU HÓA (LOCKED / INACTIVE).`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.studentProfile.deleteMany({ where: { userId: id } });
+      await tx.teacherProfile.deleteMany({ where: { userId: id } });
+      await tx.parentStudent.deleteMany({
+        where: { OR: [{ parentId: id }, { studentId: id }] },
+      });
+      await tx.notification.deleteMany({ where: { userId: id } });
+      await tx.classRegistration.deleteMany({ where: { studentId: id } });
+      await tx.userRole.deleteMany({ where: { userId: id } });
+      await tx.user.delete({ where: { id } });
+
+      return {
+        success: true,
+        message: `Đã xóa vĩnh viễn tài khoản '${user.userCode}' (${user.fullName}) thành công.`,
+      };
+    });
   }
 
   // --------------------------------------------------------------------------
@@ -880,6 +1027,25 @@ export class UsersService {
           roleId: r.id,
         })),
       });
+
+      // Đồng bộ tự động TeacherProfile / StudentProfile khi gán role
+      if (
+        dto.roleCodes.includes('teacher') ||
+        dto.roleCodes.includes('teaching_assistant')
+      ) {
+        await tx.teacherProfile.upsert({
+          where: { userId: id },
+          update: {},
+          create: { userId: id },
+        });
+      }
+      if (dto.roleCodes.includes('student')) {
+        await tx.studentProfile.upsert({
+          where: { userId: id },
+          update: {},
+          create: { userId: id },
+        });
+      }
     });
 
     return {

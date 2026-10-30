@@ -43,6 +43,13 @@ class _CourseListScreenState extends State<CourseListScreen> {
     }
   }
 
+  Future<void> _openCreateClassForCourse(String courseId) async {
+    await context.push('${RouteNames.classCreate}?courseId=$courseId');
+    if (mounted) {
+      context.read<CoursesBloc>().add(const FetchCourses(refresh: true));
+    }
+  }
+
   Future<void> _confirmDeleteCourse(CourseModel course) async {
     final codeCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
@@ -343,10 +350,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
           }
         },
         builder: (context, state) {
-          List<CourseModel> liveCourses = [];
-          if (state is CoursesLoaded) {
-            liveCourses = state.courses;
-          }
+          final bloc = context.read<CoursesBloc>();
+          final List<CourseModel> liveCourses = state is CoursesLoaded
+              ? state.courses
+              : bloc.cachedCourses;
 
           if (width < 1024) {
             return _buildMobileCourses(state, liveCourses);
@@ -981,14 +988,15 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 const SizedBox(height: 24),
 
                 // 4. DANH SÁCH / GRID THẺ KHÓA HỌC TRỰC QUAN (2 Columns)
-                if (state is CoursesLoading)
+                if ((state is CoursesLoading || state is CoursesInitial) &&
+                    liveCourses.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
                     child: LoadingWidget(
                       message: 'Đang tải danh mục chương trình đào tạo...',
                     ),
                   )
-                else if (state is CoursesError)
+                else if (state is CoursesError && liveCourses.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     child: AppErrorWidget(
@@ -1111,14 +1119,15 @@ class _CourseListScreenState extends State<CourseListScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (state is CoursesLoading || state is CoursesInitial)
+          if ((state is CoursesLoading || state is CoursesInitial) &&
+              courses.isEmpty)
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: CircularProgressIndicator(),
               ),
             )
-          else if (state is CoursesError)
+          else if (state is CoursesError && courses.isEmpty)
             MobileSectionCard(
               child: Column(
                 children: [
@@ -1154,7 +1163,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
 
     return MobileSectionCard(
       child: InkWell(
-        onTap: () => context.push('/courses/${course.id}'),
+        onTap: () => _openCourseDetail(course.id),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1227,9 +1236,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
               children: [
                 if (canOpenClass)
                   FilledButton.icon(
-                    onPressed: () => context.push(
-                      '${RouteNames.classCreate}?courseId=${course.id}',
-                    ),
+                    onPressed: () => _openCreateClassForCourse(course.id),
                     icon: const Icon(Icons.add, size: 14),
                     label: const Text('Mở lớp', style: TextStyle(fontSize: 12)),
                     style: FilledButton.styleFrom(
@@ -1243,7 +1250,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   )
                 else if (isInReview)
                   OutlinedButton.icon(
-                    onPressed: () => context.push('/courses/${course.id}'),
+                    onPressed: () => _openCourseDetail(course.id),
                     icon: const Icon(Icons.rate_review_outlined, size: 14),
                     label: const Text('Duyệt', style: TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
@@ -1655,9 +1662,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
             children: [
               if (canOpenClass)
                 FilledButton.icon(
-                  onPressed: () => context.push(
-                    '${RouteNames.classCreate}?courseId=${course.id}',
-                  ),
+                  onPressed: () => _openCreateClassForCourse(course.id),
                   icon: const Icon(Icons.add_rounded, size: 16),
                   label: const Text('Mở lớp học'),
                   style: FilledButton.styleFrom(

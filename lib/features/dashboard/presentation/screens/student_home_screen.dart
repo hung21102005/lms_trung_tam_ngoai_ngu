@@ -25,6 +25,7 @@ import '../../../courses/presentation/screens/student_courses_screen.dart';
 import '../../../finance/presentation/screens/my_invoices_screen.dart';
 import '../../../finance/presentation/bloc/finance_bloc.dart';
 import '../../../assignments/presentation/screens/student_assignments_view.dart';
+import '../views/student_course_discovery_view.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -44,7 +45,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   final List<Map<String, dynamic>> _navItems = [
     {'title': 'Trang chủ', 'icon': Icons.dashboard_rounded, 'badge': null},
     {'title': 'Lịch học', 'icon': Icons.calendar_month_rounded, 'badge': null},
-    {'title': 'Khóa học', 'icon': Icons.school_rounded, 'badge': null},
+    {'title': 'Khóa học của tôi', 'icon': Icons.school_rounded, 'badge': null},
+    {'title': 'Khám phá & Đăng ký', 'icon': Icons.explore_rounded, 'badge': 'Mới'},
     {'title': 'Bài tập', 'icon': Icons.assignment_rounded, 'badge': null},
     {'title': 'Học phí', 'icon': Icons.receipt_long_rounded, 'badge': null},
     {'title': 'Bảng điểm', 'icon': Icons.military_tech_rounded, 'badge': null},
@@ -57,11 +59,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     initializeDateFormatting('vi_VN', null);
     context.read<ClassesBloc>().add(const FetchMyClasses());
     final today = DateTime.now();
-    _upcomingSchedule = getIt<ClassesRepository>().getMySchedule(
-      fromDate: DateFormat('yyyy-MM-dd').format(today),
-      toDate: DateFormat('yyyy-MM-dd')
-          .format(today.add(const Duration(days: 60))),
-    );
+    _upcomingSchedule = getIt.isRegistered<ClassesRepository>()
+        ? getIt<ClassesRepository>().getMySchedule(
+            fromDate: DateFormat('yyyy-MM-dd').format(today),
+            toDate: DateFormat('yyyy-MM-dd')
+                .format(today.add(const Duration(days: 60))),
+          )
+        : Future.value([]);
   }
 
   @override
@@ -84,6 +88,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       },
       builder: (context, state) {
         final user = state is AuthenticatedState ? state.user : null;
+        if (user != null && !user.isStudent) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            context.go(user.dashboardRoute ?? RouteNames.login);
+          });
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
         if (isDesktop) {
           // ==================== WEB DESKTOP PORTAL LAYOUT ====================
@@ -132,7 +145,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           drawer: _buildMobileDrawer(context, user),
           body: SizedBox.expand(child: _buildActiveBody(user, false)),
           bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex > 4 ? 0 : _selectedIndex,
+            currentIndex: switch (_selectedIndex) {
+              0 => 0,
+              1 => 1,
+              2 || 3 => 2,
+              4 => 3,
+              5 => 4,
+              _ => 0,
+            },
             type: BottomNavigationBarType.fixed,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textSecondaryLight,
@@ -160,7 +180,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             ],
             onTap: (idx) {
               setState(() {
-                _selectedIndex = idx;
+                _selectedIndex = switch (idx) {
+                  0 => 0,
+                  1 => 1,
+                  2 => 2,
+                  3 => 4,
+                  4 => 5,
+                  _ => 0,
+                };
               });
             },
           ),
@@ -252,7 +279,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   setState(() {
-                    _selectedIndex = 3; // Bài tập
+                    _selectedIndex = 4; // Bài tập
                   });
                 },
                 icon: const Icon(
@@ -713,18 +740,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         child = const StudentCoursesScreen();
         break;
       case 3:
-        child = const StudentAssignmentsView();
+        child = const StudentCourseDiscoveryView();
         break;
       case 4:
+        child = const StudentAssignmentsView();
+        break;
+      case 5:
         child = BlocProvider<FinanceBloc>(
           create: (_) => getIt<FinanceBloc>(),
           child: const MyInvoicesScreen(),
         );
         break;
-      case 5:
+      case 6:
         child = const StudentGradebookView();
         break;
-      case 6:
+      case 7:
         child = const NotificationListScreen();
         break;
       default:

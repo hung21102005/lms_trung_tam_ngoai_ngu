@@ -91,7 +91,15 @@ class PublicCatalogRepository {
     String? email,
     String? targetCourse,
     String? notes,
+    String? programId,
+    String? courseId,
   }) async {
+    final combinedNotes = [
+      if (notes != null && notes.isNotEmpty) notes,
+      if (programId != null && programId.isNotEmpty) '[Chương trình: $programId]',
+      if (courseId != null && courseId.isNotEmpty) '[Khóa học: $courseId]',
+    ].join('\n');
+
     await apiClient.post(
       '/admissions/leads',
       data: {
@@ -100,7 +108,7 @@ class PublicCatalogRepository {
         if (email != null && email.isNotEmpty) 'email': email,
         if (targetCourse != null && targetCourse.isNotEmpty)
           'targetCourse': targetCourse,
-        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (combinedNotes.isNotEmpty) 'notes': combinedNotes,
         'source': 'WEBSITE',
       },
     );

@@ -149,6 +149,7 @@ class ParentHomeScreen extends StatelessWidget {
     bool openAttendance = false,
   }) async {
     try {
+      if (!getIt.isRegistered<ClassesRepository>()) return;
       final classes = await getIt<ClassesRepository>().getMyClasses();
       if (!context.mounted) return;
       final children = <String, String>{};
@@ -266,7 +267,73 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
     _reload();
   }
 
-  void _reload() => _classes = getIt<ClassesRepository>().getMyClasses();
+  void _reload() {
+    _classes = getIt.isRegistered<ClassesRepository>()
+        ? getIt<ClassesRepository>().getMyClasses()
+        : Future.value([]);
+  }
+
+  Future<void> _openAttendanceFlow(
+    BuildContext context,
+    List<ClassModel> classes,
+  ) async {
+    final children = <String, String>{};
+    for (final item in classes) {
+      for (final student in item.students) {
+        if (student.status == 'ENROLLED' && student.studentId.isNotEmpty) {
+          children[student.studentId] =
+              student.studentName ?? student.studentCode ?? 'Học viên';
+        }
+      }
+    }
+
+    if (children.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chưa có học viên được liên kết trong lớp học.'),
+        ),
+      );
+      return;
+    }
+
+    if (children.length == 1) {
+      context.push(RouteNames.myAttendance, extra: children.keys.first);
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 12,
+              ),
+              child: Text(
+                'Con em của bạn',
+                style: AppTextStyles.h3(sheetContext),
+              ),
+            ),
+            for (final child in children.entries)
+              ListTile(
+                leading: const Icon(Icons.person_outline_rounded),
+                title: Text(child.value),
+                subtitle: const Text('Xem lịch sử chuyên cần'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context.push(RouteNames.myAttendance, extra: child.key);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -372,6 +439,13 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
                 onPressed: () => context.push(RouteNames.schedule),
                 icon: const Icon(Icons.calendar_month_outlined),
                 label: const Text('Xem lịch học của con'),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+                onPressed: () => _openAttendanceFlow(context, snapshot.data ?? []),
+                icon: const Icon(Icons.checklist_rtl_rounded),
+                label: const Text('Theo Dõi Điểm Danh'),
               ),
               const SizedBox(height: 20),
               Text(

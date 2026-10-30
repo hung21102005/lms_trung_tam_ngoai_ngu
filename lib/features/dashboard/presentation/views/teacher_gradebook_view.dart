@@ -414,9 +414,9 @@ class _TeacherGradebookViewContentState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
+        const Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: const [
+          children: [
             Text(
               'Trang chủ',
               style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
@@ -439,10 +439,10 @@ class _TeacherGradebookViewContentState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Sổ Điểm Lớp Học & Đánh Giá Năng Lực Học Viên',
                     style: TextStyle(
@@ -562,7 +562,7 @@ class _TeacherGradebookViewContentState
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -631,8 +631,9 @@ class _TeacherGradebookViewContentState
                             ),
                           ],
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedClassId = val);
+                            }
                           },
                         ),
                       ),
@@ -694,8 +695,9 @@ class _TeacherGradebookViewContentState
                             ),
                           ],
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedExamPeriod = val);
+                            }
                           },
                         ),
                       ),
@@ -751,8 +753,9 @@ class _TeacherGradebookViewContentState
                             ),
                           ],
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedGradingScale = val);
+                            }
                           },
                         ),
                       ),
@@ -960,7 +963,7 @@ class _TeacherGradebookViewContentState
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -1068,7 +1071,7 @@ class _TeacherGradebookViewContentState
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -1152,7 +1155,7 @@ class _TeacherGradebookViewContentState
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1386,8 +1389,9 @@ class _TeacherGradebookViewContentState
 
                 return DataRow(
                   color: WidgetStateProperty.resolveWith<Color?>((states) {
-                    if (isWarning)
-                      return const Color(0xFFFEF3C7).withOpacity(0.2);
+                    if (isWarning) {
+                      return const Color(0xFFFEF3C7).withValues(alpha: 0.2);
+                    }
                     return null;
                   }),
                   cells: [
@@ -1571,8 +1575,8 @@ class _TeacherGradebookViewContentState
                             color: s['classifBg'],
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                              color: (s['classifColor'] as Color).withOpacity(
-                                0.3,
+                              color: (s['classifColor'] as Color).withValues(
+                                alpha: 0.3,
                               ),
                             ),
                           ),

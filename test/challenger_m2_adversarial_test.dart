@@ -256,12 +256,27 @@ void main() {
 
     mockAuthRepo = MockAuthRepository();
     authBloc = TestableAuthBloc(authRepository: mockAuthRepo);
-    notificationBloc = NotificationBloc(repository: StubNotificationsRepository());
-    classesBloc = ClassesBloc(repository: StubClassesRepository());
-    assignmentsBloc = AssignmentsBloc(repository: StubAssignmentsRepository());
-    reportsBloc = ReportsBloc(repository: StubReportsRepository());
-    coursesBloc = CoursesBloc(repository: StubCoursesRepository());
-    financeBloc = FinanceBloc(repository: StubFinanceRepository());
+    final classesRepo = StubClassesRepository();
+    final assignmentsRepo = StubAssignmentsRepository();
+    final notificationsRepo = StubNotificationsRepository();
+    final reportsRepo = StubReportsRepository();
+    final coursesRepo = StubCoursesRepository();
+    final financeRepo = StubFinanceRepository();
+
+    notificationBloc = NotificationBloc(repository: notificationsRepo);
+    classesBloc = ClassesBloc(repository: classesRepo);
+    assignmentsBloc = AssignmentsBloc(repository: assignmentsRepo);
+    reportsBloc = ReportsBloc(repository: reportsRepo);
+    coursesBloc = CoursesBloc(repository: coursesRepo);
+    financeBloc = FinanceBloc(repository: financeRepo);
+
+    getIt.registerSingleton<ClassesRepository>(classesRepo);
+    getIt.registerSingleton<AuthRepository>(mockAuthRepo);
+    getIt.registerSingleton<AssignmentsRepository>(assignmentsRepo);
+    getIt.registerSingleton<NotificationsRepository>(notificationsRepo);
+    getIt.registerSingleton<ReportsRepository>(reportsRepo);
+    getIt.registerSingleton<CoursesRepository>(coursesRepo);
+    getIt.registerSingleton<FinanceRepository>(financeRepo);
 
     getIt.registerFactory<AuthBloc>(() => authBloc);
     getIt.registerFactory<NotificationBloc>(() => notificationBloc);

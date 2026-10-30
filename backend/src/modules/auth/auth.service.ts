@@ -9,7 +9,12 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/index.js';
-import { UserStatus } from '@prisma/client';
+import {
+  UserStatus,
+  ClassStatus,
+  EnrollmentStatus,
+  RegistrationStatus,
+} from '@prisma/client';
 import {
   LoginDto,
   FirstLoginSetupDto,
@@ -153,13 +158,33 @@ export class AuthService {
         status: UserStatus.ACTIVE,
       },
       include: {
+        branch: true,
+        studentProfile: true,
+        teacherProfile: true,
         userRoles: {
           include: {
-            role: true,
+            role: {
+              include: {
+                rolePermissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
     });
+
+    const roles = updatedUser.userRoles.map((ur) => ur.role.code);
+    const permissionSet = new Set<string>();
+    for (const ur of updatedUser.userRoles) {
+      for (const rp of ur.role.rolePermissions) {
+        permissionSet.add(rp.permission.code);
+      }
+    }
+    const permissions = Array.from(permissionSet);
 
     const tokens = await this.generateTokens(
       updatedUser.id,
@@ -169,15 +194,27 @@ export class AuthService {
 
     return {
       message: 'Kích hoạt tài khoản và thiết lập mật khẩu thành công.',
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
+      requiresPasswordChange: false,
+      ...tokens,
       user: {
         id: updatedUser.id,
         userCode: updatedUser.userCode,
         fullName: updatedUser.fullName,
         email: updatedUser.email,
+        phone: updatedUser.phone,
+        avatarUrl: updatedUser.avatarUrl,
+        gender: updatedUser.gender,
+        dateOfBirth: updatedUser.dateOfBirth,
+        address: updatedUser.address,
         status: updatedUser.status,
         isFirstLogin: updatedUser.isFirstLogin,
+        branch: updatedUser.branch
+          ? { id: updatedUser.branch.id, code: updatedUser.branch.code, name: updatedUser.branch.name }
+          : null,
+        studentProfile: updatedUser.studentProfile,
+        teacherProfile: updatedUser.teacherProfile,
+        roles,
+        permissions,
       },
     };
   }
@@ -268,6 +305,158 @@ export class AuthService {
       }
     }
 
+    const isSuperAdmin = roles.includes('super_admin');
+    const isAdminOrStaff =
+      isSuperAdmin ||
+      roles.includes('branch_admin') ||
+      roles.includes('academic_staff') ||
+      roles.includes('cashier');
+    const isTeacher =
+      roles.includes('teacher') || roles.includes('teaching_assistant');
+    const isParent = roles.includes('parent');
+    const isStudent = roles.includes('student');
+
+    let currentClass: string | null = null;
+    const linkedStats: Record<string, any> = {};
+
+    if (isTeacher) {
+      const assignedClasses = await this.prisma.class.findMany({
+        where: {
+          OR: [{ mainTeacherId: user.id }, { assistantTeacherId: user.id }],
+          status: { not: ClassStatus.CANCELLED },
+        },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          status: true,
+          students: {
+            where: { status: EnrollmentStatus.ENROLLED },
+            select: { studentId: true },
+          },
+        },
+      });
+
+      const activeClasses = assignedClasses.filter(
+        (c) =>
+          c.status === ClassStatus.PLANNING ||
+          c.status === ClassStatus.OPEN_FOR_ENROLLMENT ||
+          c.status === ClassStatus.IN_PROGRESS,
+      );
+      const uniqueStudentIds = new Set<string>();
+      for (const c of assignedClasses) {
+        for (const s of c.students) {
+          uniqueStudentIds.add(s.studentId);
+        }
+      }
+
+      linkedStats.activeClassesCount = activeClasses.length;
+      linkedStats.totalClassesCount = assignedClasses.length;
+      linkedStats.totalStudentsCount = uniqueStudentIds.size;
+      if (activeClasses.length > 0) {
+        currentClass = activeClasses[0].name;
+      }
+    }
+
+    if (isStudent) {
+      const [enrollments, pendingRegsCount] = await Promise.all([
+        this.prisma.classStudent.findMany({
+          where: { studentId: user.id },
+          include: {
+            class: {
+              select: { id: true, code: true, name: true, status: true },
+            },
+          },
+          orderBy: { joinedAt: 'desc' },
+        }),
+        this.prisma.classRegistration.count({
+          where: {
+            studentId: user.id,
+            status: {
+              in: [RegistrationStatus.PENDING, RegistrationStatus.CONTACTED],
+            },
+          },
+        }),
+      ]);
+
+      const activeEnrollments = enrollments.filter(
+        (e) =>
+          e.status === EnrollmentStatus.ENROLLED &&
+          e.class.status !== ClassStatus.CANCELLED &&
+          e.class.status !== ClassStatus.COMPLETED,
+      );
+      const completedEnrollments = enrollments.filter(
+        (e) =>
+          e.status === EnrollmentStatus.ENROLLED &&
+          e.class.status === ClassStatus.COMPLETED,
+      );
+
+      linkedStats.activeClassesCount = activeEnrollments.length;
+      linkedStats.completedClassesCount = completedEnrollments.length;
+      linkedStats.pendingRegistrationsCount = pendingRegsCount;
+      if (activeEnrollments.length > 0) {
+        currentClass = activeEnrollments[0].class.name;
+      }
+    }
+
+    if (isParent) {
+      const parentRelations = await this.prisma.parentStudent.findMany({
+        where: { parentId: user.id },
+        include: {
+          student: {
+            select: {
+              id: true,
+              userCode: true,
+              fullName: true,
+              classEnrollments: {
+                where: { status: EnrollmentStatus.ENROLLED },
+                select: { id: true },
+              },
+            },
+          },
+        },
+      });
+      const childrenActiveEnrollments = parentRelations.reduce(
+        (sum, rel) => sum + rel.student.classEnrollments.length,
+        0,
+      );
+      linkedStats.linkedChildrenCount = parentRelations.length;
+      linkedStats.childrenActiveClassesCount = childrenActiveEnrollments;
+      linkedStats.linkedChildren = parentRelations.map((rel) => ({
+        id: rel.student.id,
+        userCode: rel.student.userCode,
+        fullName: rel.student.fullName,
+        relationship: rel.relationship,
+      }));
+    }
+
+    if (isAdminOrStaff) {
+      const branchScopeWhere =
+        !isSuperAdmin && user.branchId ? { branchId: user.branchId } : {};
+      const [usersCount, branchesCount, classesCount, coursesCount] =
+        await Promise.all([
+          this.prisma.user.count({ where: branchScopeWhere }),
+          this.prisma.branch.count({
+            where:
+              !isSuperAdmin && user.branchId
+                ? { id: user.branchId, isActive: true }
+                : { isActive: true },
+          }),
+          this.prisma.class.count({
+            where: {
+              ...branchScopeWhere,
+              status: { not: ClassStatus.CANCELLED },
+            },
+          }),
+          this.prisma.course.count({ where: { isActive: true } }),
+        ]);
+
+      linkedStats.scopedUsersCount = usersCount;
+      linkedStats.scopedBranchesCount = branchesCount;
+      linkedStats.scopedClassesCount = classesCount;
+      linkedStats.scopedCoursesCount = coursesCount;
+    }
+
     return {
       id: user.id,
       userCode: user.userCode,
@@ -283,6 +472,8 @@ export class AuthService {
       branch: user.branch ? { id: user.branch.id, code: user.branch.code, name: user.branch.name } : null,
       studentProfile: user.studentProfile,
       teacherProfile: user.teacherProfile,
+      currentClass,
+      linkedStats,
       roles,
       permissions: Array.from(permissionSet),
     };

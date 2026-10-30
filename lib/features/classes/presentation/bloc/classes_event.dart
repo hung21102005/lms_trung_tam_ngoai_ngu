@@ -182,3 +182,74 @@ class UpdateSessionEvent extends ClassesEvent {
     notes,
   ];
 }
+
+class UpdateClassEvent extends ClassesEvent {
+  final String id;
+  final String? code;
+  final String? name;
+  final String? roomId;
+  final String? mainTeacherId;
+  final String? assistantTeacherId;
+  final String? status;
+  final String? startDate;
+  final List<String>? scheduleDays;
+  final String? startTime;
+  final String? endTime;
+  final int? maxCapacity;
+  final double? tuitionFee;
+  final String? registrationOpenAt;
+  final String? registrationCloseAt;
+  final String? notes;
+  final String? successMessage;
+
+  const UpdateClassEvent({
+    required this.id,
+    this.code,
+    this.name,
+    this.roomId,
+    this.mainTeacherId,
+    this.assistantTeacherId,
+    this.status,
+    this.startDate,
+    this.scheduleDays,
+    this.startTime,
+    this.endTime,
+    this.maxCapacity,
+    this.tuitionFee,
+    this.registrationOpenAt,
+    this.registrationCloseAt,
+    this.notes,
+    this.successMessage,
+  });
+
+  @override
+  List<Object?> get props => [
+    id,
+    code,
+    name,
+    roomId,
+    mainTeacherId,
+    assistantTeacherId,
+    status,
+    startDate,
+    scheduleDays,
+    startTime,
+    endTime,
+    maxCapacity,
+    tuitionFee,
+    registrationOpenAt,
+    registrationCloseAt,
+    notes,
+    successMessage,
+  ];
+}
+
+class DeleteClassEvent extends ClassesEvent {
+  final String id;
+
+  const DeleteClassEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+

@@ -12,13 +12,23 @@ import * as XLSX from 'xlsx';
 import { PrismaService } from '../../database/index.js';
 import { isRetryableTransactionConflict } from '../../common/prisma-transaction.js';
 import { MailService } from '../mail/index.js';
-import { LeadStatus, UserStatus, Prisma } from '@prisma/client';
+import {
+  LeadStatus,
+  RegistrationStatus,
+  UserStatus,
+  Prisma,
+} from '@prisma/client';
 import {
   CreateLeadDto,
   UpdateLeadDto,
+  CloseLeadDto,
+  ArchiveLeadDto,
   QueryLeadsDto,
   ConvertLeadDto,
 } from './dto/index.js';
+
+const ARCHIVE_TAG_REGEX = /\[ARCHIVED(?::([A-Z_]+))?(?::([^\]]+))?\]/g;
+const CLOSE_TAG_REGEX = /\[ĐÓNG LEAD - ([^\]]+)\]/;
 
 @Injectable()
 export class AdmissionsService {
@@ -29,6 +39,63 @@ export class AdmissionsService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {}
+
+  private enrichLead<
+    T extends {
+      id: string;
+      status: LeadStatus;
+      notes?: string | null;
+      convertedUserId?: string | null;
+      classRegistrations?: { id: string; status: RegistrationStatus }[];
+    },
+  >(lead: T) {
+    const rawNotes = lead.notes ?? '';
+    const archiveMatch = /\[ARCHIVED(?::([A-Z_]+))?(?::([^\]]+))?\]/.exec(
+      rawNotes,
+    );
+    const isArchived = Boolean(archiveMatch);
+    const archivedPreviousStatus = archiveMatch?.[1] ?? null;
+    const closeMatch = CLOSE_TAG_REGEX.exec(rawNotes);
+    const closeReason = closeMatch?.[1] ?? null;
+
+    const regs = lead.classRegistrations ?? [];
+    const activeRegistrationsCount = regs.filter(
+      (r) =>
+        r.status === RegistrationStatus.PENDING ||
+        r.status === RegistrationStatus.CONTACTED ||
+        r.status === RegistrationStatus.APPROVED,
+    ).length;
+    const historicalRegistrationsCount = regs.filter(
+      (r) =>
+        r.status === RegistrationStatus.REJECTED ||
+        r.status === RegistrationStatus.CANCELLED,
+    ).length;
+
+    let canDelete = true;
+    let deleteBlockReason: string | null = null;
+    if (lead.convertedUserId || lead.status === LeadStatus.ENROLLED) {
+      canDelete = false;
+      deleteBlockReason =
+        'Hồ sơ Lead đã chuyển đổi thành học viên chính thức. Không thể xóa vĩnh viễn; vui lòng chọn Lưu trữ Lead.';
+    } else if (activeRegistrationsCount > 0) {
+      canDelete = false;
+      deleteBlockReason = `Lead đang có ${activeRegistrationsCount} đơn đăng ký lớp học đang xử lý hoặc đã duyệt. Không thể xóa vĩnh viễn.`;
+    } else if (historicalRegistrationsCount > 0) {
+      canDelete = false;
+      deleteBlockReason = `Lead có ${historicalRegistrationsCount} đơn đăng ký lớp học lưu trong lịch sử. Vui lòng xóa đơn đăng ký thử nghiệm trước hoặc chọn Lưu trữ Lead.`;
+    }
+
+    return {
+      ...lead,
+      isArchived,
+      archivedPreviousStatus,
+      closeReason,
+      activeRegistrationsCount,
+      historicalRegistrationsCount,
+      canDelete,
+      deleteBlockReason,
+    };
+  }
 
   async createLead(dto: CreateLeadDto) {
     const lead = await this.prisma.admissionLead.create({
@@ -106,17 +173,79 @@ export class AdmissionsService {
           assignedStaff: {
             select: { id: true, fullName: true, userCode: true, email: true },
           },
+          classRegistrations: {
+            select: { id: true, status: true, classId: true },
+          },
         },
       }),
       this.prisma.admissionLead.count({ where }),
     ]);
 
     return {
-      items,
+      items: items.map((item) => this.enrichLead(item)),
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getSummary(branchId?: string) {
+    const leads = await this.prisma.admissionLead.findMany({
+      where: branchId ? { branchId } : undefined,
+      select: {
+        id: true,
+        status: true,
+        notes: true,
+        convertedUserId: true,
+      },
+    });
+
+    let total = 0;
+    let activePipeline = 0;
+    let newCount = 0;
+    let contactedCount = 0;
+    let testScheduledCount = 0;
+    let enrolledCount = 0;
+    let closedCount = 0;
+    let archivedCount = 0;
+
+    for (const lead of leads) {
+      total++;
+      const isArchived = Boolean(lead.notes && lead.notes.includes('[ARCHIVED'));
+      const isConverted =
+        lead.status === LeadStatus.ENROLLED || Boolean(lead.convertedUserId);
+
+      if (isConverted) {
+        enrolledCount++;
+      }
+      if (isArchived) {
+        archivedCount++;
+        continue;
+      }
+      if (lead.status === LeadStatus.NEW) {
+        newCount++;
+        activePipeline++;
+      } else if (lead.status === LeadStatus.CONTACTED) {
+        contactedCount++;
+        activePipeline++;
+      } else if (lead.status === LeadStatus.TEST_SCHEDULED) {
+        testScheduledCount++;
+        activePipeline++;
+      } else if (lead.status === LeadStatus.CANCELLED) {
+        closedCount++;
+      }
+    }
+
+    return {
+      total,
+      activePipeline,
+      newCount,
+      contactedCount,
+      testScheduledCount,
+      enrolledCount,
+      closedCount,
+      archivedCount,
     };
   }
 
@@ -160,6 +289,9 @@ export class AdmissionsService {
             phone: true,
           },
         },
+        classRegistrations: {
+          select: { id: true, status: true, classId: true },
+        },
       },
     });
 
@@ -169,7 +301,7 @@ export class AdmissionsService {
       );
     }
 
-    return lead;
+    return this.enrichLead(lead);
   }
 
   async assertBranchAccess(id: string, branchId: string): Promise<void> {
@@ -207,12 +339,223 @@ export class AdmissionsService {
       include: {
         branch: { select: { id: true, code: true, name: true } },
         assignedStaff: { select: { id: true, fullName: true, userCode: true } },
+        classRegistrations: {
+          select: { id: true, status: true, classId: true },
+        },
       },
     });
 
     return {
       message: 'Cập nhật tiến trình tư vấn thành công.',
-      lead: updated,
+      lead: this.enrichLead(updated),
+    };
+  }
+
+  async closeLead(id: string, body: CloseLeadDto, actorId?: string) {
+    const lead = await this.findOne(id);
+    if (lead.status === LeadStatus.ENROLLED || lead.convertedUserId) {
+      throw new ConflictException(
+        'Không thể đóng Lead vì hồ sơ đã chuyển đổi thành học viên chính thức. Bạn có thể lưu trữ hồ sơ.',
+      );
+    }
+    const reason = body.reason?.trim() || 'Không còn nhu cầu';
+    const extraNote = (body.notes ?? body.note)?.trim();
+    const cleanedExisting = (lead.notes ?? '')
+      .replace(ARCHIVE_TAG_REGEX, '')
+      .replace(/\[ĐÓNG LEAD - [^\]]+\](?:: [^\n]*)?/g, '')
+      .trim();
+    const closeLine = `[ĐÓNG LEAD - ${reason}]${extraNote ? `: ${extraNote}` : ''}`;
+    const nextNotes = [cleanedExisting, closeLine]
+      .filter((part) => part.length > 0)
+      .join('\n');
+
+    const updated = await this.prisma.admissionLead.update({
+      where: { id },
+      data: {
+        status: LeadStatus.CANCELLED,
+        notes: nextNotes,
+        ...(actorId && !lead.assignedStaffId
+          ? { assignedStaffId: actorId }
+          : {}),
+      },
+      include: {
+        branch: { select: { id: true, code: true, name: true } },
+        assignedStaff: { select: { id: true, fullName: true, userCode: true } },
+        classRegistrations: {
+          select: { id: true, status: true, classId: true },
+        },
+      },
+    });
+
+    return {
+      message: `Đã đóng hồ sơ tư vấn (${reason}).`,
+      lead: this.enrichLead(updated),
+    };
+  }
+
+  async archiveLead(id: string, body?: ArchiveLeadDto, actorId?: string) {
+    const lead = await this.findOne(id);
+    const existingArchiveMatch = /\[ARCHIVED(?::([A-Z_]+))?(?::([^\]]+))?\]/.exec(
+      lead.notes ?? '',
+    );
+    const preservedStatus = existingArchiveMatch?.[1] || lead.status;
+    const cleanedNotes = (lead.notes ?? '')
+      .replace(ARCHIVE_TAG_REGEX, '')
+      .replace(/\[Lý do lưu trữ\]: [^\n]*/g, '')
+      .trim();
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const archiveTag = `[ARCHIVED:${preservedStatus}:${dateStr}]`;
+    const extraReason = (body?.reason ?? body?.notes)?.trim();
+    const nextNotes = [
+      cleanedNotes,
+      archiveTag,
+      extraReason ? `[Lý do lưu trữ]: ${extraReason}` : '',
+    ]
+      .filter((part) => part.length > 0)
+      .join('\n');
+
+    const updated = await this.prisma.admissionLead.update({
+      where: { id },
+      data: {
+        notes: nextNotes,
+        ...(actorId && !lead.assignedStaffId
+          ? { assignedStaffId: actorId }
+          : {}),
+      },
+      include: {
+        branch: { select: { id: true, code: true, name: true } },
+        assignedStaff: { select: { id: true, fullName: true, userCode: true } },
+        classRegistrations: {
+          select: { id: true, status: true, classId: true },
+        },
+      },
+    });
+
+    return {
+      message: 'Đã lưu trữ hồ sơ Lead thành công.',
+      lead: this.enrichLead(updated),
+    };
+  }
+
+  async restoreLead(id: string, _actorId?: string) {
+    const lead = await this.findOne(id);
+    const archiveMatch = /\[ARCHIVED(?::([A-Z_]+))?(?::([^\]]+))?\]/.exec(
+      lead.notes ?? '',
+    );
+    const prevStatusRaw = archiveMatch?.[1];
+    const validStatuses = Object.values(LeadStatus) as string[];
+    const restoredStatus =
+      lead.convertedUserId || lead.status === LeadStatus.ENROLLED
+        ? LeadStatus.ENROLLED
+        : prevStatusRaw &&
+            validStatuses.includes(prevStatusRaw) &&
+            prevStatusRaw !== LeadStatus.CANCELLED
+          ? (prevStatusRaw as LeadStatus)
+          : lead.status === LeadStatus.CANCELLED
+            ? LeadStatus.CONTACTED
+            : lead.status;
+
+    const cleanedNotes = (lead.notes ?? '')
+      .replace(ARCHIVE_TAG_REGEX, '')
+      .replace(/\[Lý do lưu trữ\]: [^\n]*/g, '')
+      .replace(/\[ĐÓNG LEAD - [^\]]+\](?:: [^\n]*)?/g, '')
+      .trim();
+
+    const updated = await this.prisma.admissionLead.update({
+      where: { id },
+      data: {
+        status: restoredStatus,
+        notes: cleanedNotes || null,
+      },
+      include: {
+        branch: { select: { id: true, code: true, name: true } },
+        assignedStaff: { select: { id: true, fullName: true, userCode: true } },
+        classRegistrations: {
+          select: { id: true, status: true, classId: true },
+        },
+      },
+    });
+
+    return {
+      message: 'Đã khôi phục hồ sơ Lead về danh sách hoạt động.',
+      lead: this.enrichLead(updated),
+    };
+  }
+
+  async deleteLead(id: string) {
+    const lead = await this.findOne(id);
+
+    if (lead.convertedUserId || lead.status === LeadStatus.ENROLLED) {
+      throw new ConflictException(
+        'Không thể xóa Lead vì hồ sơ đã liên kết với một học viên. Bạn có thể lưu trữ hồ sơ.',
+      );
+    }
+
+    const [activeRegCount, historicalRegCount] = await Promise.all([
+      this.prisma.classRegistration.count({
+        where: {
+          leadId: id,
+          status: {
+            in: [
+              RegistrationStatus.PENDING,
+              RegistrationStatus.CONTACTED,
+              RegistrationStatus.APPROVED,
+            ],
+          },
+        },
+      }),
+      this.prisma.classRegistration.count({
+        where: {
+          leadId: id,
+          status: {
+            in: [RegistrationStatus.REJECTED, RegistrationStatus.CANCELLED],
+          },
+        },
+      }),
+    ]);
+
+    if (activeRegCount > 0) {
+      throw new ConflictException(
+        `Không thể xóa Lead vì hồ sơ đang liên kết với ${activeRegCount} đơn đăng ký lớp học đang hoạt động. Bạn có thể đóng hoặc lưu trữ hồ sơ.`,
+      );
+    }
+
+    if (historicalRegCount > 0) {
+      throw new ConflictException(
+        `Không thể xóa Lead vì hồ sơ có ${historicalRegCount} đơn đăng ký lớp học lưu trong lịch sử. Vui lòng xóa đơn đăng ký thử nghiệm liên quan trước hoặc chọn Lưu trữ Lead.`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const fresh = await tx.admissionLead.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          status: true,
+          convertedUserId: true,
+          _count: { select: { classRegistrations: true } },
+        },
+      });
+      if (!fresh) {
+        throw new NotFoundException('Không tìm thấy thông tin đăng ký tư vấn này.');
+      }
+      if (fresh.convertedUserId || fresh.status === LeadStatus.ENROLLED) {
+        throw new ConflictException(
+          'Không thể xóa Lead vì hồ sơ đã liên kết với một học viên. Bạn có thể lưu trữ hồ sơ.',
+        );
+      }
+      if (fresh._count.classRegistrations > 0) {
+        throw new ConflictException(
+          'Không thể xóa Lead vì hồ sơ vẫn còn đơn đăng ký lớp học liên kết. Bạn có thể lưu trữ hồ sơ.',
+        );
+      }
+      await tx.admissionLead.delete({ where: { id } });
+    });
+
+    return {
+      success: true,
+      id,
+      message: `Đã xóa vĩnh viễn hồ sơ Lead "${lead.fullName}" thành công.`,
     };
   }
 

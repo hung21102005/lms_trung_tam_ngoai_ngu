@@ -275,3 +275,26 @@ Chưa có cấu hình học phí, lịch, giáo viên và chính sách thực t�
 - Danh sách khóa học công khai có bộ lọc chương trình lấy từ chính các khóa API đã công bố. Có thể đổi chương trình ngay trên catalog, kết hợp tìm kiếm và sắp xếp; liên kết từ trang Chương trình vẫn áp dụng bộ lọc ban đầu. Mobile xếp các trường theo cột, Desktop đặt cùng hàng.
 - Widget tests catalog tại 320/800/1200 px và toàn bộ test Public **15/15 đạt**. Backend vẫn quyết định khóa nào được công bố; bộ lọc không tạo nội dung giả. Trình duyệt/thiết bị thật và catalog vận hành với khóa đã được học vụ duyệt vẫn chưa kiểm chứng.
 - Sửa trường hợp mở liên kết tới chương trình chưa có khóa đã công bố: catalog vẫn hiển thị bộ lọc và cho chọn **Tất cả chương trình** để quay về danh sách; widget test hồi quy đạt, tổng Public **16/16 đạt**.
+
+## Checkpoint khắc phục 48 lỗi kiểm thử, visual audit và hoàn thiện chức năng vận hành (2026-10-29)
+
+1. **Ưu tiên 1 — Khắc phục 48 lỗi kiểm thử Challenger & Parent:**
+   - `lib/core/router/app_router.dart`: Thêm phương thức `_resolvePublicCatalogRepository()` với fallback đa tầng (`PublicCatalogRepository` → `ApiClient` → `SecureStorageService`) cho 10 routes công khai và splash route, loại bỏ triệt để lỗi crash `GetIt: Object/factory with type ApiClient is not registered`.
+   - `test/challenger_m1_stress_test.dart`, `test/challenger_m2_adversarial_test.dart`, `test/challenger_m2_responsive_stress_test.dart`: Bổ sung đăng ký đầy đủ các Singleton Repository (`ClassesRepository`, `AuthRepository`, `AssignmentsRepository`, `NotificationsRepository`, `ReportsRepository`, `CoursesRepository`, `FinanceRepository`, `ProfileRepository`) trong `setUp()`.
+   - `lib/features/dashboard/presentation/screens/student_home_screen.dart` & `parent_home_screen.dart`: Bổ sung guard `getIt.isRegistered<ClassesRepository>()` trước khi gọi repository trong `initState` hoặc build.
+   - `lib/features/dashboard/presentation/screens/parent_home_screen.dart`: Bổ sung nút 'Theo Dõi Điểm Danh' và phương thức `_openAttendanceFlow` cho mobile layout (`_ParentMobileHome`).
+   - `lib/features/classes/presentation/screens/schedule_screen.dart`: Bổ sung `_mapStatus` chuyển mã tiếng Anh sang tiếng Việt và fallback `'Chưa xếp phòng'` / `'Chưa gán GV'` khi dữ liệu null.
+   - `lib/features/dashboard/presentation/views/teacher_attendance_view.dart`: Thêm nút thống nhất `'Lưu Sổ & Chốt Điểm Danh'`, hàm `_saveAllAndLock()`, chuẩn hóa tiêu đề `'Điểm Danh & Sổ Đầu Bài'` trên Mobile và `'Sổ Đầu Bài & Nội Dung Giảng Dạy'` trên Desktop, hỗ trợ bóc tách regex thẻ `[Bài tập]` và `[Nhận xét]`.
+
+2. **Ưu tiên 2 — Hoàn thiện chức năng 3 màn hình theo ảnh chụp người dùng:**
+   - **Quản lý chi nhánh & Phòng (`branches_rooms_view.dart`):** Nút hành động chính tự động thích ứng với tab đang chọn (Tab 0: `+ Thêm phòng học mới`, Tab 1: `+ Thêm chi nhánh mới`, Tab 2: `+ Thêm phòng & Thiết bị`, Tab 3: `+ Lập lịch bảo trì & Kiểm tra`). Khi ở Tab 1 (Danh sách chi nhánh), ẩn toàn bộ dropdown tầng/trạng thái phòng và bộ chọn chi nhánh; bổ sung hộp thoại `_showAddMaintenanceLogDialog()` cho phép lập lịch kiểm tra kỹ thuật và điều phối trạng thái bảo trì.
+   - **Cài đặt hệ thống (`system_settings_view.dart`):** Mở rộng `_saveSettings()` có phản hồi cụ thể và trực quan cho toàn bộ 5 tab (Thông tin trung tâm, RBAC, Mẫu thông báo Zalo/SMS, Cổng thanh toán & Hóa đơn, An toàn & Sao lưu); dọn dẹp sạch toàn bộ cảnh báo `activeColor` và `withOpacity`.
+   - **Thông tin cá nhân (`profile_screen.dart`):** Đồng bộ giao diện Web Desktop theo Stitch theme chuyên nghiệp; loại bỏ hoàn toàn chức năng sinh trắc học trên trình duyệt Web (`!kIsWeb`); thẻ định danh tự động hiển thị đúng vai trò thực tế của người dùng (`EDULMS SUPER ADMIN` / `EDULMS ADMIN PASS` / `EDULMS FACULTY CARD` / `EDULMS SMART CARD`), loại bỏ thông tin học viên giả lập khi đăng nhập bằng tài khoản quản trị.
+
+3. **Ưu tiên 3 — Rà soát học thuật 47 khóa học seed:**
+   - Xuất bản báo cáo kiểm định chi tiết tại [docs/ACADEMIC_AUDIT_REPORT_47_COURSES.md](ACADEMIC_AUDIT_REPORT_47_COURSES.md) đánh giá toàn bộ 47 khóa thuộc 7 chương trình (`PRG-GEN`, `PRG-IELTS`, `PRG-TOEIC`, `PRG-COMM`, `PRG-YOUNG`, `PRG-TEEN`, `PRG-SKILLS`) theo CEFR, IELTS, TOEIC và Cambridge.
+   - Cam kết giữ 100% 47 khóa seed ở trạng thái `DRAFT`, không tự động công bố khi chưa có phê duyệt chính thức từ Giám đốc Học thuật.
+
+4. **Kiểm tra chất lượng mã nguồn:**
+   - Toàn bộ các file được sửa đạt **0 errors** trên bộ phân tích tĩnh của Dart/Flutter.
+

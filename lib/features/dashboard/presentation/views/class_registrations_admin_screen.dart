@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class ClassRegistrationsAdminScreen extends StatefulWidget {
@@ -19,6 +20,39 @@ class _ClassRegistrationsAdminScreenState
   Future<List<Map<String, dynamic>>>? _requests;
   String _filter = 'ALL';
   String? _busyId;
+
+  String _formatFriendlyError(Object error, {required String fallback}) {
+    debugPrint('[ClassRegistrationsAdminScreen] API Error: $error');
+    if (error is ApiException) {
+      final raw = error.message.trim();
+      final isRawRouteError = RegExp(
+        r'^Cannot\s+(GET|POST|PUT|PATCH|DELETE)\s+/',
+        caseSensitive: false,
+      ).hasMatch(raw);
+      if (isRawRouteError) {
+        return 'Chức năng đang được đồng bộ với máy chủ. Vui lòng thử lại sau giây lát.';
+      }
+      final code = error.statusCode ?? 0;
+      if (code == 400 || code == 409) {
+        return raw.isNotEmpty ? raw : fallback;
+      }
+      if (code == 401 || code == 403) {
+        return raw.isNotEmpty
+            ? raw
+            : 'Bạn không có quyền thực hiện thao tác này.';
+      }
+      if (code == 404) {
+        return raw.isNotEmpty
+            ? raw
+            : 'Không tìm thấy đơn đăng ký trên máy chủ.';
+      }
+      if (code >= 500) {
+        return 'Hệ thống đang bận hoặc gặp sự cố tạm thời. Vui lòng thử lại sau.';
+      }
+      if (raw.isNotEmpty) return raw;
+    }
+    return fallback;
+  }
 
   @override
   void initState() {
@@ -50,6 +84,8 @@ class _ClassRegistrationsAdminScreenState
     final id = '${request['id']}';
     final title = reviewStatus == 'REJECTED'
         ? 'Từ chối đăng ký này?'
+        : reviewStatus == 'REOPEN'
+        ? 'Mở lại đơn đăng ký?'
         : reviewStatus == 'CONTACTED'
         ? 'Đánh dấu đã liên hệ?'
         : 'Xác nhận nhập học?';
@@ -60,6 +96,10 @@ class _ClassRegistrationsAdminScreenState
         content: Text(
           reviewStatus == null
               ? 'Hệ thống sẽ kiểm tra tài khoản, sĩ số và tạo ghi danh cùng hóa đơn học phí. Chưa ghi nhận khoản thanh toán nào.'
+              : reviewStatus == 'REJECTED'
+              ? 'Đơn đăng ký sẽ chuyển sang trạng thái TỪ CHỐI, không giữ chỗ trong lớp và được lưu vào lịch sử.'
+              : reviewStatus == 'REOPEN'
+              ? 'Đơn đăng ký sẽ được mở lại về trạng thái Đã liên hệ để tiếp tục tư vấn.'
               : 'Trạng thái đơn sẽ được cập nhật trong CRM.',
         ),
         actions: [
@@ -101,9 +141,67 @@ class _ClassRegistrationsAdminScreenState
       _refresh();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Không xử lý được đơn: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _formatFriendlyError(
+                error,
+                fallback: 'Không thể cập nhật đơn đăng ký lúc này.',
+              ),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  Future<void> _deleteRegistration(Map<String, dynamic> request) async {
+    final id = '${request['id']}';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa đơn đăng ký thử nghiệm?'),
+        content: Text(
+          'Xóa vĩnh viễn đơn đăng ký đã từ chối/đã hủy của "${request['fullName'] ?? ''}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || _busyId != null) return;
+    setState(() => _busyId = id);
+    try {
+      await _api.delete('/admissions/registrations/$id');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã xóa đơn đăng ký thử nghiệm.')),
+      );
+      _refresh();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _formatFriendlyError(
+                error,
+                fallback: 'Không thể xóa đơn đăng ký thử nghiệm lúc này.',
+              ),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _busyId = null);
@@ -185,6 +283,7 @@ class _ClassRegistrationsAdminScreenState
                             'CONTACTED': 'Đã liên hệ',
                             'APPROVED': 'Đã nhập học',
                             'REJECTED': 'Từ chối',
+                            'CANCELLED': 'Đã hủy',
                           }.entries)
                             Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -239,6 +338,8 @@ class _ClassRegistrationsAdminScreenState
     final status = '${item['status']}';
     final id = '${item['id']}';
     final pending = status == 'PENDING' || status == 'CONTACTED';
+    final terminal = status == 'REJECTED' || status == 'CANCELLED';
+    final canDelete = terminal && item['canDelete'] != false;
     final guest = item['studentId'] == null;
     final lead = item['lead'] as Map?;
     final hasVerifiedStudent = !guest || lead?['convertedUserId'] != null;
@@ -281,6 +382,17 @@ class _ClassRegistrationsAdminScreenState
                 style: TextStyle(color: AppColors.textSecondaryLight),
               ),
             ],
+            if (terminal) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Hồ sơ lịch sử • Không giữ chỗ trong lớp.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondaryLight,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
             if (pending) ...[
               const SizedBox(height: 14),
               Wrap(
@@ -314,6 +426,30 @@ class _ClassRegistrationsAdminScreenState
                       _busyId == id ? 'Đang xử lý...' : 'Xác nhận nhập học',
                     ),
                   ),
+                ],
+              ),
+            ] else if (terminal) ...[
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: _busyId == null
+                        ? () => _act(item, reviewStatus: 'REOPEN')
+                        : null,
+                    child: const Text('Mở lại đơn'),
+                  ),
+                  if (canDelete)
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                      ),
+                      onPressed: _busyId == null
+                          ? () => _deleteRegistration(item)
+                          : null,
+                      child: const Text('Xóa đơn thử nghiệm'),
+                    ),
                 ],
               ),
             ],

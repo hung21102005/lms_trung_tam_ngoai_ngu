@@ -108,11 +108,16 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
           Expanded(
             child: BlocBuilder<FinanceBloc, FinanceState>(
               builder: (context, state) {
-                if (state is FinanceLoadingState) {
+                final bloc = context.read<FinanceBloc>();
+                final resp = state is InvoicesLoadedState
+                    ? state.response
+                    : bloc.cachedInvoicesResponse;
+
+                if (state is FinanceLoadingState && resp == null) {
                   return const LoadingWidget();
                 }
 
-                if (state is FinanceErrorState) {
+                if (state is FinanceErrorState && resp == null) {
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -130,9 +135,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                   );
                 }
 
-                if (state is InvoicesLoadedState) {
-                  final resp = state.response;
-
+                if (resp != null) {
                   return RefreshIndicator(
                     onRefresh: () async => _loadInvoices(),
                     child: ListView(
@@ -387,8 +390,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      context.push('/invoices/${inv.id}');
+                    onPressed: () async {
+                      await context.push('/invoices/${inv.id}');
+                      if (mounted) _loadInvoices();
                     },
                     icon: const Icon(Icons.visibility_outlined, size: 16),
                     label: const Text('Chi tiết'),
@@ -402,8 +406,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        context.push('/invoices/${inv.id}/record-payment');
+                      onPressed: () async {
+                        await context.push('/invoices/${inv.id}/record-payment');
+                        if (mounted) _loadInvoices();
                       },
                       icon: const Icon(Icons.point_of_sale_outlined, size: 16),
                       label: const Text('Thu tiền'),

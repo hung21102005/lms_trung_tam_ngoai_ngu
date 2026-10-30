@@ -20,27 +20,50 @@ class UserModel extends UserEntity {
     super.studentCode,
     super.currentClass,
     super.teacherCode,
+    super.teacherDegrees,
+    super.teacherSpecialties,
+    super.linkedStats = const {},
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // Xử lý linh hoạt cả khi branch là object hoặc null
     String? branchId;
     String? branchName;
-    if (json['branch'] is Map<String, dynamic>) {
-      branchId = json['branch']['id'] as String?;
-      branchName = json['branch']['name'] as String?;
-    } else if (json['branchId'] is String) {
-      branchId = json['branchId'] as String?;
+    if (json['branch'] is Map) {
+      final b = Map<String, dynamic>.from(json['branch'] as Map);
+      branchId = b['id'] as String?;
+      branchName = b['name'] as String?;
+    } else {
+      if (json['branchId'] is String) {
+        branchId = json['branchId'] as String?;
+      }
+      if (json['branchName'] is String) {
+        branchName = json['branchName'] as String?;
+      }
     }
 
-    // Xử lý danh sách roles (chuỗi hoặc object)
+    // Xử lý danh sách roles (chuỗi, object hoặc từ userRoles)
     final rolesList = <String>[];
     if (json['roles'] is List) {
       for (final r in json['roles']) {
-        if (r is String) {
-          rolesList.add(r);
+        if (r is String && r.trim().isNotEmpty) {
+          rolesList.add(r.trim());
         } else if (r is Map && r['code'] is String) {
-          rolesList.add(r['code'] as String);
+          rolesList.add((r['code'] as String).trim());
+        }
+      }
+    } else if (json['role'] is String && (json['role'] as String).trim().isNotEmpty) {
+      rolesList.add((json['role'] as String).trim());
+    }
+    if (rolesList.isEmpty && json['userRoles'] is List) {
+      for (final ur in json['userRoles']) {
+        if (ur is Map) {
+          final roleObj = ur['role'];
+          if (roleObj is Map && roleObj['code'] is String) {
+            rolesList.add((roleObj['code'] as String).trim());
+          } else if (ur['code'] is String) {
+            rolesList.add((ur['code'] as String).trim());
+          }
         }
       }
     }
@@ -54,12 +77,14 @@ class UserModel extends UserEntity {
     }
 
     // Trích xuất thông tin hồ sơ bổ sung
-    String? studentCode;
-    String? currentClass;
-    if (json['studentProfile'] is Map<String, dynamic>) {
-      final sp = json['studentProfile'] as Map<String, dynamic>;
-      studentCode = sp['studentCode'] as String?;
-      if (sp['classStudents'] is List && (sp['classStudents'] as List).isNotEmpty) {
+    String? studentCode = json['studentCode'] as String?;
+    String? currentClass = json['currentClass'] as String?;
+    if (json['studentProfile'] is Map) {
+      final sp = Map<String, dynamic>.from(json['studentProfile'] as Map);
+      studentCode ??= sp['studentCode'] as String?;
+      if (currentClass == null &&
+          sp['classStudents'] is List &&
+          (sp['classStudents'] as List).isNotEmpty) {
         final firstEnroll = sp['classStudents'][0];
         if (firstEnroll is Map && firstEnroll['class'] is Map) {
           currentClass = firstEnroll['class']['name'] as String?;
@@ -67,9 +92,19 @@ class UserModel extends UserEntity {
       }
     }
 
-    String? teacherCode;
-    if (json['teacherProfile'] is Map<String, dynamic>) {
-      teacherCode = json['teacherProfile']['teacherCode'] as String?;
+    String? teacherCode = json['teacherCode'] as String?;
+    String? teacherDegrees = json['teacherDegrees'] as String?;
+    String? teacherSpecialties = json['teacherSpecialties'] as String?;
+    if (json['teacherProfile'] is Map) {
+      final tp = Map<String, dynamic>.from(json['teacherProfile'] as Map);
+      teacherCode ??= tp['teacherCode'] as String?;
+      teacherDegrees ??= tp['degrees'] as String?;
+      teacherSpecialties ??= tp['specialties'] as String?;
+    }
+
+    Map<String, dynamic> linkedStats = const {};
+    if (json['linkedStats'] is Map) {
+      linkedStats = Map<String, dynamic>.from(json['linkedStats'] as Map);
     }
 
     return UserModel(
@@ -91,6 +126,37 @@ class UserModel extends UserEntity {
       studentCode: studentCode,
       currentClass: currentClass,
       teacherCode: teacherCode,
+      teacherDegrees: teacherDegrees,
+      teacherSpecialties: teacherSpecialties,
+      linkedStats: linkedStats,
+    );
+  }
+
+  /// Hợp nhất thông tin với dữ liệu user trước đó nếu response thiếu roles/branch
+  UserModel mergeWithFallback(UserEntity? fallback) {
+    if (fallback == null) return this;
+    return UserModel(
+      id: id.isNotEmpty ? id : fallback.id,
+      userCode: userCode.isNotEmpty ? userCode : fallback.userCode,
+      fullName: fullName.isNotEmpty ? fullName : fallback.fullName,
+      email: email ?? fallback.email,
+      phone: phone ?? fallback.phone,
+      avatarUrl: avatarUrl ?? fallback.avatarUrl,
+      status: status.isNotEmpty ? status : fallback.status,
+      isFirstLogin: isFirstLogin,
+      branchId: branchId ?? fallback.branchId,
+      branchName: branchName ?? fallback.branchName,
+      roles: roles.isNotEmpty ? roles : fallback.roles,
+      permissions: permissions.isNotEmpty ? permissions : fallback.permissions,
+      gender: gender ?? fallback.gender,
+      dateOfBirth: dateOfBirth ?? fallback.dateOfBirth,
+      address: address ?? fallback.address,
+      studentCode: studentCode ?? fallback.studentCode,
+      currentClass: currentClass ?? fallback.currentClass,
+      teacherCode: teacherCode ?? fallback.teacherCode,
+      teacherDegrees: teacherDegrees ?? fallback.teacherDegrees,
+      teacherSpecialties: teacherSpecialties ?? fallback.teacherSpecialties,
+      linkedStats: linkedStats.isNotEmpty ? linkedStats : fallback.linkedStats,
     );
   }
 
@@ -114,6 +180,9 @@ class UserModel extends UserEntity {
       'studentCode': studentCode,
       'currentClass': currentClass,
       'teacherCode': teacherCode,
+      'teacherDegrees': teacherDegrees,
+      'teacherSpecialties': teacherSpecialties,
+      'linkedStats': linkedStats,
     };
   }
 }

@@ -8,6 +8,7 @@ import '../../../../core/router/route_names.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/login_form.dart';
 
@@ -26,16 +27,17 @@ class LoginScreen extends StatelessWidget {
         } else if (state is AuthenticatedState) {
           if (state.requiresPasswordChange) {
             context.go(RouteNames.firstLoginSetup);
-          } else if (state.user.isSuperAdmin ||
-              state.user.isBranchAdmin ||
-              state.user.isAcademicStaff) {
-            context.go(RouteNames.adminHome);
-          } else if (state.user.isTeacher) {
-            context.go(RouteNames.teacherHome);
-          } else if (state.user.isParent) {
-            context.go(RouteNames.parentHome);
+            return;
+          }
+          final targetRoute = state.user.dashboardRoute;
+          if (targetRoute != null) {
+            context.go(targetRoute);
           } else {
-            context.go(RouteNames.studentHome);
+            AppDialog.showErrorSnackBar(
+              context,
+              'Không xác định được vai trò tài khoản. Vui lòng liên hệ quản trị viên.',
+            );
+            context.read<AuthBloc>().add(LogoutRequestedEvent());
           }
         }
       },

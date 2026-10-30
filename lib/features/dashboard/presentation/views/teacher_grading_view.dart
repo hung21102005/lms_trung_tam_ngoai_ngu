@@ -24,7 +24,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
   ClassesRepository? _classesRepo;
   AssignmentsRepository? _assignmentsRepo;
 
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String? _errorMessage;
 
   List<ClassModel> _classes = [];
@@ -34,7 +34,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
   // Active tab: 0 = "Danh sách bài nộp cần chấm", 1 = "Bài đã chấm xong", 2 = "Danh sách đề bài đã giao"
   int _activeTab = 0;
   String _selectedSkill = 'ALL'; // ALL, WRITING, SPEAKING, READING
-  String _searchQuery = '';
+  final String _searchQuery = '';
 
   // Active grading student submission (index 0 is selected by default)
   int _selectedSubmissionIndex = 0;
@@ -263,8 +263,8 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: const [
+        const Row(
+          children: [
             Text(
               'Trang chủ',
               style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
@@ -287,10 +287,10 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Quản Lý Bài Tập & Cổng Chấm Bài Trực Tuyến',
                     style: TextStyle(
@@ -458,7 +458,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -747,7 +747,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
               decoration: BoxDecoration(
                 color: isActive
-                    ? Colors.white.withOpacity(0.2)
+                    ? Colors.white.withValues(alpha: 0.2)
                     : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(99),
               ),
@@ -775,7 +775,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1012,10 +1012,10 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: (item['fileColor'] as Color).withOpacity(0.08),
+                          color: (item['fileColor'] as Color).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: (item['fileColor'] as Color).withOpacity(0.2),
+                            color: (item['fileColor'] as Color).withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -1209,7 +1209,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -1235,8 +1235,8 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(Icons.edit_note, color: Color(0xFF93C5FD), size: 18),
                         SizedBox(width: 6),
                         Text(
@@ -1253,7 +1253,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(99),
                       ),
                       child: const Text(
@@ -1325,7 +1325,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
+                                color: Colors.black.withValues(alpha: 0.15),
                                 blurRadius: 4,
                               ),
                             ],
@@ -1409,9 +1409,9 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
                       '4 TIÊU CHÍ CHẤM IELTS WRITING/SPEAKING',
                       style: TextStyle(
@@ -1483,9 +1483,9 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
                 const SizedBox(height: 14),
 
                 // Teacher Feedback Textarea
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
                       'Nhận xét chi tiết của Giảng viên *',
                       style: TextStyle(
@@ -1651,9 +1651,9 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: color.withOpacity(0.2)),
+                border: Border.all(color: color.withValues(alpha: 0.2)),
               ),
               child: Text(
                 '${value.toStringAsFixed(1)} / 9.0',
@@ -1671,7 +1671,7 @@ class _TeacherGradingViewState extends State<TeacherGradingView> {
             activeTrackColor: color,
             inactiveTrackColor: const Color(0xFFE2E8F0),
             thumbColor: color,
-            overlayColor: color.withOpacity(0.12),
+            overlayColor: color.withValues(alpha: 0.12),
             trackHeight: 3,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
           ),

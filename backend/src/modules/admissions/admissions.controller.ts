@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -23,6 +24,8 @@ import { AdmissionsService } from './admissions.service.js';
 import {
   CreateLeadDto,
   UpdateLeadDto,
+  CloseLeadDto,
+  ArchiveLeadDto,
   QueryLeadsDto,
   ConvertLeadDto,
 } from './dto/index.js';
@@ -98,6 +101,22 @@ export class AdmissionsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin', 'branch_admin', 'academic_staff')
   @ApiBearerAuth('JWT-auth')
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Thống kê tổng hợp số lượng Lead theo trạng thái & lưu trữ',
+  })
+  getSummary(
+    @Query('branchId') branchId: string | undefined,
+    @CurrentUser() actor: { roles: string[]; branchId?: string | null },
+  ) {
+    return this.admissionsService.getSummary(
+      this.scopedBranch(actor, branchId),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
   @Get('export/xlsx')
   async exportLeads(
     @Res() res: Response,
@@ -155,6 +174,74 @@ export class AdmissionsController {
     await this.assertLeadAccess(actor, id);
     if (dto.branchId) dto.branchId = this.scopedBranch(actor, dto.branchId);
     return this.admissionsService.updateLead(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/close')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đóng hồ sơ tư vấn (Không còn nhu cầu / Không liên hệ được / ...)',
+  })
+  async closeLead(
+    @Param('id') id: string,
+    @Body() body: CloseLeadDto,
+    @CurrentUser()
+    actor: { id?: string; roles: string[]; branchId?: string | null },
+  ) {
+    await this.assertLeadAccess(actor, id);
+    return this.admissionsService.closeLead(id, body, actor.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Lưu trữ hồ sơ Lead (ẩn khỏi Kanban đang hoạt động, giữ lịch sử)',
+  })
+  async archiveLead(
+    @Param('id') id: string,
+    @Body() body: ArchiveLeadDto,
+    @CurrentUser()
+    actor: { id?: string; roles: string[]; branchId?: string | null },
+  ) {
+    await this.assertLeadAccess(actor, id);
+    return this.admissionsService.archiveLead(id, body, actor.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Khôi phục hồ sơ Lead từ mục Lưu trữ hoặc Đã đóng',
+  })
+  async restoreLead(
+    @Param('id') id: string,
+    @CurrentUser()
+    actor: { id?: string; roles: string[]; branchId?: string | null },
+  ) {
+    await this.assertLeadAccess(actor, id);
+    return this.admissionsService.restoreLead(id, actor.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'academic_staff')
+  @ApiBearerAuth('JWT-auth')
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Xóa vĩnh viễn Lead thử nghiệm khi đủ điều kiện an toàn dữ liệu',
+  })
+  async deleteLead(
+    @Param('id') id: string,
+    @CurrentUser() actor: { roles: string[]; branchId?: string | null },
+  ) {
+    await this.assertLeadAccess(actor, id);
+    return this.admissionsService.deleteLead(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

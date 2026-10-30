@@ -103,8 +103,6 @@ class MockClassesRepository implements ClassesRepository {
     String? notes,
   }) async => throw UnimplementedError();
 
-  Future<void> deleteClass(String id) async {}
-
   @override
   Future<ClassStudentModel> enrollStudent(
     String classId, {
@@ -131,6 +129,12 @@ class MockClassesRepository implements ClassesRepository {
     String? notes,
     String? title,
   }) async => throw UnimplementedError();
+
+  @override
+  Future<void> deleteClass(String id) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockAssignmentsRepository implements AssignmentsRepository {

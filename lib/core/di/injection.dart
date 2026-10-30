@@ -42,6 +42,7 @@ import '../../features/reports/data/datasources/reports_remote_datasource.dart';
 import '../../features/reports/domain/repositories/reports_repository.dart';
 import '../../features/reports/data/repositories/reports_repository_impl.dart';
 import '../../features/reports/presentation/bloc/reports_bloc.dart';
+import '../../features/public/data/public_catalog_repository.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -139,6 +140,9 @@ Future<void> setupLocator() async {
     () => ReportsRepositoryImpl(
       remoteDataSource: getIt<ReportsRemoteDataSource>(),
     ),
+  );
+  getIt.registerLazySingleton<PublicCatalogRepository>(
+    () => PublicCatalogRepository(getIt<ApiClient>()),
   );
 
   // 5. Use Cases

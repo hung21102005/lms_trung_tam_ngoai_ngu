@@ -68,10 +68,12 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
     return [];
   }
 
-  Future<void> _fetchBranches({bool initial = false}) async {
-    if (mounted) {
+  Future<void> _fetchBranches({bool initial = false, bool silent = false}) async {
+    if (mounted && !silent) {
       setState(() {
-        _isLoading = true;
+        if (_branches.isEmpty) {
+          _isLoading = true;
+        }
         _errorMessage = null;
       });
     }
@@ -103,21 +105,23 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
       }
 
       if (_selectedBranchId != null) {
-        await _fetchRooms(_selectedBranchId!);
+        await _fetchRooms(_selectedBranchId!, silent: silent);
       } else if (mounted) {
         setState(() => _isLoading = false);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          if (_branches.isEmpty && !silent) {
+            _errorMessage = e.toString();
+          }
           _isLoading = false;
         });
       }
     }
   }
 
-  Future<void> _fetchRooms(String branchId) async {
+  Future<void> _fetchRooms(String branchId, {bool silent = false}) async {
     try {
       final res = await _apiClient.get('/branches/$branchId/rooms');
       final roomItems = _extractList(res);
@@ -125,13 +129,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
       if (mounted) {
         setState(() {
           _rooms = roomItems;
+          _errorMessage = null;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          if (_rooms.isEmpty && !silent) {
+            _errorMessage = e.toString();
+          }
           _isLoading = false;
         });
       }
@@ -349,8 +356,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       }
                       setDialogState(() => isSubmitting = true);
                       try {
+                        final dynamic res;
                         if (isEdit) {
-                          await _apiClient.patch(
+                          res = await _apiClient.patch(
                             '/branches/${existingBranch['id']}',
                             data: {
                               'name': name,
@@ -363,7 +371,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             },
                           );
                         } else {
-                          await _apiClient.post(
+                          res = await _apiClient.post(
                             '/branches',
                             data: {
                               'code': code,
@@ -377,7 +385,32 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           );
                         }
                         if (ctx.mounted) Navigator.pop(ctx);
-                        await _fetchBranches();
+                        final payload = res is Map ? res['data'] ?? res : res;
+                        if (payload is Map && mounted) {
+                          final updatedBranch = Map<String, dynamic>.from(
+                            payload,
+                          );
+                          setState(() {
+                            if (isEdit) {
+                              _branches = _branches.map((b) {
+                                if (b is Map &&
+                                    b['id']?.toString() ==
+                                        existingBranch['id']?.toString()) {
+                                  return <String, dynamic>{
+                                    ...Map<String, dynamic>.from(b),
+                                    ...updatedBranch,
+                                  };
+                                }
+                                return b;
+                              }).toList();
+                            } else {
+                              _branches = [updatedBranch, ..._branches];
+                              _selectedBranchId ??=
+                                  updatedBranch['id']?.toString();
+                            }
+                          });
+                        }
+                        await _fetchBranches(silent: true);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -595,8 +628,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
 
                       setDialogState(() => isSubmitting = true);
                       try {
+                        final dynamic res;
                         if (isEdit) {
-                          await _apiClient.patch(
+                          res = await _apiClient.patch(
                             '/rooms/${existingRoom['id']}',
                             data: {
                               'name': name,
@@ -606,7 +640,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             },
                           );
                         } else {
-                          await _apiClient.post(
+                          res = await _apiClient.post(
                             '/rooms',
                             data: {
                               'branchId': branchId,
@@ -621,7 +655,30 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         if (branchId != null) {
                           _selectedBranchId = branchId;
                         }
-                        await _fetchBranches();
+                        final payload = res is Map ? res['data'] ?? res : res;
+                        if (payload is Map && mounted) {
+                          final updatedRoom = Map<String, dynamic>.from(
+                            payload,
+                          );
+                          setState(() {
+                            if (isEdit) {
+                              _rooms = _rooms.map((r) {
+                                if (r is Map &&
+                                    r['id']?.toString() ==
+                                        existingRoom['id']?.toString()) {
+                                  return <String, dynamic>{
+                                    ...Map<String, dynamic>.from(r),
+                                    ...updatedRoom,
+                                  };
+                                }
+                                return r;
+                              }).toList();
+                            } else {
+                              _rooms = [updatedRoom, ..._rooms];
+                            }
+                          });
+                        }
+                        await _fetchBranches(silent: true);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -1231,37 +1288,39 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           onChanged: (_) => setState(() {}),
                         ),
                       ),
-                      if (_branches.isNotEmpty)
-                        Container(
-                          width: isDesktop ? null : width - 32,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              isExpanded: !isDesktop,
-                              value: _selectedBranchId,
-                              items: _branches.map((b) {
-                                return DropdownMenuItem<String>(
-                                  value: b['id']?.toString(),
-                                  child: Text(
-                                    b['name']?.toString() ?? 'Chi nhánh',
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (v) {
-                                if (v != null) {
-                                  setState(() => _selectedBranchId = v);
-                                  _fetchRooms(v);
-                                }
-                              },
+                      if (_activeTab != 1) ...[
+                        if (_branches.isNotEmpty)
+                          Container(
+                            width: isDesktop ? null : width - 32,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: !isDesktop,
+                                value: _selectedBranchId,
+                                items: _branches.map((b) {
+                                  return DropdownMenuItem<String>(
+                                    value: b['id']?.toString(),
+                                    child: Text(
+                                      b['name']?.toString() ?? 'Chi nhánh',
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (v) {
+                                  if (v != null) {
+                                    setState(() => _selectedBranchId = v);
+                                    _fetchRooms(v);
+                                  }
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      if (_activeTab != 1) ...[
                         Container(
                           width: isDesktop ? null : width - 32,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1430,7 +1489,187 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
     );
   }
 
+  void _showAddMaintenanceLogDialog() {
+    if (_rooms.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chưa có phòng học để lập lịch bảo trì.')),
+      );
+      return;
+    }
+    String selectedRoomId = _rooms.first['id']?.toString() ?? '';
+    final reasonCtrl = TextEditingController(
+      text: 'Kiểm tra bảo dưỡng máy chiếu & hệ thống lạnh định kỳ',
+    );
+    final technicianCtrl = TextEditingController(
+      text: 'Bộ phận IT & Cơ sở vật chất',
+    );
+    bool setMaintenanceNow = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.build_circle_rounded, color: Color(0xFFD97706)),
+              SizedBox(width: 8),
+              Text(
+                'Lập Lịch Kiểm Tra & Bảo Trì Kỹ Thuật',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Chọn phòng học cần kiểm tra / bảo trì: *',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: selectedRoomId,
+                    items: _rooms.map((r) {
+                      final map = Map<String, dynamic>.from(r as Map);
+                      return DropdownMenuItem<String>(
+                        value: map['id']?.toString(),
+                        child: Text(
+                          '${map['code']} - ${map['name']} (Sức chứa: ${map['capacity']} chỗ)',
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v != null) setDialogState(() => selectedRoomId = v);
+                    },
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Nội dung / Lý do bảo trì: *',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Đơn vị / Kỹ thuật viên phụ trách:',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: technicianCtrl,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Khóa phòng sang chế độ bảo trì ngay lập tức',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    subtitle: const Text(
+                      'Tạm ngừng xếp lịch học cho phòng này trong thời gian bảo trì.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    value: setMaintenanceNow,
+                    activeThumbColor: const Color(0xFFD97706),
+                    onChanged: (v) => setDialogState(() => setMaintenanceNow = v),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Hủy bỏ'),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD97706),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final targetRoom = _rooms.firstWhere(
+                  (r) => r['id']?.toString() == selectedRoomId,
+                  orElse: () => null,
+                );
+                if (targetRoom != null) {
+                  final log = {
+                    'roomId': selectedRoomId,
+                    'roomCode': targetRoom['code'],
+                    'roomName': targetRoom['name'],
+                    'reason': reasonCtrl.text.trim(),
+                    'technician': technicianCtrl.text.trim(),
+                    'date': DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+                    'status': setMaintenanceNow ? 'IN_PROGRESS' : 'SCHEDULED',
+                  };
+                  setState(() {
+                    _maintenanceLogs.insert(0, log);
+                  });
+                  if (setMaintenanceNow && targetRoom['isActive'] != false) {
+                    await _toggleRoomMaintenance(
+                      Map<String, dynamic>.from(targetRoom as Map),
+                    );
+                  }
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Đã lập lịch kiểm tra & bảo trì phòng học thành công!',
+                      ),
+                      backgroundColor: Color(0xFF047857),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.check_circle_rounded, size: 16),
+              label: const Text('Xác nhận lập lịch'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeaderActions() {
+    String primaryLabel;
+    IconData primaryIcon;
+    VoidCallback primaryAction;
+
+    switch (_activeTab) {
+      case 1:
+        primaryLabel = '+ Thêm chi nhánh mới';
+        primaryIcon = Icons.domain_add_rounded;
+        primaryAction = () => _showAddBranchDialog();
+        break;
+      case 2:
+        primaryLabel = '+ Thêm phòng & Thiết bị';
+        primaryIcon = Icons.devices_other_rounded;
+        primaryAction = () => _showAddOrEditRoomDialog();
+        break;
+      case 3:
+        primaryLabel = '+ Lập lịch bảo trì & Kiểm tra';
+        primaryIcon = Icons.build_circle_rounded;
+        primaryAction = () => _showAddMaintenanceLogDialog();
+        break;
+      default:
+        primaryLabel = '+ Thêm phòng học mới';
+        primaryIcon = Icons.add_rounded;
+        primaryAction = () => _showAddOrEditRoomDialog();
+    }
+
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -1453,28 +1692,29 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
             ),
           ),
         ),
-        OutlinedButton.icon(
-          onPressed: () => _showAddBranchDialog(),
-          icon: const Icon(
-            Icons.domain_add_rounded,
-            size: 18,
-            color: Color(0xFF003FB1),
-          ),
-          label: const Text('+ Thêm chi nhánh'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF003FB1),
-            side: const BorderSide(color: Color(0xFF003FB1)),
-            backgroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        if (_activeTab != 1)
+          OutlinedButton.icon(
+            onPressed: () => _showAddBranchDialog(),
+            icon: const Icon(
+              Icons.domain_add_rounded,
+              size: 18,
+              color: Color(0xFF003FB1),
+            ),
+            label: const Text('+ Thêm chi nhánh'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF003FB1),
+              side: const BorderSide(color: Color(0xFF003FB1)),
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
-        ),
         ElevatedButton.icon(
-          onPressed: () => _showAddOrEditRoomDialog(),
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('+ Thêm phòng học mới'),
+          onPressed: primaryAction,
+          icon: Icon(primaryIcon, size: 18),
+          label: Text(primaryLabel),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF003FB1),
             foregroundColor: Colors.white,

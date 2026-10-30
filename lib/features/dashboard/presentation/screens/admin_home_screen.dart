@@ -10,9 +10,14 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../notifications/presentation/widgets/notification_bell_icon.dart';
+import '../../../reports/presentation/bloc/reports_bloc.dart';
 import '../../../reports/presentation/screens/admin_dashboard_screen.dart';
 import '../../../reports/presentation/screens/reports_overview_screen.dart';
+import '../../../courses/presentation/bloc/courses_bloc.dart';
+import '../../../courses/presentation/bloc/courses_event.dart';
 import '../../../courses/presentation/screens/course_list_screen.dart';
+import '../../../classes/presentation/bloc/classes_bloc.dart';
+import '../../../classes/presentation/bloc/classes_event.dart';
 import '../../../classes/presentation/screens/class_list_screen.dart';
 import '../views/users_management_view.dart';
 import '../views/branches_rooms_view.dart';
@@ -73,6 +78,41 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     super.dispose();
   }
 
+  void _selectNavTab(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (!mounted) return;
+    switch (index) {
+      case 0:
+      case 7:
+        context.read<ReportsBloc?>()?.add(
+          const FetchDashboardOverviewEvent(forceRefresh: true),
+        );
+        break;
+      case 4:
+        context.read<CoursesBloc?>()?.add(const FetchCourses(refresh: true));
+        break;
+      case 5:
+        context.read<ClassesBloc?>()?.add(const FetchClasses(refresh: true));
+        break;
+    }
+  }
+
+  Future<void> _openCreateClassFromShell() async {
+    final result = await context.push(RouteNames.classCreate);
+    if (!mounted) return;
+    context.read<ClassesBloc?>()?.add(const FetchClasses(refresh: true));
+    context.read<ReportsBloc?>()?.add(
+      const FetchDashboardOverviewEvent(forceRefresh: true),
+    );
+    if (result != null) {
+      setState(() {
+        _selectedIndex = 5;
+      });
+    }
+  }
+
   Widget _buildActiveBody() {
     Widget child;
     switch (_selectedIndex) {
@@ -128,16 +168,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (!user.isSuperAdmin && !user.isBranchAdmin) {
+        if (!user.isSuperAdmin &&
+            !user.isBranchAdmin &&
+            !user.isAcademicStaff &&
+            !user.isCashier) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            context.go(
-              user.isTeacher
-                  ? RouteNames.teacherHome
-                  : user.isParent
-                  ? RouteNames.parentHome
-                  : RouteNames.studentHome,
-            );
+            context.go(user.dashboardRoute ?? RouteNames.login);
           });
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -245,8 +282,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
-                                  onPressed: () =>
-                                      context.push(RouteNames.classCreate),
+                                  onPressed: _openCreateClassFromShell,
                                   icon: const Icon(
                                     Icons.add_circle_outline_rounded,
                                     size: 18,
@@ -284,11 +320,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(8),
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedIndex = index;
-                                    });
-                                  },
+                                  onTap: () => _selectNavTab(index),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
@@ -713,7 +745,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         ),
                       ),
                       onTap: () {
-                        setState(() => _selectedIndex = idx);
+                        _selectNavTab(idx);
                         Navigator.pop(context); // Close drawer
                       },
                     );
@@ -769,22 +801,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
               ],
               onTap: (idx) {
-                setState(() {
-                  switch (idx) {
-                    case 0:
-                      _selectedIndex = 0;
-                      break;
-                    case 1:
-                      _selectedIndex = 5; // Classes
-                      break;
-                    case 2:
-                      _selectedIndex = 4; // Courses
-                      break;
-                    case 3:
-                      _selectedIndex = 7; // Reports
-                      break;
-                  }
-                });
+                switch (idx) {
+                  case 0:
+                    _selectNavTab(0);
+                    break;
+                  case 1:
+                    _selectNavTab(5); // Classes
+                    break;
+                  case 2:
+                    _selectNavTab(4); // Courses
+                    break;
+                  case 3:
+                    _selectNavTab(7); // Reports
+                    break;
+                }
               },
             ),
           );

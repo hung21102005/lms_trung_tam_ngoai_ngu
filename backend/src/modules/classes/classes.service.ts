@@ -146,6 +146,50 @@ export class ClassesService {
   // CLASSES CRUD & LIST
   // --------------------------------------------------------------------------
 
+  private isClassArchived(notes?: string | null): boolean {
+    return Boolean(notes && notes.includes('[ARCHIVED'));
+  }
+
+  private enrichClassCounts<
+    T extends {
+      notes?: string | null;
+      registrations?: { status: RegistrationStatus }[];
+      _count?: {
+        students?: number;
+        sessions?: number;
+        invoices?: number;
+        assignments?: number;
+        exams?: number;
+      };
+    },
+  >(item: T) {
+    const regs = item.registrations ?? [];
+    const activeRegistrationsCount = regs.filter(
+      (r) =>
+        r.status === RegistrationStatus.PENDING ||
+        r.status === RegistrationStatus.CONTACTED ||
+        r.status === RegistrationStatus.APPROVED,
+    ).length;
+    const rejectedRegistrationsCount = regs.filter(
+      (r) => r.status === RegistrationStatus.REJECTED,
+    ).length;
+    const cancelledRegistrationsCount = regs.filter(
+      (r) => r.status === RegistrationStatus.CANCELLED,
+    ).length;
+    const historicalRegistrationsCount =
+      rejectedRegistrationsCount + cancelledRegistrationsCount;
+
+    return {
+      ...item,
+      isArchived: this.isClassArchived(item.notes),
+      activeRegistrationsCount,
+      historicalRegistrationsCount,
+      rejectedRegistrationsCount,
+      cancelledRegistrationsCount,
+      invoicesCount: item._count?.invoices ?? 0,
+    };
+  }
+
   async findAll(query: QueryClassesDto, actor: ClassActor) {
     const { page, limit, search, status, branchId, courseId, teacherId } =
       query;
@@ -258,6 +302,15 @@ export class ClassesService {
             select: {
               students: true,
               sessions: true,
+              invoices: { where: { status: { not: InvoiceStatus.CANCELLED } } },
+              assignments: true,
+              exams: true,
+            },
+          },
+          registrations: {
+            select: {
+              id: true,
+              status: true,
             },
           },
         },
@@ -266,7 +319,7 @@ export class ClassesService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => this.enrichClassCounts(item)),
       total,
       page,
       limit,
@@ -326,6 +379,27 @@ export class ClassesService {
             room: { select: { id: true, code: true, name: true } },
             teacher: { select: { id: true, fullName: true, userCode: true } },
             lesson: { select: { id: true, title: true, order: true } },
+          },
+        },
+        registrations: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            email: true,
+            status: true,
+            notes: true,
+            createdAt: true,
+          },
+        },
+        _count: {
+          select: {
+            students: true,
+            sessions: true,
+            invoices: { where: { status: { not: InvoiceStatus.CANCELLED } } },
+            assignments: true,
+            exams: true,
           },
         },
       },
@@ -390,7 +464,7 @@ export class ClassesService {
         ['super_admin', 'branch_admin', 'academic_staff'].includes(role),
       )
     ) {
-      return {
+      return this.enrichClassCounts({
         ...classEntity,
         students: classEntity.students.map((item) => ({
           id: item.id,
@@ -406,10 +480,10 @@ export class ClassesService {
             status: item.student.status,
           },
         })),
-      };
+      });
     }
 
-    return classEntity;
+    return this.enrichClassCounts(classEntity);
   }
 
   // --------------------------------------------------------------------------
@@ -523,15 +597,19 @@ export class ClassesService {
       const teacher = await this.prisma.user.findFirst({
         where: {
           id: teacherId,
-          branchId: dto.branchId,
           status: UserStatus.ACTIVE,
-          userRoles: { some: { role: { code: 'teacher' } } },
+          userRoles: {
+            some: {
+              role: { code: { in: ['teacher', 'teaching_assistant'] } },
+            },
+          },
+          OR: [{ branchId: dto.branchId }, { branchId: null }],
         },
         select: { id: true },
       });
       if (!teacher) {
         throw new BadRequestException(
-          'Giáo viên được chọn không hoạt động, không thuộc chi nhánh hoặc không có quyền giảng dạy',
+          'Giáo viên được chọn không hoạt động, thuộc chi nhánh khác hoặc không có quyền giảng dạy',
         );
       }
     }
@@ -842,12 +920,51 @@ export class ClassesService {
       );
     }
 
-    const registrationCount = await this.prisma.classRegistration.count({
-      where: { classId: id },
-    });
-    if (registrationCount > 0) {
+    const [
+      activeRegistrationCount,
+      rejectedRegistrationCount,
+      cancelledRegistrationCount,
+    ] = await Promise.all([
+      this.prisma.classRegistration.count({
+        where: {
+          classId: id,
+          status: {
+            in: [
+              RegistrationStatus.PENDING,
+              RegistrationStatus.CONTACTED,
+              RegistrationStatus.APPROVED,
+            ],
+          },
+        },
+      }),
+      this.prisma.classRegistration.count({
+        where: { classId: id, status: RegistrationStatus.REJECTED },
+      }),
+      this.prisma.classRegistration.count({
+        where: { classId: id, status: RegistrationStatus.CANCELLED },
+      }),
+    ]);
+
+    if (activeRegistrationCount > 0) {
       throw new BadRequestException(
-        `Lớp học đã có ${registrationCount} đơn đăng ký trực tuyến. Vui lòng chuyển trạng thái sang HỦY LỚP (CANCELLED) thay vì xóa vĩnh viễn.`,
+        `Lớp học đang có ${activeRegistrationCount} đơn đăng ký có hiệu lực (đang chờ xử lý hoặc đã duyệt). Vui lòng xử lý đơn hoặc chuyển trạng thái sang HỦY LỚP (CANCELLED) thay vì xóa vĩnh viễn.`,
+      );
+    }
+
+    const historicalRegistrationCount =
+      rejectedRegistrationCount + cancelledRegistrationCount;
+    if (historicalRegistrationCount > 0) {
+      const historyParts: string[] = [];
+      if (rejectedRegistrationCount > 0) {
+        historyParts.push(
+          `${rejectedRegistrationCount} đơn đăng ký đã từ chối`,
+        );
+      }
+      if (cancelledRegistrationCount > 0) {
+        historyParts.push(`${cancelledRegistrationCount} đơn đăng ký đã hủy`);
+      }
+      throw new BadRequestException(
+        `Lớp học có ${historyParts.join(' và ')} được lưu trong lịch sử. Không thể xóa vĩnh viễn khi cần bảo toàn hồ sơ. Bạn có thể lưu trữ lớp hoặc hủy lớp.`,
       );
     }
 

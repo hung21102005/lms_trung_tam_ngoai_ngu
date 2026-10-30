@@ -101,6 +101,10 @@ class FakeClassesRepository implements ClassesRepository {
   Future<List<ClassModel>> getMyClasses() async => [];
   @override
   Future<List<ClassSessionModel>> getMySchedule({String? fromDate, String? toDate}) async => [];
+  @override
+  Future<void> deleteClass(String id) async {}
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeAssignmentsRepository implements AssignmentsRepository {
@@ -235,7 +239,12 @@ void main() {
     reportsBloc = ReportsBloc(repository: reportsRepo);
     coursesBloc = CoursesBloc(repository: coursesRepo);
 
+    getIt.registerSingleton<AuthRepository>(authRepo);
     getIt.registerSingleton<ClassesRepository>(classesRepo);
+    getIt.registerSingleton<AssignmentsRepository>(assignmentsRepo);
+    getIt.registerSingleton<NotificationsRepository>(notificationsRepo);
+    getIt.registerSingleton<ReportsRepository>(reportsRepo);
+    getIt.registerSingleton<CoursesRepository>(coursesRepo);
     getIt.registerFactory<AuthBloc>(() => authBloc);
     getIt.registerFactory<NotificationBloc>(() => notificationBloc);
     getIt.registerFactory<ClassesBloc>(() => classesBloc);

@@ -158,7 +158,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -382,7 +382,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -432,7 +432,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.12),
+                  color: badgeColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -479,7 +479,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -556,7 +556,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -674,7 +674,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -881,9 +881,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                         vertical: 1.5,
                       ),
                       decoration: BoxDecoration(
-                        color: fileColor.withOpacity(0.08),
+                        color: fileColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: fileColor.withOpacity(0.2)),
+                        border: Border.all(color: fileColor.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -966,7 +966,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1144,7 +1144,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

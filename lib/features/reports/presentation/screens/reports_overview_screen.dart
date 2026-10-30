@@ -39,8 +39,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     final type = types[_activePerspectiveTab];
     try {
       final bytes = await _apiClient.download('/reports/export/$type');
-      if (bytes.isEmpty)
+      if (bytes.isEmpty) {
         throw StateError('Máy chủ không trả về dữ liệu Excel.');
+      }
       final saved = await FilePicker.saveFile(
         fileName:
             'bao-cao-$type-${DateFormat('yyyy-MM-dd').format(DateTime.now())}.xlsx',
@@ -208,9 +209,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                           borderRadius: BorderRadius.circular(99),
                           border: Border.all(color: const Color(0xFFA7F3D0)),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             CircleAvatar(
                               radius: 3,
                               backgroundColor: Color(0xFF059669),
@@ -241,9 +242,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                       Expanded(
                         child: Text(
                           'Hôm nay, ${DateFormat('dd/MM/yyyy').format(DateTime.now())} • Kỳ đối soát: Tháng ${DateTime.now().month}/${DateTime.now().year}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12.5,
-                            color: Color(0xFF64748B),
+                            color: const Color(0xFF64748B),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -454,7 +455,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -501,7 +502,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: badgeColor.withOpacity(0.1),
+              color: badgeColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -535,7 +536,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -652,8 +653,8 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
               ),
               if (isDesktop) ...[
                 const SizedBox(width: 12),
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.tune, size: 15, color: Color(0xFF003FB1)),
                     SizedBox(width: 4),
                     Text(
@@ -890,7 +891,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -905,9 +906,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             spacing: 12,
             runSpacing: 8,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Biểu đồ Phân tích Doanh thu & Dòng tiền 2026',
                     style: TextStyle(
@@ -1117,7 +1118,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1126,9 +1127,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Cơ cấu theo Chi nhánh',
                 style: TextStyle(
@@ -1310,7 +1311,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1318,14 +1319,14 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 12,
               runSpacing: 4,
-              children: const [
+              children: [
                 Text(
                   'Sổ Quỹ & Lịch Sử Giao Dịch Thu Học Phí Gần Đây',
                   style: TextStyle(
@@ -1513,7 +1514,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: (t['color'] as Color).withOpacity(0.1),
+                          color: (t['color'] as Color).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
@@ -1530,10 +1531,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
+                          const IconButton(
                             onPressed: null,
-                            icon: const Icon(Icons.print_outlined, size: 16),
-                            color: const Color(0xFF64748B),
+                            icon: Icon(Icons.print_outlined, size: 16),
+                            color: Color(0xFF64748B),
                             tooltip: 'Chưa hỗ trợ in biên lai',
                           ),
                           IconButton(
@@ -1602,10 +1603,11 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         ),
       );
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Không tải được hóa đơn: $error')),
         );
+      }
     }
   }
 
@@ -1753,12 +1755,13 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                           ),
                         );
                       } catch (error) {
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Không thể tạo hóa đơn: $error'),
                             ),
                           );
+                        }
                       } finally {
                         if (ctx.mounted) updateDialog(() => saving = false);
                       }

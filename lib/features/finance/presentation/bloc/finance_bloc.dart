@@ -151,6 +151,12 @@ class FinanceErrorState extends FinanceState {
 // BLOC
 class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   final FinanceRepository repository;
+  InvoicesResponseModel? _cachedInvoicesResponse;
+  final Map<String, InvoiceModel> _cachedInvoiceDetails = {};
+  FetchInvoicesEvent? _lastFetchInvoicesEvent;
+
+  InvoicesResponseModel? get cachedInvoicesResponse => _cachedInvoicesResponse;
+  InvoiceModel? getCachedInvoiceDetail(String id) => _cachedInvoiceDetails[id];
 
   FinanceBloc({required this.repository}) : super(FinanceInitialState()) {
     on<FetchInvoicesEvent>(_onFetchInvoices);
@@ -164,11 +170,36 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     on<ValidatePromotionEvent>(_onValidatePromotion);
   }
 
+  Future<void> _refreshInvoicesSilently(Emitter<FinanceState> emit) async {
+    try {
+      final lastEvent = _lastFetchInvoicesEvent;
+      final response = await repository.getInvoices(
+        status: lastEvent?.status,
+        search: lastEvent?.search,
+        studentId: lastEvent?.studentId,
+        classId: lastEvent?.classId,
+        page: lastEvent?.page ?? 1,
+      );
+      _cachedInvoicesResponse = response;
+      for (final item in response.items) {
+        _cachedInvoiceDetails[item.id] = item;
+      }
+      emit(InvoicesLoadedState(response));
+    } catch (_) {
+      if (_cachedInvoicesResponse != null) {
+        emit(InvoicesLoadedState(_cachedInvoicesResponse!));
+      }
+    }
+  }
+
   Future<void> _onFetchInvoices(
     FetchInvoicesEvent event,
     Emitter<FinanceState> emit,
   ) async {
-    emit(FinanceLoadingState());
+    _lastFetchInvoicesEvent = event;
+    if (_cachedInvoicesResponse == null) {
+      emit(FinanceLoadingState());
+    }
     try {
       final response = await repository.getInvoices(
         status: event.status,
@@ -177,9 +208,16 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
         classId: event.classId,
         page: event.page,
       );
+      _cachedInvoicesResponse = response;
+      for (final item in response.items) {
+        _cachedInvoiceDetails[item.id] = item;
+      }
       emit(InvoicesLoadedState(response));
     } catch (e) {
       emit(FinanceErrorState(e.toString()));
+      if (_cachedInvoicesResponse != null) {
+        emit(InvoicesLoadedState(_cachedInvoicesResponse!));
+      }
     }
   }
 
@@ -200,12 +238,19 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     FetchInvoiceDetailEvent event,
     Emitter<FinanceState> emit,
   ) async {
-    emit(FinanceLoadingState());
+    if (!_cachedInvoiceDetails.containsKey(event.id)) {
+      emit(FinanceLoadingState());
+    }
     try {
       final invoice = await repository.getInvoiceDetail(event.id);
+      _cachedInvoiceDetails[invoice.id] = invoice;
       emit(InvoiceDetailLoadedState(invoice));
     } catch (e) {
       emit(FinanceErrorState(e.toString()));
+      final cached = _cachedInvoiceDetails[event.id];
+      if (cached != null) {
+        emit(InvoiceDetailLoadedState(cached));
+      }
     }
   }
 
@@ -216,7 +261,9 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     emit(FinanceLoadingState());
     try {
       final invoice = await repository.createInvoice(event.data);
+      _cachedInvoiceDetails[invoice.id] = invoice;
       emit(InvoiceCreatedSuccessState(invoice));
+      await _refreshInvoicesSilently(emit);
     } catch (e) {
       emit(FinanceErrorState(e.toString()));
     }
@@ -236,6 +283,12 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
         notes: event.notes,
       );
       emit(PaymentRecordedSuccessState(result));
+      try {
+        final updatedInvoice = await repository.getInvoiceDetail(event.invoiceId);
+        _cachedInvoiceDetails[updatedInvoice.id] = updatedInvoice;
+        emit(InvoiceDetailLoadedState(updatedInvoice));
+      } catch (_) {}
+      await _refreshInvoicesSilently(emit);
     } catch (e) {
       emit(FinanceErrorState(e.toString()));
     }
@@ -249,6 +302,12 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     try {
       await repository.cancelInvoice(event.invoiceId, reason: event.reason);
       emit(FinanceActionSuccessState('Hủy hóa đơn thành công'));
+      try {
+        final updatedInvoice = await repository.getInvoiceDetail(event.invoiceId);
+        _cachedInvoiceDetails[updatedInvoice.id] = updatedInvoice;
+        emit(InvoiceDetailLoadedState(updatedInvoice));
+      } catch (_) {}
+      await _refreshInvoicesSilently(emit);
     } catch (e) {
       emit(FinanceErrorState(e.toString()));
     }
@@ -266,6 +325,12 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
         reason: event.reason,
       );
       emit(FinanceActionSuccessState('Hoàn tiền học phí thành công'));
+      try {
+        final updatedInvoice = await repository.getInvoiceDetail(event.invoiceId);
+        _cachedInvoiceDetails[updatedInvoice.id] = updatedInvoice;
+        emit(InvoiceDetailLoadedState(updatedInvoice));
+      } catch (_) {}
+      await _refreshInvoicesSilently(emit);
     } catch (e) {
       emit(FinanceErrorState(e.toString()));
     }

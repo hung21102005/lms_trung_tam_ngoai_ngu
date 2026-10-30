@@ -49,19 +49,21 @@ class _FirstLoginScreenState extends State<FirstLoginScreen> {
         if (state is AuthFailureState) {
           AppDialog.showErrorSnackBar(context, state.errorMessage);
         } else if (state is AuthenticatedState && !state.requiresPasswordChange) {
+          final targetRoute = state.user.dashboardRoute;
+          if (targetRoute == null) {
+            AppDialog.showErrorSnackBar(
+              context,
+              'Không xác định được vai trò tài khoản. Vui lòng đăng nhập lại bằng mật khẩu mới.',
+            );
+            context.read<AuthBloc>().add(LogoutRequestedEvent());
+            context.go(RouteNames.login);
+            return;
+          }
           AppDialog.showSuccessSnackBar(
             context,
             'Kích hoạt tài khoản thành công! Chào mừng bạn đến với LMS.',
           );
-          if (state.user.isSuperAdmin || state.user.isBranchAdmin || state.user.isAcademicStaff) {
-            context.go(RouteNames.adminHome);
-          } else if (state.user.isTeacher) {
-            context.go(RouteNames.teacherHome);
-          } else if (state.user.isParent) {
-            context.go(RouteNames.parentHome);
-          } else {
-            context.go(RouteNames.studentHome);
-          }
+          context.go(targetRoute);
         }
       },
       child: Scaffold(

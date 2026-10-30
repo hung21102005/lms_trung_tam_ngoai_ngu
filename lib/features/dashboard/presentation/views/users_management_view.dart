@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/di/injection.dart';
@@ -173,22 +174,46 @@ class _UsersManagementViewState extends State<UsersManagementView> {
     try {
       final response = await _apiClient.get('/branches');
       final data = response is Map ? response['data'] ?? response : response;
-      if (data is List && mounted)
-        setState(
-          () => _branches = data
-              .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList(),
-        );
+      final rawList = data is List
+          ? data
+          : (data is Map && data['items'] is List
+                ? data['items'] as List
+                : (response is Map && response['items'] is List
+                      ? response['items'] as List
+                      : <dynamic>[]));
+      final parsed = rawList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .where((item) => item['id'] != null)
+          .toList();
+      if (parsed.isNotEmpty && mounted) {
+        setState(() => _branches = parsed);
+      }
     } catch (_) {
       // Danh mục chi nhánh có thể tải lại khi mở lại trang.
     }
+  }
+
+  List<Map<String, dynamic>> _availableBranches() {
+    if (_branches.isNotEmpty) return _branches;
+    final fromUsers = <String, Map<String, dynamic>>{};
+    for (final u in _users) {
+      if (u is Map && u['branch'] is Map) {
+        final b = Map<String, dynamic>.from(u['branch'] as Map);
+        final bId = b['id']?.toString();
+        if (bId != null && bId.isNotEmpty) {
+          fromUsers[bId] = b;
+        }
+      }
+    }
+    return fromUsers.values.toList();
   }
 
   @override
   void reassemble() {
     super.reassemble();
     _fetchUsers(initial: true);
+    _fetchBranches();
   }
 
   @override
@@ -221,10 +246,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Kết quả nhập Excel: $result')));
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Nhập Excel thất bại: $error')));
+      }
     } finally {
       if (mounted) setState(() => _isMutating = false);
     }
@@ -240,20 +266,22 @@ class _UsersManagementViewState extends State<UsersManagementView> {
         mimeType:
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
-      if (saved != null && mounted)
+      if (saved != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã xuất danh sách người dùng.')),
         );
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Xuất danh sách thất bại: $error')),
         );
+      }
     }
   }
 
-  Future<void> _fetchUsers({bool initial = false}) async {
-    if (!initial && mounted) {
+  Future<void> _fetchUsers({bool initial = false, bool silent = false}) async {
+    if (!initial && !silent && _users.isEmpty && mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
@@ -293,227 +321,318 @@ class _UsersManagementViewState extends State<UsersManagementView> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          if (_users.isEmpty) {
+            _errorMessage = e.toString();
+          }
           _isLoading = false;
         });
       }
     }
   }
 
-  void _showAddUserDialog() {
+  Future<void> _showAddUserDialog() async {
+    if (_branches.isEmpty) {
+      await _fetchBranches();
+    }
+    if (!mounted) return;
+    final branchOptions = _availableBranches();
     final authState = context.read<AuthBloc>().state;
     final canCreateBranchAdmin =
         authState is AuthenticatedState && authState.user.isSuperAdmin;
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
+    final specialtiesCtrl = TextEditingController();
+    final degreesCtrl = TextEditingController();
     String role = 'student';
     String? branchId = _selectedBranch != 'ALL'
         ? _selectedBranch
-        : (_branches.length == 1 ? _branches.first['id']?.toString() : null);
+        : (branchOptions.isNotEmpty
+              ? branchOptions.first['id']?.toString()
+              : null);
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.person_add_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text(
-              'Thêm Người Dùng Mới',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 480,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Họ và tên *',
-                    hintText: 'VD: Trần Thị Mai Lan',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: emailCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Email *',
-                    hintText: 'VD: lan.tran@gmail.com',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Số điện thoại',
-                    hintText: 'VD: 0912345678',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  value: role,
-                  decoration: const InputDecoration(
-                    labelText: 'Vai trò tài khoản',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: 'student',
-                      child: Text('Học viên'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.person_add_rounded, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text(
+                'Thêm Người Dùng Mới',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Họ và tên *',
+                      hintText: 'VD: Trần Thị Mai Lan',
+                      border: OutlineInputBorder(),
                     ),
-                    const DropdownMenuItem(
-                      value: 'teacher',
-                      child: Text('Giảng viên'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Email *',
+                      hintText: 'VD: lan.tran@gmail.com',
+                      border: OutlineInputBorder(),
                     ),
-                    const DropdownMenuItem(
-                      value: 'academic_staff',
-                      child: Text('Nhân viên tư vấn/học vụ'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Số điện thoại',
+                      hintText: 'VD: 0912345678',
+                      border: OutlineInputBorder(),
                     ),
-                    if (canCreateBranchAdmin)
-                      const DropdownMenuItem(
-                        value: 'branch_admin',
-                        child: Text('Quản trị chi nhánh'),
-                      ),
-                    const DropdownMenuItem(
-                      value: 'parent',
-                      child: Text('Phụ huynh'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) role = v;
-                  },
-                ),
-                if (_branches.isNotEmpty) ...[
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
-                    initialValue: branchId,
+                    initialValue: role,
                     decoration: const InputDecoration(
-                      labelText: 'Chi nhánh',
+                      labelText: 'Vai trò tài khoản',
                       border: OutlineInputBorder(),
                     ),
-                    items: _branches
-                        .map(
-                          (branch) => DropdownMenuItem<String>(
-                            value: branch['id']?.toString(),
-                            child: Text(branch['name']?.toString() ?? ''),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) => branchId = value,
+                    items: [
+                      const DropdownMenuItem(
+                        value: 'student',
+                        child: Text('Học viên'),
+                      ),
+                      const DropdownMenuItem(
+                        value: 'teacher',
+                        child: Text('Giảng viên'),
+                      ),
+                      const DropdownMenuItem(
+                        value: 'academic_staff',
+                        child: Text('Nhân viên tư vấn/học vụ'),
+                      ),
+                      if (canCreateBranchAdmin)
+                        const DropdownMenuItem(
+                          value: 'branch_admin',
+                          child: Text('Quản trị chi nhánh'),
+                        ),
+                      const DropdownMenuItem(
+                        value: 'parent',
+                        child: Text('Phụ huynh'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) {
+                        setDialogState(() => role = v);
+                      }
+                    },
                   ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String?>(
+                    isExpanded: true,
+                    initialValue: branchOptions.any(
+                          (b) => b['id']?.toString() == branchId,
+                        )
+                        ? branchId
+                        : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Chi nhánh công tác / theo học *',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      if (role == 'teacher')
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Chưa gán chi nhánh cố định (Liên cơ sở)'),
+                        ),
+                      ...branchOptions.map(
+                        (branch) => DropdownMenuItem<String?>(
+                          value: branch['id']?.toString(),
+                          child: Text(branch['name']?.toString() ?? ''),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setDialogState(() => branchId = value),
+                  ),
+                  if (role == 'teacher') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: specialtiesCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Chuyên môn giảng dạy (Tùy chọn)',
+                        hintText: 'Để trống nếu chưa cập nhật',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: degreesCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Bằng cấp / Chứng chỉ (Tùy chọn)',
+                        hintText: 'Để trống nếu chưa cập nhật',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy bỏ'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Hủy bỏ'),
             ),
-            onPressed: _isMutating
-                ? null
-                : () async {
-                    final name = nameCtrl.text.trim();
-                    final email = emailCtrl.text.trim();
-                    final phone = phoneCtrl.text.trim();
-                    if (name.isEmpty ||
-                        (role != 'student' && email.isEmpty) ||
-                        (role == 'parent' && phone.isEmpty)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Vui lòng nhập đầy đủ thông tin bắt buộc cho vai trò đã chọn.',
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-                    if (email.isNotEmpty &&
-                        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                            .hasMatch(email)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Email không đúng định dạng.'),
-                        ),
-                      );
-                      return;
-                    }
-                    setState(() => _isMutating = true);
-                    try {
-                      final path = role == 'student'
-                          ? '/users/students'
-                          : role == 'parent'
-                          ? '/users/parents'
-                          : '/users/staff';
-                      final response = await _apiClient.post(
-                        path,
-                        data: {
-                          'fullName': name,
-                          if (email.isNotEmpty) 'email': email,
-                          if (phone.isNotEmpty) 'phone': phone,
-                          if (branchId != null) 'branchId': branchId,
-                          if (role != 'student' && role != 'parent')
-                            'roleCode': role,
-                        },
-                      );
-                      if (!mounted) return;
-                      Navigator.pop(ctx);
-                      await _fetchUsers();
-                      if (!mounted) return;
-                      final created = response is Map
-                          ? response['data'] ?? response
-                          : response;
-                      final password = created is Map
-                          ? created['temporaryPassword']?.toString()
-                          : null;
-                      await showDialog<void>(
-                        context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text('Đã tạo tài khoản'),
-                          content: SelectableText(
-                            password == null
-                                ? 'Tài khoản đã được tạo thành công.'
-                                : 'Mật khẩu tạm thời: $password\nHãy lưu lại và chuyển riêng cho người dùng.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dialogContext),
-                              child: const Text('Đóng'),
-                            ),
-                          ],
-                        ),
-                      );
-                    } catch (e) {
-                      if (mounted)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: _isMutating
+                  ? null
+                  : () async {
+                      final name = nameCtrl.text.trim();
+                      final email = emailCtrl.text.trim();
+                      final phone = phoneCtrl.text.trim();
+                      final specialties = specialtiesCtrl.text.trim();
+                      final degrees = degreesCtrl.text.trim();
+                      if (name.isEmpty ||
+                          (role != 'student' && email.isEmpty) ||
+                          (role == 'parent' && phone.isEmpty)) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Không tạo được người dùng: $e'),
+                          const SnackBar(
+                            content: Text(
+                              'Vui lòng nhập đầy đủ thông tin bắt buộc cho vai trò đã chọn.',
+                            ),
                           ),
                         );
-                    } finally {
-                      if (mounted) setState(() => _isMutating = false);
-                    }
-                  },
-            child: const Text('Xác nhận tạo'),
-          ),
-        ],
+                        return;
+                      }
+                      if (email.isNotEmpty &&
+                          !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                              .hasMatch(email)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Email không đúng định dạng.'),
+                          ),
+                        );
+                        return;
+                      }
+                      setState(() => _isMutating = true);
+                      try {
+                        final path = role == 'student'
+                            ? '/users/students'
+                            : role == 'parent'
+                            ? '/users/parents'
+                            : '/users/staff';
+                        final response = await _apiClient.post(
+                          path,
+                          data: {
+                            'fullName': name,
+                            if (email.isNotEmpty) 'email': email,
+                            if (phone.isNotEmpty) 'phone': phone,
+                            if (branchId != null && branchId!.isNotEmpty)
+                              'branchId': branchId,
+                            if (role != 'student' && role != 'parent')
+                              'roleCode': role,
+                            if (role == 'teacher' && specialties.isNotEmpty)
+                              'specialties': specialties,
+                            if (role == 'teacher' && degrees.isNotEmpty)
+                              'degrees': degrees,
+                          },
+                        );
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                        }
+                        if (!mounted) return;
+                        final created = response is Map
+                            ? response['data'] ?? response
+                            : response;
+                        if (created is Map) {
+                          final createdMap = Map<String, dynamic>.from(created);
+                          setState(() {
+                            _users = [
+                              createdMap,
+                              ..._users.where(
+                                (u) =>
+                                    u is! Map ||
+                                    u['id']?.toString() !=
+                                        createdMap['id']?.toString(),
+                              ),
+                            ];
+                          });
+                        }
+                        await _fetchUsers(silent: true);
+                        if (!mounted) return;
+                        if (_selectedRole != 'ALL' &&
+                            created is Map<String, dynamic> &&
+                            !_userMatchesRole(created, _selectedRole)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Tài khoản "$name" đã tạo thành công nhưng đang nằm ngoài tab bộ lọc hiện tại.',
+                              ),
+                              action: SnackBarAction(
+                                label: 'Hiện tất cả',
+                                onPressed: () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _selectedRole = 'ALL';
+                                      _selectedBranch = 'ALL';
+                                      _selectedStatus = 'ALL';
+                                      _searchController.clear();
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        }
+                        final password = created is Map
+                            ? created['temporaryPassword']?.toString()
+                            : null;
+                        await showDialog<void>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Đã tạo tài khoản'),
+                            content: SelectableText(
+                              password == null
+                                  ? 'Tài khoản đã được tạo thành công.'
+                                  : 'Mật khẩu tạm thời: $password\nHãy lưu lại và chuyển riêng cho người dùng.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Đóng'),
+                              ),
+                            ],
+                          ),
+                        );
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Không tạo được người dùng: $e'),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isMutating = false);
+                      }
+                    },
+              child: const Text('Xác nhận tạo'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -521,7 +640,64 @@ class _UsersManagementViewState extends State<UsersManagementView> {
   Future<void> _showUserAction(Map<String, dynamic> user, String action) async {
     final id = user['id']?.toString();
     if (id == null || id.isEmpty) return;
-    if (action == 'Chỉnh sửa' || action == 'Thao tác') {
+
+    if (action == 'Thao tác') {
+      final authState = context.read<AuthBloc>().state;
+      final isSuperAdmin = authState is AuthenticatedState && authState.user.isSuperAdmin;
+      final isSelf = authState is AuthenticatedState && authState.user.id == id;
+      final isActive = user['status']?.toString() == 'ACTIVE';
+
+      final selected = await showModalBottomSheet<String>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Color(0xFF64748B)),
+                title: const Text('Chỉnh sửa thông tin'),
+                onTap: () => Navigator.pop(ctx, 'Chỉnh sửa'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.key_rounded, color: Color(0xFFD97706)),
+                title: const Text('Cấp lại mật khẩu tạm'),
+                onTap: () => Navigator.pop(ctx, 'Cấp lại mật khẩu'),
+              ),
+              ListTile(
+                leading: Icon(
+                  isActive ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+                  color: isActive ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                ),
+                title: Text(isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'),
+                onTap: () => Navigator.pop(ctx, isActive ? 'Khóa tài khoản' : 'Mở khóa'),
+              ),
+              if (isSuperAdmin && !isSelf) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
+                  title: const Text(
+                    'Xóa vĩnh viễn tài khoản',
+                    style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () => Navigator.pop(ctx, 'Xóa tài khoản'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+      if (selected != null) {
+        await _showUserAction(user, selected);
+      }
+      return;
+    }
+
+    if (action == 'Chỉnh sửa') {
+      if (_branches.isEmpty) {
+        await _fetchBranches();
+      }
+      if (!mounted) return;
+      final branchOptions = _availableBranches();
       final nameCtrl = TextEditingController(
         text: user['fullName']?.toString() ?? '',
       );
@@ -531,86 +707,314 @@ class _UsersManagementViewState extends State<UsersManagementView> {
       final phoneCtrl = TextEditingController(
         text: user['phone']?.toString() ?? '',
       );
+      final rawTeacherProfile = user['teacherProfile'] is Map
+          ? Map<String, dynamic>.from(user['teacherProfile'] as Map)
+          : <String, dynamic>{};
+      final specialtiesCtrl = TextEditingController(
+        text: rawTeacherProfile['specialties']?.toString() ?? '',
+      );
+      final degreesCtrl = TextEditingController(
+        text: rawTeacherProfile['degrees']?.toString() ?? '',
+      );
+      final isTeacherUser = _userMatchesRole(user, 'teacher');
+      String? selectedBranchId =
+          (user['branch'] is Map ? user['branch']['id']?.toString() : null) ??
+          user['branchId']?.toString();
+      if ((selectedBranchId == null || selectedBranchId.isEmpty) &&
+          branchOptions.length == 1) {
+        selectedBranchId = branchOptions.first['id']?.toString();
+      }
+
       await showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('Chỉnh sửa ${user['userCode'] ?? ''}'),
-          content: SizedBox(
-            width: 460,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Họ và tên *'),
-                ),
-                TextField(
-                  controller: emailCtrl,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                ),
-                TextField(
-                  controller: phoneCtrl,
-                  decoration: const InputDecoration(labelText: 'Số điện thoại'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Hủy'),
-            ),
-            FilledButton(
-              onPressed: _isMutating
-                  ? null
-                  : () async {
-                      if (nameCtrl.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Họ và tên không được để trống.'),
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: Text('Chỉnh sửa ${user['userCode'] ?? ''}'),
+            content: SizedBox(
+              width: 460,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Họ và tên *',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: emailCtrl,
+                      decoration: const InputDecoration(labelText: 'Email'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: phoneCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Số điện thoại',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String?>(
+                      isExpanded: true,
+                      initialValue: branchOptions.any(
+                            (b) => b['id']?.toString() == selectedBranchId,
+                          )
+                          ? selectedBranchId
+                          : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Chi nhánh công tác / theo học *',
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Chưa gán chi nhánh (Liên cơ sở)'),
+                        ),
+                        ...branchOptions.map(
+                          (b) => DropdownMenuItem<String?>(
+                            value: b['id']?.toString(),
+                            child: Text(b['name']?.toString() ?? ''),
                           ),
-                        );
-                        return;
-                      }
-                      try {
-                        setState(() => _isMutating = true);
-                        await _apiClient.patch(
-                          '/users/$id',
-                          data: {
-                            'fullName': nameCtrl.text.trim(),
-                            if (emailCtrl.text.trim().isNotEmpty)
-                              'email': emailCtrl.text.trim(),
-                            'phone': phoneCtrl.text.trim(),
-                          },
-                        );
-                        if (!mounted) return;
-                        Navigator.pop(ctx);
-                        await _fetchUsers();
-                        if (mounted)
+                        ),
+                      ],
+                      onChanged: (v) =>
+                          setDialogState(() => selectedBranchId = v),
+                    ),
+                    if (isTeacherUser) ...[
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: specialtiesCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Chuyên môn giảng dạy',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: degreesCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Bằng cấp / Chứng chỉ',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Hủy'),
+              ),
+              FilledButton(
+                onPressed: _isMutating
+                    ? null
+                    : () async {
+                        if (nameCtrl.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Đã cập nhật người dùng.'),
+                              content: Text('Họ và tên không được để trống.'),
                             ),
                           );
-                      } catch (error) {
-                        if (mounted)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Cập nhật thất bại: $error'),
-                            ),
+                          return;
+                        }
+                        try {
+                          setState(() => _isMutating = true);
+                          final patchRes = await _apiClient.patch(
+                            '/users/$id',
+                            data: {
+                              'fullName': nameCtrl.text.trim(),
+                              if (emailCtrl.text.trim().isNotEmpty)
+                                'email': emailCtrl.text.trim(),
+                              'phone': phoneCtrl.text.trim(),
+                              'branchId': ?selectedBranchId,
+                              if (isTeacherUser) ...{
+                                'specialties': specialtiesCtrl.text.trim(),
+                                'degrees': degreesCtrl.text.trim(),
+                              },
+                            },
                           );
-                      } finally {
-                        if (mounted) setState(() => _isMutating = false);
-                      }
-                    },
-              child: const Text('Lưu thay đổi'),
-            ),
-          ],
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
+                          }
+                          if (!mounted) return;
+                          final updatedPayload = patchRes is Map
+                              ? patchRes['data'] ?? patchRes
+                              : null;
+                          setState(() {
+                            _users = _users.map((u) {
+                              if (u is Map && u['id']?.toString() == id) {
+                                final copy = Map<String, dynamic>.from(u);
+                                if (updatedPayload is Map) {
+                                  copy.addAll(
+                                    Map<String, dynamic>.from(updatedPayload),
+                                  );
+                                }
+                                copy['fullName'] = nameCtrl.text.trim();
+                                if (emailCtrl.text.trim().isNotEmpty) {
+                                  copy['email'] = emailCtrl.text.trim();
+                                }
+                                copy['phone'] = phoneCtrl.text.trim();
+                                if (selectedBranchId != null) {
+                                  copy['branchId'] = selectedBranchId;
+                                  final matchedBranch = branchOptions
+                                      .where(
+                                        (b) =>
+                                            b['id']?.toString() ==
+                                            selectedBranchId,
+                                      )
+                                      .firstOrNull;
+                                  if (matchedBranch != null) {
+                                    copy['branch'] = matchedBranch;
+                                  }
+                                }
+                                return copy;
+                              }
+                              return u;
+                            }).toList();
+                          });
+                          await _fetchUsers(silent: true);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Đã cập nhật người dùng.'),
+                              ),
+                            );
+                          }
+                        } catch (error) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Cập nhật thất bại: $error'),
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _isMutating = false);
+                        }
+                      },
+                child: const Text('Lưu thay đổi'),
+              ),
+            ],
+          ),
         ),
       );
       nameCtrl.dispose();
       emailCtrl.dispose();
       phoneCtrl.dispose();
+      specialtiesCtrl.dispose();
+      degreesCtrl.dispose();
+      return;
+    }
+
+    if (action == 'Xóa tài khoản') {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthenticatedState && authState.user.id == id) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFFDC2626),
+            content: Text('Bạn không thể tự xóa tài khoản của chính mình.'),
+          ),
+        );
+        return;
+      }
+      final userCode = user['userCode']?.toString() ?? '';
+      final fullName = user['fullName']?.toString() ?? '';
+
+      final result = await showDialog<_DeleteUserResult>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => _DeleteUserConfirmationDialog(
+          userId: id,
+          userCode: userCode,
+          fullName: fullName,
+          apiClient: _apiClient,
+        ),
+      );
+
+      if (result == null) return;
+
+      if (result.success) {
+        try {
+          setState(() {
+            _isMutating = true;
+            _users = _users
+                .where((u) => u is! Map || u['id']?.toString() != id)
+                .toList();
+          });
+          await _fetchUsers(silent: true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: const Color(0xFF15803D),
+                content: Text(
+                  'Đã xóa vĩnh viễn tài khoản $fullName ($userCode) thành công.',
+                ),
+              ),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _isMutating = false);
+        }
+      } else if (result.isOperationalError) {
+        final msg = result.errorMessage ??
+            'Không thể xóa tài khoản do đã phát sinh lịch sử học vụ.';
+        if (mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.shield_outlined, color: Color(0xFFD97706)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Không thể xóa do có dữ liệu',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    msg,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Bạn có muốn chuyển sang Khóa / Vô hiệu hóa tài khoản này ngay bây giờ không?',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Đóng'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showUserAction(user, 'Khóa tài khoản');
+                  },
+                  child: const Text('Khóa tài khoản ngay'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
       return;
     }
     if (action == 'Cấp lại mật khẩu') {
@@ -641,6 +1045,16 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           data: <String, dynamic>{},
         );
         if (!mounted) return;
+        setState(() {
+          _users = _users.map((u) {
+            if (u is Map && u['id']?.toString() == id) {
+              return {...Map<String, dynamic>.from(u), 'isFirstLogin': true};
+            }
+            return u;
+          }).toList();
+        });
+        await _fetchUsers(silent: true);
+        if (!mounted) return;
         final payload = response is Map
             ? response['data'] ?? response
             : response;
@@ -663,10 +1077,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           ),
         );
       } catch (error) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Cấp lại mật khẩu thất bại: $error')),
           );
+        }
       } finally {
         if (mounted) setState(() => _isMutating = false);
       }
@@ -694,18 +1109,30 @@ class _UsersManagementViewState extends State<UsersManagementView> {
     try {
       setState(() => _isMutating = true);
       await _apiClient.patch('/users/$id/status', data: {'status': nextStatus});
-      await _fetchUsers();
-      if (mounted)
+      if (mounted) {
+        setState(() {
+          _users = _users.map((u) {
+            if (u is Map && u['id']?.toString() == id) {
+              return {...Map<String, dynamic>.from(u), 'status': nextStatus};
+            }
+            return u;
+          }).toList();
+        });
+      }
+      await _fetchUsers(silent: true);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đã cập nhật trạng thái ${user['fullName']}.'),
           ),
         );
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Không đổi được trạng thái: $error')),
         );
+      }
     } finally {
       if (mounted) setState(() => _isMutating = false);
     }
@@ -1232,8 +1659,9 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               ),
                             ],
                             onChanged: (v) {
-                              if (v != null)
+                              if (v != null) {
                                 setState(() => _selectedBranch = v);
+                              }
                             },
                           ),
                         ),
@@ -1269,8 +1697,9 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               ),
                             ],
                             onChanged: (v) {
-                              if (v != null)
+                              if (v != null) {
                                 setState(() => _selectedStatus = v);
+                              }
                             },
                           ),
                         ),
@@ -1620,7 +2049,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                 ),
               ),
               SizedBox(
-                width: 144,
+                width: 180,
                 child: Text(
                   'THAO TÁC',
                   textAlign: TextAlign.right,
@@ -1639,7 +2068,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: usersList.length,
-          separatorBuilder: (_, __) =>
+          separatorBuilder: (_, _) =>
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
           itemBuilder: (context, index) {
             final u = usersList[index] as Map<String, dynamic>;
@@ -1655,6 +2084,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
             final isFirstLogin = u['isFirstLogin'] == true;
             final status = u['status']?.toString() ?? 'ACTIVE';
             final isActive = status == 'ACTIVE';
+
+            final authState = context.read<AuthBloc>().state;
+            final isSuperAdmin = authState is AuthenticatedState && authState.user.isSuperAdmin;
+            final isSelf = authState is AuthenticatedState && authState.user.id == u['id'];
+            final canDelete = isSuperAdmin && !isSelf;
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1818,7 +2252,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                   ),
                   // Thao tác
                   SizedBox(
-                    width: 144,
+                    width: 180,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -1874,6 +2308,21 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                             isActive ? 'Khóa tài khoản' : 'Mở khóa',
                           ),
                         ),
+                        if (canDelete)
+                          IconButton(
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                              color: Color(0xFFDC2626),
+                            ),
+                            tooltip: 'Xóa tài khoản',
+                            onPressed: () => _showUserAction(u, 'Xóa tài khoản'),
+                          ),
                       ],
                     ),
                   ),
@@ -1933,7 +2382,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: usersList.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const Divider(height: 1, color: Color(0xFFE2E8F0)),
       itemBuilder: (context, index) {
         final u = usersList[index] as Map<String, dynamic>;
@@ -1974,6 +2423,257 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           ),
         );
       },
+    );
+  }
+}
+
+class _DeleteUserResult {
+  final bool success;
+  final bool isOperationalError;
+  final String? errorMessage;
+
+  const _DeleteUserResult({
+    required this.success,
+    this.isOperationalError = false,
+    this.errorMessage,
+  });
+}
+
+class _DeleteUserConfirmationDialog extends StatefulWidget {
+  final String userId;
+  final String userCode;
+  final String fullName;
+  final ApiClient apiClient;
+
+  const _DeleteUserConfirmationDialog({
+    required this.userId,
+    required this.userCode,
+    required this.fullName,
+    required this.apiClient,
+  });
+
+  @override
+  State<_DeleteUserConfirmationDialog> createState() =>
+      _DeleteUserConfirmationDialogState();
+}
+
+class _DeleteUserConfirmationDialogState
+    extends State<_DeleteUserConfirmationDialog> {
+  late final TextEditingController _confirmCtrl;
+  final _formKey = GlobalKey<FormState>();
+  bool _isDeleting = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _confirmCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleConfirmDelete() async {
+    if (_formKey.currentState?.validate() != true) return;
+    setState(() {
+      _isDeleting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.apiClient.delete('/users/${widget.userId}');
+      if (!mounted) return;
+      Navigator.of(context).pop(const _DeleteUserResult(success: true));
+    } catch (error) {
+      final msg = error is ApiException ? error.message : error.toString();
+      final bool isOperationalError =
+          msg.contains('lịch sử vận hành') ||
+          msg.contains('VÔ HIỆU HÓA') ||
+          msg.contains('bảo toàn lịch sử');
+      if (!mounted) return;
+      if (isOperationalError) {
+        Navigator.of(context).pop(
+          _DeleteUserResult(
+            success: false,
+            isOperationalError: true,
+            errorMessage: msg,
+          ),
+        );
+      } else {
+        setState(() {
+          _isDeleting = false;
+          _errorMessage = msg;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEE2E2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.delete_forever_rounded,
+              color: Color(0xFFDC2626),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Xác nhận xóa tài khoản',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 480,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bạn đang yêu cầu xóa vĩnh viễn tài khoản: ${widget.fullName} (${widget.userCode})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 20,
+                      color: Color(0xFFDC2626),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lưu ý an toàn: Chỉ cho phép xóa vĩnh viễn tài khoản vừa tạo nhầm, chưa phát sinh lịch sử học vụ (lớp học, điểm danh, bài thi, hóa đơn, giờ dạy). Nếu đã có dữ liệu, hãy chọn Khóa/Vô hiệu hóa để bảo toàn dữ liệu.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF991B1B),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nhập mã định danh "${widget.userCode}" để xác nhận xóa:',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _confirmCtrl,
+                enabled: !_isDeleting,
+                decoration: InputDecoration(
+                  hintText: widget.userCode,
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim() != widget.userCode) {
+                    return 'Vui lòng nhập chính xác mã: ${widget.userCode}';
+                  }
+                  return null;
+                },
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF991B1B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isDeleting ? null : () => Navigator.pop(context),
+          child: const Text('Hủy bỏ'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+          onPressed: _isDeleting ? null : _handleConfirmDelete,
+          child: _isDeleting
+              ? const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text('Đang xóa...'),
+                  ],
+                )
+              : const Text('Xác nhận xóa vĩnh viễn'),
+        ),
+      ],
     );
   }
 }

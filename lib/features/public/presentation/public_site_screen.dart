@@ -892,12 +892,52 @@ class _ConsultationFormState extends State<_ConsultationForm> {
   final _phone = TextEditingController();
   final _email = TextEditingController();
   final _notes = TextEditingController();
-  late final TextEditingController _target = TextEditingController(
-    text: widget.targetCourse ?? '',
-  );
   bool _saving = false;
   bool _sent = false;
   String? _error;
+
+  List<Map<String, dynamic>> _programs = [];
+  List<Map<String, dynamic>> _courses = [];
+  bool _loadingOptions = true;
+  String? _selectedProgramId;
+  String? _selectedCourseId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOptions();
+  }
+
+  Future<void> _loadOptions() async {
+    try {
+      final results = await Future.wait([
+        widget.repository.programs(),
+        widget.repository.courses(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _programs = results[0];
+        _courses = results[1];
+        _loadingOptions = false;
+
+        if (widget.targetCourse != null && widget.targetCourse!.isNotEmpty) {
+          final target = widget.targetCourse!.toLowerCase().trim();
+          for (final c in _courses) {
+            final title = (c['title'] ?? '').toString().toLowerCase();
+            final id = (c['id'] ?? '').toString().toLowerCase();
+            final slug = (c['slug'] ?? '').toString().toLowerCase();
+            if (title == target || id == target || slug == target || title.contains(target)) {
+              _selectedCourseId = c['id']?.toString();
+              _selectedProgramId = (c['programId'] ?? (c['program'] as Map?)?['id'])?.toString();
+              break;
+            }
+          }
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingOptions = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -905,7 +945,6 @@ class _ConsultationFormState extends State<_ConsultationForm> {
     _phone.dispose();
     _email.dispose();
     _notes.dispose();
-    _target.dispose();
     super.dispose();
   }
 
@@ -915,12 +954,43 @@ class _ConsultationFormState extends State<_ConsultationForm> {
       _saving = true;
       _error = null;
     });
+
+    Map<String, dynamic>? selectedCourse;
+    if (_selectedCourseId != null) {
+      for (final c in _courses) {
+        if (c['id']?.toString() == _selectedCourseId) {
+          selectedCourse = c;
+          break;
+        }
+      }
+    }
+
+    Map<String, dynamic>? selectedProgram;
+    final programId = _selectedProgramId ??
+        (selectedCourse?['programId'] ?? (selectedCourse?['program'] as Map?)?['id'])?.toString();
+    if (programId != null) {
+      for (final p in _programs) {
+        if (p['id']?.toString() == programId) {
+          selectedProgram = p;
+          break;
+        }
+      }
+    }
+
+    final targetText = selectedCourse != null
+        ? '${selectedCourse['title']}'
+        : (selectedProgram != null
+            ? 'Chương trình ${selectedProgram['nameVi'] ?? selectedProgram['nameEn'] ?? selectedProgram['code']}'
+            : 'Chưa xác định / Cần tư vấn');
+
     try {
       await widget.repository.sendConsultation(
         fullName: _name.text.trim(),
         phone: _phone.text.trim(),
         email: _email.text.trim(),
-        targetCourse: _target.text.trim(),
+        targetCourse: targetText,
+        programId: programId,
+        courseId: _selectedCourseId,
         notes: _notes.text.trim(),
       );
       if (mounted) setState(() => _sent = true);
@@ -1002,20 +1072,85 @@ class _ConsultationFormState extends State<_ConsultationForm> {
                           : 'Email không hợp lệ',
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _target,
-                      textInputAction: TextInputAction.next,
+                    DropdownButtonFormField<String?>(
+                      initialValue: _selectedProgramId,
+                      isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText: 'Khóa học quan tâm',
+                        labelText: 'Chương trình đào tạo quan tâm',
                         border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.school_outlined),
                       ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Tất cả chương trình / Chưa xác định'),
+                        ),
+                        for (final p in _programs)
+                          DropdownMenuItem<String?>(
+                            value: p['id']?.toString(),
+                            child: Text(
+                              p['nameVi']?.toString() ??
+                                  p['nameEn']?.toString() ??
+                                  p['code']?.toString() ??
+                                  '',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: _loadingOptions
+                          ? null
+                          : (val) {
+                              setState(() {
+                                _selectedProgramId = val;
+                                if (val != null && _selectedCourseId != null) {
+                                  final matches = _courses.any((c) =>
+                                      c['id']?.toString() == _selectedCourseId &&
+                                      (c['programId'] ?? (c['program'] as Map?)?['id'])?.toString() == val);
+                                  if (!matches) _selectedCourseId = null;
+                                }
+                              });
+                            },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String?>(
+                      initialValue: _selectedCourseId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Khóa học quan tâm *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.menu_book_outlined),
+                        helperText: 'Chọn khóa học cụ thể hoặc "Cần tư vấn" để học vụ định hướng',
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Chưa xác định / Cần tư vấn lộ trình phù hợp'),
+                        ),
+                        for (final c in (_selectedProgramId == null
+                            ? _courses
+                            : _courses.where((c) {
+                                final pid = (c['programId'] ?? (c['program'] as Map?)?['id'])?.toString();
+                                return pid == _selectedProgramId;
+                              })))
+                          DropdownMenuItem<String?>(
+                            value: c['id']?.toString(),
+                            child: Text(
+                              c['title']?.toString() ?? '',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: _loadingOptions
+                          ? null
+                          : (val) => setState(() => _selectedCourseId = val),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _notes,
                       maxLines: 3,
                       decoration: const InputDecoration(
-                        labelText: 'Nhu cầu học tập',
+                        labelText: 'Nhu cầu học tập & mục tiêu',
+                        hintText: 'VD: Cần đạt IELTS 6.5 trong 6 tháng, học buổi tối...',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -1118,6 +1253,19 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   Widget build(BuildContext context) {
     final course = widget.offering['course'] as Map?;
     final branch = widget.offering['branch'] as Map?;
+    final room = widget.offering['room'] as Map?;
+    final level = widget.offering['level'] as Map?;
+    final price = num.tryParse('${widget.offering['tuitionFee']}');
+    final start = DateTime.tryParse('${widget.offering['startDate']}');
+    final remaining = num.tryParse('${widget.offering['remainingSeats']}')?.toInt() ?? 0;
+    final maxSeats = num.tryParse('${widget.offering['maxCapacity'] ?? widget.offering['capacity']}')?.toInt() ?? 20;
+    final scheduleDays = widget.offering['scheduleDays'];
+    final scheduleStr = scheduleDays is List ? scheduleDays.join(', ') : '';
+    final timeStr = '${widget.offering['startTime'] ?? ''} - ${widget.offering['endTime'] ?? ''}'.trim();
+    final feeFormatted = price == null || price == 0
+        ? 'Liên hệ học phí'
+        : '${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} đ';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
       child: Center(
@@ -1153,23 +1301,151 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       const SizedBox(height: 20),
                       Card(
                         color: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
                         child: Padding(
-                          padding: const EdgeInsets.all(18),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _string(widget.offering['name']),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.event_available_rounded,
+                                      color: AppColors.primary,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _string(widget.offering['name']),
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Mã lớp: ${_string(widget.offering['code'])}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: AppColors.textSecondaryLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 6),
-                              Text(_string(course?['title'])),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_string(branch?['name'])} · ${widget.offering['remainingSeats']} chỗ còn',
+                              const Divider(height: 24),
+                              Row(
+                                children: [
+                                  const Icon(Icons.menu_book_rounded, size: 18, color: AppColors.textSecondaryLight),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Khóa học: ${_string(course?['title'])}${level != null ? ' (${_string(level['name'])})' : ''}',
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined, size: 18, color: AppColors.textSecondaryLight),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Cơ sở: ${_string(branch?['name'])}${room != null ? ' · Phòng ${_string(room['name'])}' : ''}',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (timeStr.isNotEmpty || scheduleStr.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.schedule_rounded, size: 18, color: AppColors.textSecondaryLight),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Lịch học: ${scheduleStr.isNotEmpty ? '$scheduleStr · ' : ''}$timeStr',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (start != null) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.textSecondaryLight),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Khai giảng: ${start.day.toString().padLeft(2, '0')}/${start.month.toString().padLeft(2, '0')}/${start.year}',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondaryLight),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          'Học phí: $feeFormatted',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: remaining <= 3
+                                          ? const Color(0xFFFEE2E2)
+                                          : const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Còn $remaining / $maxSeats chỗ',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: remaining <= 3
+                                            ? const Color(0xFFB91C1C)
+                                            : const Color(0xFF15803D),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -1177,11 +1453,40 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       ),
                       const SizedBox(height: 18),
                       if (widget.isStudent)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            'Đăng ký bằng tài khoản học viên: ${widget.studentName ?? ''}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.verified_user_rounded, color: Color(0xFF1D4ED8)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Đăng ký bằng tài khoản học viên: ${widget.studentName ?? "Học viên EduLMS"}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E3A8A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Hồ sơ và lịch sử học tập của bạn được tự động liên kết.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF1E40AF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         )
                       else ...[

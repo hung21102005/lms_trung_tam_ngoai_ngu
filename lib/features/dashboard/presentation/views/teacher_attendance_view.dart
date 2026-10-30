@@ -174,9 +174,12 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
           text: student.notes ?? '',
         );
       }
+      final currentSession =
+          _sessions.where((item) => item.id == sessionId).firstOrNull;
       _attendance = data;
       _loadLogbook(
-        _sessions.where((item) => item.id == sessionId).firstOrNull?.notes,
+        currentSession?.notes,
+        defaultTopic: currentSession?.title ?? data.title,
       );
     } catch (error) {
       if (mounted) _error = 'Không tải được danh sách điểm danh: $error';
@@ -185,37 +188,66 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
     }
   }
 
-  void _loadLogbook(String? rawNotes) {
+  void _loadLogbook(String? rawNotes, {String? defaultTopic}) {
     _topicController.clear();
     _evaluationController.clear();
     _homeworkController.clear();
     _attachments.clear();
     _pendingAttachments.clear();
     _reportSubmitted = false;
+    if (defaultTopic != null && defaultTopic.isNotEmpty) {
+      _topicController.text = defaultTopic;
+    }
     if (rawNotes == null || rawNotes.trim().isEmpty) return;
     try {
       final value = jsonDecode(rawNotes);
-      if (value is! Map<String, dynamic> || value['kind'] != 'TEACHING_LOG') {
-        _topicController.text = rawNotes;
+      if (value is Map<String, dynamic> && value['kind'] == 'TEACHING_LOG') {
+        _topicController.text =
+            value['topic']?.toString() ?? (defaultTopic ?? '');
+        _evaluationController.text = value['evaluation']?.toString() ?? '';
+        _homeworkController.text = value['homework']?.toString() ?? '';
+        _reportSubmitted = value['submitted'] == true;
+        final files = value['attachments'];
+        if (files is List) {
+          _attachments.addAll(
+            files.whereType<Map>().map(
+              (item) => AssignmentAttachmentModel.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            ),
+          );
+        }
         return;
       }
-      _topicController.text = value['topic']?.toString() ?? '';
-      _evaluationController.text = value['evaluation']?.toString() ?? '';
-      _homeworkController.text = value['homework']?.toString() ?? '';
-      _reportSubmitted = value['submitted'] == true;
-      final files = value['attachments'];
-      if (files is List) {
-        _attachments.addAll(
-          files.whereType<Map>().map(
-            (item) => AssignmentAttachmentModel.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
-          ),
-        );
+    } catch (_) {}
+
+    final hwMatch = RegExp(
+      r'\[Bài tập\]:\s*([\s\S]*?)(?=\n\[|$)',
+      caseSensitive: false,
+    ).firstMatch(rawNotes);
+    final evalMatch = RegExp(
+      r'\[(?:Nhận xét|Đánh giá)\]:\s*([\s\S]*?)(?=\n\[|$)',
+      caseSensitive: false,
+    ).firstMatch(rawNotes);
+    final topicMatch = RegExp(
+      r'\[(?:Nội dung|Chủ đề)\]:\s*([\s\S]*?)(?=\n\[|$)',
+      caseSensitive: false,
+    ).firstMatch(rawNotes);
+
+    if (hwMatch != null || evalMatch != null || topicMatch != null) {
+      if (hwMatch != null) {
+        _homeworkController.text = hwMatch.group(1)?.trim() ?? '';
       }
-    } catch (_) {
-      _topicController.text = rawNotes;
+      if (evalMatch != null) {
+        _evaluationController.text = evalMatch.group(1)?.trim() ?? '';
+      }
+      if (topicMatch != null) {
+        _topicController.text = topicMatch.group(1)?.trim() ?? '';
+      }
+      return;
     }
+
+    _evaluationController.text = rawNotes;
   }
 
   void _setStatus(StudentAttendanceItemModel student, String status) {
@@ -344,6 +376,17 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
     }
   }
 
+  Future<void> _saveAllAndLock() async {
+    if (_savingAttendance || _savingLogbook || _locked) return;
+    if (_selectedSessionId != null &&
+        (_topicController.text.trim().isNotEmpty ||
+            _evaluationController.text.trim().isNotEmpty ||
+            _homeworkController.text.trim().isNotEmpty)) {
+      await _saveLogbook(submit: true);
+    }
+    await _saveAndLockAttendance();
+  }
+
   Future<void> _pickAttachments() async {
     try {
       final files = await FilePicker.pickFiles(
@@ -403,16 +446,28 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
         );
       }
       _pendingAttachments.clear();
-      final notes = jsonEncode({
-        'kind': 'TEACHING_LOG',
-        'topic': _topicController.text.trim(),
-        'evaluation': _evaluationController.text.trim(),
-        'homework': _homeworkController.text.trim(),
-        'attachments': _attachments.map((item) => item.toJson()).toList(),
-        'submitted': submit || _reportSubmitted,
-        'updatedAt': DateTime.now().toIso8601String(),
-      });
-      await _classesRepository.updateSession(sessionId, notes: notes);
+      final hw = _homeworkController.text.trim();
+      final eval = _evaluationController.text.trim();
+      final topic = _topicController.text.trim();
+
+      String formattedNotes;
+      if (hw.isNotEmpty || eval.isNotEmpty) {
+        final buffer = StringBuffer();
+        if (hw.isNotEmpty) buffer.write('[Bài tập]: $hw');
+        if (eval.isNotEmpty) {
+          if (buffer.isNotEmpty) buffer.write('\n');
+          buffer.write('[Nhận xét]: $eval');
+        }
+        formattedNotes = buffer.toString();
+      } else {
+        formattedNotes = topic;
+      }
+
+      await _classesRepository.updateSessionWithTitle(
+        sessionId,
+        title: topic.isNotEmpty ? topic : null,
+        notes: formattedNotes,
+      );
       _reportSubmitted = submit || _reportSubmitted;
       _sessions = await _classesRepository.getClassSessions(_selectedClassId!);
       if (mounted) {
@@ -520,7 +575,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           Text(
-            'Điểm danh buổi học',
+            'Điểm Danh & Sổ Đầu Bài',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 12),
@@ -684,10 +739,10 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                   label: const Text('Quét / nhập mã'),
                 ),
                 FilledButton.icon(
-                  onPressed: _savingAttendance || _locked
+                  onPressed: _savingAttendance || _savingLogbook || _locked
                       ? null
-                      : _saveAndLockAttendance,
-                  icon: _savingAttendance
+                      : _saveAllAndLock,
+                  icon: (_savingAttendance || _savingLogbook)
                       ? const SizedBox(
                           width: 16,
                           height: 16,
@@ -695,7 +750,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                         )
                       : const Icon(Icons.lock_outline),
                   label: Text(
-                    _locked ? 'Điểm danh đã khóa' : 'Lưu & khóa điểm danh',
+                    _locked ? 'Điểm danh đã khóa' : 'Lưu Sổ & Chốt Điểm Danh',
                   ),
                 ),
               ],
@@ -916,7 +971,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Sổ đầu bài & Nhật ký giảng dạy',
+                        'Sổ Đầu Bài & Nội Dung Giảng Dạy',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -933,7 +988,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                     children: [
                       const Expanded(
                         child: Text(
-                          'Sổ đầu bài & Nhật ký giảng dạy',
+                          'Sổ Đầu Bài & Nội Dung Giảng Dạy',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
@@ -958,13 +1013,23 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                   '1. Nội dung kiến thức đã giảng dạy *',
                   _topicController,
                   3,
+                  labelText: 'Chủ đề / Giáo án buổi học',
+                  hintText: 'Chủ đề / Giáo án buổi học',
                 ),
                 _field(
                   '2. Đánh giá ý thức & chất lượng buổi học *',
                   _evaluationController,
                   3,
+                  labelText: 'Nhận xét tình hình buổi học',
+                  hintText: 'Nhận xét tình hình buổi học',
                 ),
-                _field('3. Dặn dò & Bài tập về nhà', _homeworkController, 2),
+                _field(
+                  '3. Dặn dò & Bài tập về nhà',
+                  _homeworkController,
+                  2,
+                  labelText: 'Bài tập về nhà đã giao',
+                  hintText: 'Bài tập về nhà đã giao',
+                ),
                 const Text(
                   '4. Tài liệu bài giảng đính kèm',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -1046,7 +1111,13 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
     );
   }
 
-  Widget _field(String label, TextEditingController controller, int lines) {
+  Widget _field(
+    String label,
+    TextEditingController controller,
+    int lines, {
+    String? labelText,
+    String? hintText,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -1057,7 +1128,11 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
           TextField(
             controller: controller,
             maxLines: lines,
-            decoration: const InputDecoration(filled: true),
+            decoration: InputDecoration(
+              filled: true,
+              labelText: labelText,
+              hintText: hintText,
+            ),
           ),
         ],
       ),

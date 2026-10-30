@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/router/route_names.dart';
 
 class UserEntity extends Equatable {
   final String id;
@@ -19,6 +20,9 @@ class UserEntity extends Equatable {
   final String? studentCode;
   final String? currentClass;
   final String? teacherCode;
+  final String? teacherDegrees;
+  final String? teacherSpecialties;
+  final Map<String, dynamic> linkedStats;
 
   const UserEntity({
     required this.id,
@@ -39,14 +43,48 @@ class UserEntity extends Equatable {
     this.studentCode,
     this.currentClass,
     this.teacherCode,
+    this.teacherDegrees,
+    this.teacherSpecialties,
+    this.linkedStats = const {},
   });
 
-  bool get isSuperAdmin => roles.contains('super_admin');
-  bool get isBranchAdmin => roles.contains('branch_admin');
-  bool get isAcademicStaff => roles.contains('academic_staff');
-  bool get isTeacher => roles.contains('teacher') || roles.contains('teaching_assistant');
-  bool get isStudent => roles.contains('student');
-  bool get isParent => roles.contains('parent');
+  bool _hasRole(String code) =>
+      roles.any((r) => r.trim().toLowerCase() == code.toLowerCase());
+
+  bool get isSuperAdmin => _hasRole('super_admin');
+  bool get isBranchAdmin => _hasRole('branch_admin');
+  bool get isAcademicStaff => _hasRole('academic_staff');
+  bool get isCashier => _hasRole('cashier');
+  bool get isTeacher => _hasRole('teacher') || _hasRole('teaching_assistant');
+  bool get isStudent => _hasRole('student');
+  bool get isParent => _hasRole('parent');
+
+  bool get hasValidRole =>
+      isSuperAdmin ||
+      isBranchAdmin ||
+      isAcademicStaff ||
+      isCashier ||
+      isTeacher ||
+      isParent ||
+      isStudent;
+
+  /// Trả về route dashboard chuẩn xác theo vai trò đã xác thực.
+  /// TUYỆT ĐỐI KHÔNG fallback về [RouteNames.studentHome] khi chưa xác định được role.
+  String? get dashboardRoute {
+    if (isSuperAdmin || isBranchAdmin || isAcademicStaff || isCashier) {
+      return RouteNames.adminHome;
+    }
+    if (isTeacher) {
+      return RouteNames.teacherHome;
+    }
+    if (isParent) {
+      return RouteNames.parentHome;
+    }
+    if (isStudent) {
+      return RouteNames.studentHome;
+    }
+    return null;
+  }
 
   @override
   List<Object?> get props => [
@@ -68,5 +106,8 @@ class UserEntity extends Equatable {
         studentCode,
         currentClass,
         teacherCode,
+        teacherDegrees,
+        teacherSpecialties,
+        linkedStats,
       ];
 }
