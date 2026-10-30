@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/public_catalog_repository.dart';
+import 'public_home_view.dart';
 
 enum PublicPage {
   home,
@@ -130,7 +131,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
         ];
         return Scaffold(
           backgroundColor: AppColors.backgroundLight,
-          appBar: AppBar(
+          appBar: widget.page == PublicPage.home ? null : AppBar(
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.white,
             title: const Text(
@@ -172,7 +173,7 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
                     const SizedBox(width: 24),
                   ],
           ),
-          bottomNavigationBar: mobile
+          bottomNavigationBar: widget.page != PublicPage.home && mobile
               ? NavigationBar(
                   selectedIndex: current,
                   onDestinationSelected: (index) => _navigate(routes[index]),
@@ -277,73 +278,13 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
     final classes = result[1] as Map<String, dynamic>;
     final offerings = (classes['items'] as List).cast<Map<String, dynamic>>();
     final courses = result[2] as List<Map<String, dynamic>>;
-    return _pageScroll([
-      _HeroCard(
-        title: 'Học tiếng Anh theo lộ trình của bạn',
-        subtitle: 'Khám phá chương trình đào tạo và lớp đang nhận đăng ký tại EduLMS.',
-        onExplore: () => _navigate(RouteNames.publicCourses),
-        onConsult: () => _navigate(RouteNames.publicConsultation),
-      ),
-      const SizedBox(height: 32),
-      _SectionHeading(
-        'Chương trình đào tạo',
-        () => _navigate(RouteNames.publicPrograms),
-      ),
-      const SizedBox(height: 12),
-      if (programs.isEmpty)
-        const _EmptyCard('Chương trình đang được chuẩn bị công bố.')
-      else
-        _responsiveCards(
-          programs
-              .take(3)
-              .map(
-                (item) => _InfoCard(
-                  icon: Icons.school_outlined,
-                  title: _string(item['nameVi']),
-                  subtitle: _string(item['description']),
-                  footnote: _string(item['targetAudience']),
-                  onTap: () => _navigate(
-                    '${RouteNames.publicCourses}?chuong-trinh=${Uri.encodeQueryComponent(_string(item['slug']))}',
-                  ),
-                ),
-              )
-              .toList(),
-        ),
-      const SizedBox(height: 32),
-      _SectionHeading(
-        'Khóa học đã công bố',
-        () => _navigate(RouteNames.publicCourses),
-      ),
-      const SizedBox(height: 12),
-      if (courses.isEmpty)
-        const _EmptyCard('Khóa học đang được chuẩn bị công bố.')
-      else
-        _responsiveCards(
-          courses.take(3).map((course) {
-            final program = course['program'] as Map?;
-            return _InfoCard(
-              icon: Icons.menu_book_rounded,
-              title: _string(course['title']),
-              subtitle: _string(course['publicDescription']),
-              footnote: _string(program?['nameVi']),
-              actionLabel: 'Xem khóa học',
-              onTap: () => _navigate(
-                '/khoa-hoc-cong-khai/${Uri.encodeComponent(_string(course['slug']))}',
-              ),
-            );
-          }).toList(),
-        ),
-      const SizedBox(height: 32),
-      _SectionHeading(
-        'Lớp sắp khai giảng',
-        () => _navigate(RouteNames.publicClasses),
-      ),
-      const SizedBox(height: 12),
-      if (offerings.isEmpty)
-        const _EmptyCard('Hiện chưa có lớp mở đăng ký.')
-      else
-        _responsiveCards(offerings.take(3).map(_offeringCard).toList()),
-    ]);
+    return PublicHomeView(
+      programs: programs,
+      courses: courses,
+      offerings: offerings,
+      navigate: _navigate,
+      dashboardRoute: widget.dashboardRoute,
+    );
   }
 
   Widget _programs(List<Map<String, dynamic>> programs) => _pageScroll([
@@ -802,209 +743,6 @@ class _PageHeading extends StatelessWidget {
           color: AppColors.textSecondaryLight,
         ),
       ),
-    ],
-  );
-}
-
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({
-    required this.title,
-    required this.subtitle,
-    required this.onExplore,
-    required this.onConsult,
-  });
-  final String title;
-  final String subtitle;
-  final VoidCallback onExplore;
-  final VoidCallback onConsult;
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final mobile = constraints.maxWidth < 600;
-      final introduction = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .15),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Text(
-              mobile ? 'EDULMS · TIẾNG ANH' : 'HỌC TIẾNG ANH CÙNG EDULMS',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          SizedBox(height: mobile ? 18 : 28),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: mobile ? (constraints.maxWidth < 360 ? 27 : 30) : 42,
-              height: 1.14,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 16,
-              height: 1.5,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (mobile)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FilledButton.icon(
-                  onPressed: onExplore,
-                  icon: const Icon(Icons.arrow_forward_rounded),
-                  label: const Text('Khám phá khóa học'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryDark,
-                    minimumSize: const Size.fromHeight(50),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: onConsult,
-                  icon: const Icon(Icons.support_agent_rounded),
-                  label: const Text('Nhận tư vấn chọn lộ trình'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.white),
-                ),
-              ],
-            )
-          else
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                FilledButton.icon(
-                  onPressed: onExplore,
-                  icon: const Icon(Icons.arrow_forward_rounded),
-                  label: const Text('Khám phá khóa học'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryDark,
-                  ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: onConsult,
-                  icon: const Icon(Icons.support_agent_rounded),
-                  label: const Text('Nhận tư vấn'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-        ],
-      );
-      return Container(
-        padding: EdgeInsets.all(mobile ? 24 : 40),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primaryDark, AppColors.primaryLight],
-          ),
-          borderRadius: BorderRadius.circular(mobile ? 28 : 32),
-        ),
-        child: mobile
-            ? introduction
-            : Row(
-                children: [
-                  Expanded(flex: 3, child: introduction),
-                  const SizedBox(width: 40),
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .12),
-                        border: Border.all(color: Colors.white24),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.auto_stories_rounded,
-                            size: 38,
-                            color: Colors.white,
-                          ),
-                          SizedBox(height: 24),
-                          _HeroStep('01', 'Khám phá chương trình'),
-                          _HeroStep('02', 'Chọn khóa và lớp phù hợp'),
-                          _HeroStep('03', 'Đăng ký hoặc nhận tư vấn'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      );
-    },
-  );
-}
-
-class _HeroStep extends StatelessWidget {
-  const _HeroStep(this.number, this.label);
-  final String number;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Row(
-      children: [
-        Text(
-          number,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading(this.title, this.onTap);
-  final String title;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ),
-      TextButton(onPressed: onTap, child: const Text('Xem tất cả')),
     ],
   );
 }

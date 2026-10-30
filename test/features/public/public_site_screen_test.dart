@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +20,8 @@ class _FakeApiClient implements ApiClient {
     '/my/registrations': <Map<String, dynamic>>[],
   };
   bool failLead = false;
+  bool failPublicGet = false;
+  Completer<dynamic>? pendingClasses;
   int leadCalls = 0;
   String? lastPostPath;
   Map<String, dynamic>? leadData;
@@ -29,8 +33,12 @@ class _FakeApiClient implements ApiClient {
     Map<String, dynamic>? queryParameters,
     dynamic options,
   }) async {
+    if (failPublicGet && path.startsWith('/public/')) {
+      throw Exception('Mất kết nối');
+    }
     if (path == '/public/classes') {
       lastClassQuery = queryParameters;
+      if (pendingClasses != null) return pendingClasses!.future;
     }
     return responses[path];
   }
@@ -312,6 +320,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Xem tất cả').first);
     await tester.tap(find.text('Xem tất cả').first);
     await tester.pumpAndSettle();
     expect(
@@ -331,7 +340,7 @@ void main() {
     router.dispose();
   });
 
-  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+  for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0, 1440.0]) {
     testWidgets('homepage shows an eligible API class at $width px', (
       tester,
     ) async {
@@ -381,7 +390,7 @@ void main() {
   testWidgets(
     'public pages keep mobile navigation and empty state across widths',
     (tester) async {
-      for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0]) {
+      for (final width in [320.0, 375.0, 393.0, 430.0, 800.0, 1200.0, 1440.0]) {
         final api = _FakeApiClient();
         final router = _router(
           PublicCatalogRepository(api),
@@ -395,8 +404,8 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.byType(NavigationBar),
-          width < 1000 ? findsOneWidget : findsNothing,
+          find.byType(PopupMenuButton<String>),
+          width < 1100 ? findsOneWidget : findsNothing,
         );
         expect(tester.takeException(), isNull, reason: 'width $width');
         router.dispose();
@@ -414,7 +423,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(320, 760));
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Khám phá khóa học'));
+    await tester.tap(find.text('Khám phá khóa học ↗'));
     await tester.pumpAndSettle();
     expect(
       router.routeInformationProvider.value.uri.path,
@@ -422,11 +431,88 @@ void main() {
     );
     router.go(RouteNames.publicHome);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nhận tư vấn chọn lộ trình'));
+    await tester.tap(find.text('Nhận tư vấn miễn phí'));
     await tester.pumpAndSettle();
     expect(
       router.routeInformationProvider.value.uri.path,
       RouteNames.publicConsultation,
+    );
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage shows loading then API records', (tester) async {
+    final api = _FakeApiClient()..pendingClasses = Completer<dynamic>();
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(393, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    api.pendingClasses!.complete(api.responses['/public/classes']);
+    await tester.pumpAndSettle();
+    expect(find.text('Hiện chưa có lớp mở đăng ký.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage API error offers a working retry', (tester) async {
+    final api = _FakeApiClient()..failPublicGet = true;
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(375, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(find.text('Không tải được nội dung'), findsOneWidget);
+    api.failPublicGet = false;
+    await tester.tap(find.text('Thử lại'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hiện chưa có lớp mở đăng ký.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage mobile menu reaches the real login route', (
+    tester,
+  ) async {
+    final router = _router(
+      PublicCatalogRepository(_FakeApiClient()),
+      RouteNames.publicHome,
+    );
+    await tester.binding.setSurfaceSize(const Size(393, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Mở menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đăng nhập').last);
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, RouteNames.login);
+    expect(tester.takeException(), isNull);
+    router.dispose();
+  });
+
+  testWidgets('homepage course card opens the API course slug', (tester) async {
+    final api = _FakeApiClient();
+    api.responses['/public/courses'] = [
+      {
+        'slug': 'ielts-foundation',
+        'title': 'IELTS Foundation',
+        'publicDescription': 'Lộ trình nền tảng',
+        'program': {'nameVi': 'Luyện thi IELTS'},
+      },
+    ];
+    api.responses['/public/courses/ielts-foundation'] = {
+      'slug': 'ielts-foundation',
+      'title': 'IELTS Foundation',
+      'levels': <Map<String, dynamic>>[],
+    };
+    final router = _router(PublicCatalogRepository(api), RouteNames.publicHome);
+    await tester.binding.setSurfaceSize(const Size(393, 850));
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Xem khóa học ↗'));
+    await tester.tap(find.text('Xem khóa học ↗'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/khoa-hoc-cong-khai/ielts-foundation',
     );
     expect(tester.takeException(), isNull);
     router.dispose();
