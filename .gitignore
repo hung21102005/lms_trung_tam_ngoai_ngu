@@ -128,3 +128,6 @@ scratch/test_mermaid.png
 /Nhom10_*
 /Task*_*
 /scratch/
+docs/*.png
+docs/diagrams_generated/
+/outputs/
