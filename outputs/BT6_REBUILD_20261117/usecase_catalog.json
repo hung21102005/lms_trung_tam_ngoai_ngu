@@ -1,0 +1,132 @@
+{
+  "sourceBasis": "Flutter routes/screens and NestJS controllers/services reviewed on 2026-11-17; runtime E2E not performed",
+  "groups": [
+    {
+      "id": "TK",
+      "name": "Xử lý tài khoản",
+      "actors": ["Người dùng có tài khoản", "Tài khoản mới được cấp", "Super Admin", "Branch Admin", "Academic Staff"],
+      "cases": [
+        {"id":"TK-01","name":"Đăng nhập","actors":[0],"api":"POST /auth/login","source":"backend/src/modules/auth/auth.service.ts:40; lib/features/auth/presentation/screens/login_screen.dart"},
+        {"id":"TK-02","name":"Thiết lập mật khẩu lần đầu","actors":[1],"api":"POST /auth/first-login-setup","source":"backend/src/modules/auth/auth.service.ts:133; lib/features/auth/presentation/screens/first_login_screen.dart"},
+        {"id":"TK-03","name":"Đặt lại mật khẩu bằng OTP","actors":[0],"api":"POST /auth/forgot-password; POST /auth/reset-password","source":"backend/src/modules/auth/auth.service.ts:482; lib/features/auth/presentation/screens/forgot_password_screen.dart"},
+        {"id":"TK-04","name":"Đổi mật khẩu","actors":[0],"api":"POST /auth/change-password","source":"backend/src/modules/auth/auth.service.ts:224; lib/features/profile/presentation/screens/change_password_screen.dart"},
+        {"id":"TK-05","name":"Cập nhật hồ sơ cá nhân","actors":[0],"api":"PATCH /users/profile/me","source":"backend/src/modules/users/users.controller.ts:269; lib/features/profile/presentation/screens/edit_profile_screen.dart"},
+        {"id":"TK-06","name":"Tra cứu tài khoản","actors":[2,3,4],"api":"GET /users; GET /users/:id","source":"backend/src/modules/users/users.controller.ts:65; lib/features/dashboard/presentation/views/users_management_view.dart"},
+        {"id":"TK-07","name":"Cấp tài khoản mới","actors":[2,3,4],"api":"POST /users/students; POST /users/parents; POST /users/staff","source":"backend/src/modules/users/users.controller.ts:118; lib/features/dashboard/presentation/views/users_management_view.dart"},
+        {"id":"TK-08","name":"Cập nhật tài khoản","actors":[2,3,4],"api":"PATCH /users/:id","source":"backend/src/modules/users/users.controller.ts:296; lib/features/dashboard/presentation/views/users_management_view.dart"},
+        {"id":"TK-09","name":"Khóa hoặc mở khóa tài khoản","actors":[2,3],"api":"PATCH /users/:id/status","source":"backend/src/modules/users/users.controller.ts:316; lib/features/dashboard/presentation/views/users_management_view.dart"},
+        {"id":"TK-10","name":"Cấp lại mật khẩu tạm","actors":[2,3],"api":"POST /users/:id/reset-password","source":"backend/src/modules/users/users.controller.ts:362; lib/features/dashboard/presentation/views/users_management_view.dart"},
+        {"id":"TK-11","name":"Xóa tài khoản chưa có lịch sử","actors":[2],"api":"DELETE /users/:id","source":"backend/src/modules/users/users.controller.ts:339; lib/features/dashboard/presentation/views/users_management_view.dart"}
+      ]
+    },
+    {
+      "id": "CC",
+      "name": "Khám phá công khai và đăng ký lớp",
+      "actors": ["Khách vãng lai", "Học viên"],
+      "cases": [
+        {"id":"CC-01","name":"Xem chương trình đào tạo","actors":[0,1],"api":"GET /public/programs","source":"backend/src/modules/courses/courses.controller.ts:50; lib/features/public/data/public_catalog_repository.dart:22"},
+        {"id":"CC-02","name":"Tra cứu khóa học công bố","actors":[0,1],"api":"GET /public/courses","source":"backend/src/modules/courses/courses.controller.ts:57; lib/features/public/data/public_catalog_repository.dart:25"},
+        {"id":"CC-03","name":"Xem chi tiết khóa học","actors":[0,1],"api":"GET /public/courses/:slug","source":"backend/src/modules/courses/courses.controller.ts:64; lib/features/public/data/public_catalog_repository.dart:29"},
+        {"id":"CC-04","name":"Xem lớp đang tuyển sinh","actors":[0,1],"api":"GET /public/classes; GET /public/classes/:id","source":"backend/src/modules/classes/public-classes.controller.ts:13; lib/features/public/data/public_catalog_repository.dart:37"},
+        {"id":"CC-05","name":"Gửi yêu cầu tư vấn","actors":[0,1],"api":"POST /admissions/leads","source":"backend/src/modules/admissions/admissions.controller.ts:66; lib/features/public/data/public_catalog_repository.dart:63"},
+        {"id":"CC-06","name":"Đăng ký lớp với tư cách khách","actors":[0],"api":"POST /public/registrations","source":"backend/src/modules/admissions/class-registrations.controller.ts:37; lib/features/public/data/public_catalog_repository.dart:76"},
+        {"id":"CC-07","name":"Đăng ký lớp bằng tài khoản học viên","actors":[1],"api":"POST /my/registrations","source":"backend/src/modules/admissions/class-registrations.controller.ts:44; lib/features/public/data/public_catalog_repository.dart:103"},
+        {"id":"CC-08","name":"Theo dõi đơn đăng ký của mình","actors":[1],"api":"GET /my/registrations","source":"backend/src/modules/admissions/class-registrations.controller.ts:53; lib/features/public/data/public_catalog_repository.dart:86"}
+      ]
+    },
+    {
+      "id": "TS",
+      "name": "Xử lý tư vấn và tuyển sinh",
+      "actors": ["Super Admin", "Branch Admin", "Academic Staff"],
+      "cases": [
+        {"id":"TS-01","name":"Tra cứu hồ sơ tư vấn","actors":[0,1,2],"api":"GET /admissions/leads; GET /admissions/leads/:id","source":"backend/src/modules/admissions/admissions.controller.ts:84; lib/features/dashboard/presentation/views/admissions_crm_view.dart"},
+        {"id":"TS-02","name":"Cập nhật hồ sơ tư vấn","actors":[0,1,2],"api":"PATCH /admissions/leads/:id","source":"backend/src/modules/admissions/admissions.controller.ts:157; lib/features/dashboard/presentation/views/admissions_crm_view.dart"},
+        {"id":"TS-03","name":"Đóng hoặc lưu trữ hồ sơ tư vấn","actors":[0,1,2],"api":"POST /admissions/leads/:id/close; /archive; /restore","source":"backend/src/modules/admissions/admissions.controller.ts:180; lib/features/dashboard/presentation/views/admissions_crm_view.dart"},
+        {"id":"TS-04","name":"Chuyển hồ sơ tư vấn thành học viên","actors":[0,1,2],"api":"POST /admissions/leads/:id/convert","source":"backend/src/modules/admissions/admissions.controller.ts:248; lib/features/dashboard/presentation/views/admissions_crm_view.dart"},
+        {"id":"TS-05","name":"Rà soát đơn đăng ký lớp","actors":[0,1,2],"api":"GET /admissions/registrations; PATCH /admissions/registrations/:id/review","source":"backend/src/modules/admissions/class-registrations.controller.ts:63; lib/features/dashboard/presentation/views/class_registrations_admin_screen.dart"},
+        {"id":"TS-06","name":"Phê duyệt ghi danh vào lớp","actors":[0,1,2],"api":"POST /admissions/registrations/:id/approve","source":"backend/src/modules/admissions/class-registrations.controller.ts:116; lib/features/dashboard/presentation/views/class_registrations_admin_screen.dart"}
+      ]
+    },
+    {
+      "id": "CT",
+      "name": "Chương trình khóa học và lộ trình",
+      "actors": ["Super Admin", "Academic Staff", "Giảng viên"],
+      "cases": [
+        {"id":"CT-01","name":"Tạo chương trình đào tạo","actors":[0,1],"api":"POST /programs","source":"backend/src/modules/courses/courses.controller.ts:94; lib/features/courses/presentation/screens/program_catalog_screen.dart"},
+        {"id":"CT-02","name":"Cập nhật chương trình đào tạo","actors":[0,1],"api":"PATCH /programs/:id; PATCH /programs/:id/status; /visibility","source":"backend/src/modules/courses/courses.controller.ts:103; lib/features/courses/presentation/screens/program_catalog_screen.dart"},
+        {"id":"CT-03","name":"Tạo khóa học","actors":[0,1],"api":"POST /courses","source":"backend/src/modules/courses/courses.controller.ts:161; lib/features/courses/presentation/screens/course_list_screen.dart"},
+        {"id":"CT-04","name":"Cập nhật khóa học","actors":[0,1],"api":"PATCH /courses/:id","source":"backend/src/modules/courses/courses.controller.ts:175; lib/features/courses/presentation/screens/course_detail_screen.dart"},
+        {"id":"CT-05","name":"Thẩm định và công bố khóa học","actors":[0,1],"api":"GET /courses/:id/publication-check; POST /courses/:id/academic-review; PATCH /courses/:id/publication","source":"backend/src/modules/courses/courses.controller.ts:186; lib/features/courses/presentation/screens/course_detail_screen.dart"},
+        {"id":"CT-06","name":"Quản lý cấp độ khóa học","actors":[0,1],"api":"POST /courses/:id/levels; PATCH /levels/:id","source":"backend/src/modules/courses/courses.controller.ts:248; lib/features/courses/presentation/screens/course_detail_screen.dart"},
+        {"id":"CT-07","name":"Quản lý học phần và bài học","actors":[0,1],"api":"POST /levels/:id/modules; PATCH /modules/:id; POST /modules/:id/lessons; PATCH /lessons/:id","source":"backend/src/modules/courses/courses.controller.ts:288; lib/features/courses/presentation/screens/course_detail_screen.dart"},
+        {"id":"CT-08","name":"Đính kèm tài liệu bài học","actors":[0,1,2],"api":"POST /lessons/:id/materials","source":"backend/src/modules/courses/courses.controller.ts:345; lib/features/courses/presentation/screens/lesson_detail_screen.dart"}
+      ]
+    },
+    {
+      "id": "LH",
+      "name": "Lớp học lịch dạy và điểm danh",
+      "actors": ["Super Admin", "Branch Admin", "Academic Staff", "Giảng viên", "Học viên", "Phụ huynh"],
+      "cases": [
+        {"id":"LH-01","name":"Tạo lớp học","actors":[0,1,2],"api":"POST /classes","source":"backend/src/modules/classes/classes.controller.ts:111; lib/features/classes/presentation/screens/class_create_screen.dart"},
+        {"id":"LH-02","name":"Cập nhật hoặc hủy lớp","actors":[0,1,2],"api":"PATCH /classes/:id; DELETE /classes/:id","source":"backend/src/modules/classes/classes.controller.ts:131; lib/features/classes/presentation/screens/class_detail_screen.dart"},
+        {"id":"LH-03","name":"Ghi danh hoặc rút học viên","actors":[0,1,2],"api":"POST /classes/:id/students; DELETE /classes/:id/students/:studentId","source":"backend/src/modules/classes/classes.controller.ts:165; lib/features/classes/presentation/screens/class_detail_screen.dart"},
+        {"id":"LH-04","name":"Xem lớp và lịch liên quan","actors":[3,4,5],"api":"GET /my/classes; GET /my/schedule","source":"backend/src/modules/classes/classes.controller.ts:42; lib/features/classes/presentation/screens/schedule_screen.dart; lib/features/dashboard/presentation/screens/parent_home_screen.dart"},
+        {"id":"LH-05","name":"Cập nhật buổi học","actors":[0,1,2,3],"api":"PATCH /sessions/:id","source":"backend/src/modules/classes/classes.controller.ts:213; lib/features/classes/presentation/screens/class_detail_screen.dart"},
+        {"id":"LH-06","name":"Ghi nhận điểm danh","actors":[0,1,2,3],"api":"POST /sessions/:id/attendance","source":"backend/src/modules/attendance/attendance.controller.ts:60; lib/features/attendance/presentation/screens/attendance_mark_screen.dart"},
+        {"id":"LH-07","name":"Xem chuyên cần","actors":[3,4,5],"api":"GET /students/:id/attendance; GET /classes/:id/attendance-summary","source":"backend/src/modules/attendance/attendance.controller.ts:96; lib/features/attendance/presentation/screens/my_attendance_screen.dart; lib/features/dashboard/presentation/screens/parent_home_screen.dart"},
+        {"id":"LH-08","name":"Gửi yêu cầu học bù","actors":[4],"api":"POST /makeup-requests","source":"backend/src/modules/attendance/attendance.controller.ts:132; lib/features/attendance/presentation/screens/my_attendance_screen.dart"}
+      ]
+    },
+    {
+      "id": "BT",
+      "name": "Giao làm nộp và chấm bài tập",
+      "actors": ["Giảng viên", "Học viên", "Academic Staff"],
+      "cases": [
+        {"id":"BT-01","name":"Giao bài tập cho lớp","actors":[0,2],"api":"POST /classes/:id/assignments","source":"backend/src/modules/assignments/assignments.controller.ts:44; lib/features/assignments/presentation/screens/create_assignment_screen.dart"},
+        {"id":"BT-02","name":"Cập nhật bài tập","actors":[0,2],"api":"PATCH /assignments/:id","source":"backend/src/modules/assignments/assignments.controller.ts:69; lib/features/assignments/presentation/screens/create_assignment_screen.dart"},
+        {"id":"BT-03","name":"Xem bài tập và yêu cầu làm bài","actors":[0,1,2],"api":"GET /classes/:id/assignments; GET /assignments/:id","source":"backend/src/modules/assignments/assignments.controller.ts:37; lib/features/assignments/presentation/screens/assignment_detail_screen.dart"},
+        {"id":"BT-04","name":"Lưu bản nháp bài làm","actors":[1],"api":"POST /assignments/:id/draft","source":"backend/src/modules/assignments/assignments.controller.ts:94; lib/features/assignments/presentation/screens/submit_assignment_screen.dart"},
+        {"id":"BT-05","name":"Nộp bài làm","actors":[1],"api":"POST /assignments/:id/submit","source":"backend/src/modules/assignments/assignments.controller.ts:80; lib/features/assignments/presentation/screens/submit_assignment_screen.dart"},
+        {"id":"BT-06","name":"Chấm bài và ghi nhận xét","actors":[0,2],"api":"PATCH /submissions/:id/grade","source":"backend/src/modules/assignments/assignments.controller.ts:122; lib/features/assignments/presentation/screens/grade_submission_screen.dart"},
+        {"id":"BT-07","name":"Công bố hoặc trả bài nộp","actors":[0,2],"api":"PATCH /submissions/:id/publish; PATCH /submissions/:id/return","source":"backend/src/modules/assignments/assignments.controller.ts:136; lib/features/assignments/presentation/screens/submission_review_screen.dart"}
+      ]
+    },
+    {
+      "id": "KT",
+      "name": "Ngân hàng câu hỏi và bài kiểm tra",
+      "actors": ["Giảng viên", "Academic Staff", "Học viên"],
+      "cases": [
+        {"id":"KT-01","name":"Quản lý ngân hàng câu hỏi","actors":[0,1],"api":"GET/POST /question-banks; POST /question-banks/:id/questions; PATCH/DELETE /questions/:id","source":"backend/src/modules/exams/exams.controller.ts:37; lib/features/exams/presentation/screens/question_bank_list_screen.dart"},
+        {"id":"KT-02","name":"Tạo bài kiểm tra","actors":[0,1],"api":"POST /exams","source":"backend/src/modules/exams/exams.controller.ts:115; lib/features/exams/presentation/screens/create_exam_screen.dart"},
+        {"id":"KT-03","name":"Bắt đầu làm bài kiểm tra","actors":[2],"api":"POST /exams/:id/start","source":"backend/src/modules/exams/exams.controller.ts:129; lib/features/exams/presentation/screens/take_exam_screen.dart"},
+        {"id":"KT-04","name":"Lưu đáp án bài kiểm tra","actors":[2],"api":"PATCH /exam-attempts/:id/answers","source":"backend/src/modules/exams/exams.controller.ts:136; lib/features/exams/presentation/screens/take_exam_screen.dart"},
+        {"id":"KT-05","name":"Nộp bài kiểm tra","actors":[2],"api":"POST /exams/:id/submit","source":"backend/src/modules/exams/exams.controller.ts:147; lib/features/exams/presentation/screens/take_exam_screen.dart"},
+        {"id":"KT-07","name":"Xem kết quả bài kiểm tra","actors":[0,1,2],"api":"GET /exams/:id/results; GET /my/exam-results","source":"backend/src/modules/exams/exams.controller.ts:154; lib/features/exams/presentation/screens/my_exam_results_screen.dart"}
+      ]
+    },
+    {
+      "id": "TC",
+      "name": "Học phí hóa đơn và thanh toán",
+      "actors": ["Super Admin", "Branch Admin", "Thu ngân", "Học viên", "Phụ huynh"],
+      "cases": [
+        {"id":"TC-01","name":"Tạo hóa đơn học phí","actors":[0,1,2],"api":"POST /finance/invoices","source":"backend/src/modules/finance/finance.controller.ts:35; lib/features/reports/presentation/screens/reports_overview_screen.dart"},
+        {"id":"TC-02","name":"Tra cứu hóa đơn","actors":[0,1,2,3,4],"api":"GET /finance/invoices; GET /finance/my-invoices; GET /finance/invoices/:id","source":"backend/src/modules/finance/finance.controller.ts:44; lib/features/finance/presentation/screens/my_invoices_screen.dart"},
+        {"id":"TC-03","name":"Ghi nhận thanh toán","actors":[0,1,2],"api":"POST /finance/invoices/:id/payments","source":"backend/src/modules/finance/finance.controller.ts:95; lib/features/finance/presentation/screens/record_payment_screen.dart"},
+        {"id":"TC-04","name":"Hủy hóa đơn","actors":[0,1,2],"api":"POST /finance/invoices/:id/cancel","source":"backend/src/modules/finance/finance.controller.ts:108; lib/features/finance/presentation/screens/invoice_detail_screen.dart"},
+        {"id":"TC-05","name":"Tạo yêu cầu thanh toán trực tuyến","actors":[3,4],"api":"POST /finance/invoices/:id/pay-online","source":"backend/src/modules/finance/finance.controller.ts:131; lib/features/finance/presentation/screens/pay_online_screen.dart"}
+      ]
+    },
+    {
+      "id": "VH",
+      "name": "Chi nhánh báo cáo và thông báo",
+      "actors": ["Super Admin", "Branch Admin", "Academic Staff", "Giảng viên", "Người dùng đã đăng nhập"],
+      "cases": [
+        {"id":"VH-01","name":"Quản lý chi nhánh","actors":[0,1],"api":"POST /branches; PATCH /branches/:id","source":"backend/src/modules/branches/branches.controller.ts:58; lib/features/dashboard/presentation/views/branches_rooms_view.dart"},
+        {"id":"VH-02","name":"Quản lý phòng học","actors":[0,1],"api":"POST /rooms; PATCH /rooms/:id","source":"backend/src/modules/branches/branches.controller.ts:100; lib/features/dashboard/presentation/views/branches_rooms_view.dart"},
+        {"id":"VH-03","name":"Tra cứu báo cáo vận hành","actors":[0,1,2,3],"api":"GET /reports/dashboard; /revenue; /attendance; /academic; /debts; /teacher-workload","source":"backend/src/modules/reports/reports.controller.ts:39; lib/features/reports/presentation/screens/reports_overview_screen.dart"},
+        {"id":"VH-04","name":"Xuất báo cáo","actors":[0,1,2],"api":"GET /reports/export/:type","source":"backend/src/modules/reports/reports.controller.ts:93; lib/features/reports/presentation/screens/reports_overview_screen.dart"},
+        {"id":"VH-06","name":"Xem và đánh dấu thông báo","actors":[4],"api":"GET /notifications; PATCH /notifications/:id/read; POST /notifications/read-all","source":"backend/src/modules/notifications/notifications.controller.ts:27; lib/features/notifications/presentation/screens/notification_list_screen.dart"}
+      ]
+    }
+  ]
+}

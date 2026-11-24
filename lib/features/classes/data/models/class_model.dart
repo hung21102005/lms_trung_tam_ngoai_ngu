@@ -354,6 +354,13 @@ class ClassStudentModel extends Equatable {
   final DateTime? joinedAt;
   final double tuitionPaid;
   final String? notes;
+  final String? invoiceId;
+  final String? invoiceCode;
+  final String? invoiceStatus;
+  final double invoiceTotalAmount;
+  final double invoicePaidAmount;
+  final double invoiceBalance;
+  final DateTime? invoiceDueDate;
 
   const ClassStudentModel({
     required this.id,
@@ -368,10 +375,29 @@ class ClassStudentModel extends Equatable {
     this.joinedAt,
     this.tuitionPaid = 0,
     this.notes,
+    this.invoiceId,
+    this.invoiceCode,
+    this.invoiceStatus,
+    this.invoiceTotalAmount = 0,
+    this.invoicePaidAmount = 0,
+    this.invoiceBalance = 0,
+    this.invoiceDueDate,
   });
 
   factory ClassStudentModel.fromJson(Map<String, dynamic> json) {
     final student = json['student'] as Map<String, dynamic>?;
+    final paid = json['tuitionPaid'] != null
+        ? double.tryParse(json['tuitionPaid'].toString()) ?? 0.0
+        : 0.0;
+    final invPaid = json['invoicePaidAmount'] != null
+        ? double.tryParse(json['invoicePaidAmount'].toString()) ?? paid
+        : paid;
+    final invTotal = json['invoiceTotalAmount'] != null
+        ? double.tryParse(json['invoiceTotalAmount'].toString()) ?? 0.0
+        : 0.0;
+    final invBalance = json['invoiceBalance'] != null
+        ? double.tryParse(json['invoiceBalance'].toString()) ?? 0.0
+        : 0.0;
 
     return ClassStudentModel(
       id: json['id'] as String? ?? '',
@@ -384,8 +410,17 @@ class ClassStudentModel extends Equatable {
       studentAvatar: student?['avatarUrl'] as String?,
       status: json['status'] as String? ?? 'ENROLLED',
       joinedAt: json['joinedAt'] != null ? DateTime.tryParse(json['joinedAt'].toString()) : null,
-      tuitionPaid: json['tuitionPaid'] != null ? double.tryParse(json['tuitionPaid'].toString()) ?? 0.0 : 0.0,
+      tuitionPaid: paid,
       notes: json['notes'] as String?,
+      invoiceId: json['invoiceId'] as String?,
+      invoiceCode: json['invoiceCode'] as String?,
+      invoiceStatus: json['invoiceStatus'] as String?,
+      invoiceTotalAmount: invTotal,
+      invoicePaidAmount: invPaid,
+      invoiceBalance: invBalance,
+      invoiceDueDate: json['invoiceDueDate'] != null
+          ? DateTime.tryParse(json['invoiceDueDate'].toString())
+          : null,
     );
   }
 
@@ -399,6 +434,12 @@ class ClassStudentModel extends Equatable {
         status,
         joinedAt,
         tuitionPaid,
+        invoiceId,
+        invoiceCode,
+        invoiceStatus,
+        invoiceTotalAmount,
+        invoicePaidAmount,
+        invoiceBalance,
       ];
 }
 

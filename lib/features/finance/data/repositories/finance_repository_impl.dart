@@ -13,6 +13,8 @@ class FinanceRepositoryImpl implements FinanceRepository {
     String? search,
     String? studentId,
     String? classId,
+    String? branchId,
+    bool? pendingTransferOnly,
     int page = 1,
     int limit = 20,
   }) {
@@ -21,6 +23,8 @@ class FinanceRepositoryImpl implements FinanceRepository {
       search: search,
       studentId: studentId,
       classId: classId,
+      branchId: branchId,
+      pendingTransferOnly: pendingTransferOnly,
       page: page,
       limit: limit,
     );
@@ -56,6 +60,52 @@ class FinanceRepositoryImpl implements FinanceRepository {
       transactionId: transactionId,
       notes: notes,
     );
+  }
+
+  @override
+  Future<Map<String, dynamic>> submitTransferPayment(
+    String invoiceId, {
+    required double amount,
+    String? transactionId,
+    String? notes,
+  }) {
+    return remoteDataSource.submitTransferPayment(
+      invoiceId,
+      amount: amount,
+      transactionId: transactionId,
+      notes: notes,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> approvePendingPayment(
+    String paymentId, {
+    String? notes,
+  }) {
+    return remoteDataSource.approvePendingPayment(paymentId, notes: notes);
+  }
+
+  @override
+  Future<Map<String, dynamic>> rejectPendingPayment(
+    String paymentId, {
+    String? reason,
+  }) {
+    return remoteDataSource.rejectPendingPayment(paymentId, reason: reason);
+  }
+
+  @override
+  Future<Map<String, dynamic>> checkOverdueInvoices() {
+    return remoteDataSource.checkOverdueInvoices();
+  }
+
+  @override
+  Future<PromotionModel> createPromotion(Map<String, dynamic> data) {
+    return remoteDataSource.createPromotion(data);
+  }
+
+  @override
+  Future<PromotionModel> togglePromotion(String id) {
+    return remoteDataSource.togglePromotion(id);
   }
 
   @override

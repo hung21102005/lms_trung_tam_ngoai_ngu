@@ -19,11 +19,28 @@ class PayOnlineScreen extends StatefulWidget {
 class _PayOnlineScreenState extends State<PayOnlineScreen> {
   InvoiceModel? _invoice;
   int _selectedTab = 0; // 0: VietQR, 1: VNPay Gateway
+  final TextEditingController _transferAmountCtrl = TextEditingController();
+  final TextEditingController _transactionIdCtrl = TextEditingController();
+  final TextEditingController _transferNotesCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _invoice = context.read<FinanceBloc>().getCachedInvoiceDetail(
+      widget.invoiceId,
+    );
+    if (_invoice != null) {
+      _transferAmountCtrl.text = _invoice!.balance.toInt().toString();
+    }
     context.read<FinanceBloc>().add(FetchInvoiceDetailEvent(widget.invoiceId));
+  }
+
+  @override
+  void dispose() {
+    _transferAmountCtrl.dispose();
+    _transactionIdCtrl.dispose();
+    _transferNotesCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -35,10 +52,24 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
           if (state is InvoiceDetailLoadedState) {
             setState(() {
               _invoice = state.invoice;
+              if (_transferAmountCtrl.text.trim().isEmpty) {
+                _transferAmountCtrl.text = state.invoice.balance
+                    .toInt()
+                    .toString();
+              }
             });
           }
           if (state is PayOnlineUrlReadyState) {
             _showVNPayDialog(context, state.paymentUrl);
+          }
+          if (state is FinanceActionSuccessState) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            context.read<FinanceBloc>().add(FetchMyInvoicesEvent());
           }
           if (state is FinanceErrorState) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -269,7 +300,124 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Refresh status button
+          // Refresh / Submit transfer confirmation section
+          if (inv.hasPendingTransfer)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFD97706)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.hourglass_top_rounded,
+                    color: Color(0xFFD97706),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Bạn đã gửi xác nhận chuyển khoản cho hóa đơn này. Thu ngân đang kiểm tra sao kê để xác nhận phiếu thu.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            const Divider(height: 24),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Xác nhận đã chuyển khoản để Thu ngân đối soát',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                ActionChip(
+                  label: const Text('Đóng 100% dư nợ'),
+                  onPressed: () {
+                    setState(() {
+                      _transferAmountCtrl.text = inv.balance.toInt().toString();
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                if (inv.balance >= 1000000)
+                  ActionChip(
+                    label: const Text('Đóng 50%'),
+                    onPressed: () {
+                      setState(() {
+                        _transferAmountCtrl.text =
+                            (inv.balance / 2).toInt().toString();
+                      });
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _transferAmountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Số tiền đã chuyển khoản (VNĐ) *',
+                prefixIcon: Icon(Icons.payments_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _transactionIdCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Mã giao dịch ngân hàng (tùy chọn)',
+                hintText: 'VD: FT261121998877',
+                prefixIcon: Icon(Icons.receipt_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                onPressed: () {
+                  final amt =
+                      double.tryParse(_transferAmountCtrl.text.trim()) ??
+                      inv.balance;
+                  if (amt <= 0 || amt > inv.balance) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Số tiền xác nhận không hợp lệ hoặc vượt quá dư nợ.',
+                        ),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                    return;
+                  }
+                  context.read<FinanceBloc>().add(
+                    SubmitTransferPaymentEvent(
+                      invoiceId: inv.id,
+                      amount: amt,
+                      transactionId: _transactionIdCtrl.text.trim(),
+                      notes: 'Xác nhận chuyển khoản VietQR (${inv.code})',
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Gửi xác nhận đã chuyển khoản'),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: () {
               context.read<FinanceBloc>().add(
@@ -277,14 +425,14 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
               );
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Đang kiểm tra trạng thái thanh toán...'),
+                  content: Text('Đang làm mới trạng thái thanh toán...'),
                 ),
               );
             },
             icon: const Icon(Icons.refresh),
-            label: const Text('Tôi đã chuyển khoản - Kiểm tra trạng thái'),
+            label: const Text('Làm mới trạng thái hóa đơn'),
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
+              minimumSize: const Size(double.infinity, 44),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),

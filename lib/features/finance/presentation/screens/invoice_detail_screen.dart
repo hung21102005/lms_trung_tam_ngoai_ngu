@@ -27,7 +27,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     final state = context.read<AuthBloc?>()?.state;
     if (state is! AuthenticatedState) return false;
     final user = state.user;
-    return user.isSuperAdmin || user.isBranchAdmin || user.isAcademicStaff;
+    return user.isSuperAdmin ||
+        user.isBranchAdmin ||
+        user.isAcademicStaff ||
+        user.isCashier;
   }
 
   @override
@@ -240,9 +243,34 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            payment.code,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                payment.code,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                payment.status == 'PENDING'
+                                    ? 'Chờ đối soát'
+                                    : payment.status == 'FAILED'
+                                    ? 'Đã từ chối'
+                                    : payment.status == 'REFUNDED'
+                                    ? 'Hoàn tiền'
+                                    : 'Đã thu',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: payment.status == 'PENDING'
+                                      ? const Color(0xFFD97706)
+                                      : payment.status == 'FAILED'
+                                      ? AppColors.error
+                                      : AppColors.success,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -256,6 +284,38 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                             '${_formatDate(payment.payDate)} · ${payment.method}',
                             style: const TextStyle(color: AppColors.neutral600),
                           ),
+                          if (_canManageInvoice &&
+                              payment.status == 'PENDING') ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed: () {
+                                      context.read<FinanceBloc>().add(
+                                        ApprovePendingPaymentEvent(
+                                          paymentId: payment.id,
+                                          invoiceId: inv.id,
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('Duyệt CK'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => _confirmRejectPayment(
+                                      context,
+                                      inv.id,
+                                      payment.id,
+                                    ),
+                                    child: const Text('Từ chối'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -267,6 +327,12 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       onPressed: () => _openRecordPayment(inv.id),
                       icon: const Icon(Icons.point_of_sale),
                       label: const Text('Ghi nhận thu tiền'),
+                    ),
+                  if (inv.paidAmount > 0 && inv.status != 'REFUNDED')
+                    TextButton.icon(
+                      onPressed: () => _showRefundDialog(context, inv),
+                      icon: const Icon(Icons.replay_rounded),
+                      label: const Text('Hoàn tiền học phí'),
                     ),
                   if (inv.status != 'PAID' &&
                       inv.status != 'CANCELLED' &&
@@ -537,6 +603,24 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           ],
 
           if (_canManageInvoice &&
+              inv.paidAmount > 0 &&
+              inv.status != 'REFUNDED') ...[
+            Center(
+              child: TextButton.icon(
+                onPressed: () => _showRefundDialog(context, inv),
+                icon: const Icon(Icons.replay_rounded, color: Colors.purple),
+                label: const Text(
+                  'Hoàn tiền học phí (Refund)',
+                  style: TextStyle(
+                    color: Colors.purple,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          if (_canManageInvoice &&
               inv.status != 'PAID' &&
               inv.status != 'CANCELLED' &&
               inv.paidAmount == 0) ...[
@@ -617,69 +701,284 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   }
 
   Widget _buildPaymentItem(PaymentModel payment) {
+    final isPending = payment.status == 'PENDING';
+    final isFailed = payment.status == 'FAILED';
+    final isRefunded = payment.status == 'REFUNDED';
+    final accentColor = isPending
+        ? const Color(0xFFD97706)
+        : isFailed
+        ? AppColors.error
+        : isRefunded
+        ? Colors.purple
+        : AppColors.success;
+    final badgeText = isPending
+        ? 'Chờ thu ngân đối soát'
+        : isFailed
+        ? 'Từ chối đối soát'
+        : isRefunded
+        ? 'Hoàn trả học phí'
+        : 'Đã thu';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isPending ? const Color(0xFFFFFBEB) : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(
+          color: isPending ? const Color(0xFFD97706) : AppColors.borderLight,
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.success.withAlpha(20),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.check, color: AppColors.success, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: accentColor.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPending
+                      ? Icons.hourglass_top_rounded
+                      : isFailed
+                      ? Icons.close_rounded
+                      : isRefunded
+                      ? Icons.replay_rounded
+                      : Icons.check,
+                  color: accentColor,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              payment.code,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accentColor.withAlpha(25),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                badgeText,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: accentColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          _formatCurrency(payment.amount),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
                     Text(
-                      payment.code,
+                      '${_formatDate(payment.payDate)} • Phương thức: ${payment.method}',
                       style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        color: AppColors.textSecondaryLight,
                       ),
                     ),
-                    Text(
-                      _formatCurrency(payment.amount),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.success,
+                    if (payment.transactionId != null &&
+                        payment.transactionId!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Mã GD: ${payment.transactionId}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMutedLight,
+                        ),
                       ),
-                    ),
+                    ],
+                    if (payment.notes != null && payment.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        payment.notes!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondaryLight,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${_formatDate(payment.payDate)} • Phương thức: ${payment.method}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondaryLight,
+              ),
+            ],
+          ),
+          if (_canManageInvoice && isPending) ...[
+            const Divider(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _confirmRejectPayment(
+                    context,
+                    payment.invoiceId.isNotEmpty
+                        ? payment.invoiceId
+                        : widget.invoiceId,
+                    payment.id,
+                  ),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: AppColors.error,
+                  ),
+                  label: const Text(
+                    'Từ chối',
+                    style: TextStyle(color: AppColors.error),
                   ),
                 ),
-                if (payment.transactionId != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Mã GD: ${payment.transactionId}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMutedLight,
-                    ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () {
+                    context.read<FinanceBloc>().add(
+                      ApprovePendingPaymentEvent(
+                        paymentId: payment.id,
+                        invoiceId: payment.invoiceId.isNotEmpty
+                            ? payment.invoiceId
+                            : widget.invoiceId,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.verified_rounded, size: 16),
+                  label: const Text('Xác nhận đã nhận tiền'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
                   ),
-                ],
+                ),
               ],
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _confirmRejectPayment(
+    BuildContext context,
+    String invoiceId,
+    String paymentId,
+  ) {
+    final reasonCtrl = TextEditingController(
+      text: 'Chưa ghi nhận giao dịch trên sao kê ngân hàng',
+    );
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Từ chối xác nhận chuyển khoản'),
+        content: TextField(
+          controller: reasonCtrl,
+          maxLines: 2,
+          decoration: const InputDecoration(
+            labelText: 'Lý do từ chối *',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () {
+              final reason = reasonCtrl.text.trim();
+              Navigator.pop(dialogCtx);
+              context.read<FinanceBloc>().add(
+                RejectPendingPaymentEvent(
+                  paymentId: paymentId,
+                  invoiceId: invoiceId,
+                  reason: reason,
+                ),
+              );
+            },
+            child: const Text('Xác nhận từ chối'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRefundDialog(BuildContext context, InvoiceModel inv) {
+    final amountCtrl = TextEditingController(
+      text: inv.paidAmount.toInt().toString(),
+    );
+    final reasonCtrl = TextEditingController(
+      text: 'Hoàn trả học phí theo yêu cầu học viên',
+    );
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Hoàn tiền học phí (Refund)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText:
+                    'Số tiền hoàn (Tối đa ${_formatCurrency(inv.paidAmount)}) *',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Lý do hoàn tiền *',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.purple),
+            onPressed: () {
+              final amt = double.tryParse(amountCtrl.text.trim()) ?? 0;
+              if (amt <= 0 || amt > inv.paidAmount) return;
+              final reason = reasonCtrl.text.trim();
+              Navigator.pop(dialogCtx);
+              context.read<FinanceBloc>().add(
+                RefundInvoiceEvent(inv.id, amount: amt, reason: reason),
+              );
+            },
+            child: const Text('Xác nhận hoàn tiền'),
           ),
         ],
       ),

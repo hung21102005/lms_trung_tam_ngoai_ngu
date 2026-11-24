@@ -133,6 +133,7 @@ class ParentHomeScreen extends StatelessWidget {
                       Icons.payment_rounded,
                       'Thanh Toán Học Phí',
                       Colors.purple,
+                      onTap: () => context.push(RouteNames.myInvoices),
                     ),
                   ],
                 ),
@@ -446,6 +447,13 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
                 onPressed: () => _openAttendanceFlow(context, snapshot.data ?? []),
                 icon: const Icon(Icons.checklist_rtl_rounded),
                 label: const Text('Theo Dõi Điểm Danh'),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: Colors.purple),
+                onPressed: () => context.push(RouteNames.myInvoices),
+                icon: const Icon(Icons.payment_rounded),
+                label: const Text('Thanh Toán Học Phí'),
               ),
               const SizedBox(height: 20),
               Text(

@@ -8,6 +8,8 @@ abstract class FinanceRemoteDataSource {
     String? search,
     String? studentId,
     String? classId,
+    String? branchId,
+    bool? pendingTransferOnly,
     int page = 1,
     int limit = 20,
   });
@@ -21,6 +23,20 @@ abstract class FinanceRemoteDataSource {
     String? transactionId,
     String? notes,
   });
+  Future<Map<String, dynamic>> submitTransferPayment(
+    String invoiceId, {
+    required double amount,
+    String? transactionId,
+    String? notes,
+  });
+  Future<Map<String, dynamic>> approvePendingPayment(
+    String paymentId, {
+    String? notes,
+  });
+  Future<Map<String, dynamic>> rejectPendingPayment(
+    String paymentId, {
+    String? reason,
+  });
   Future<InvoiceModel> cancelInvoice(String invoiceId, {String? reason});
   Future<InvoiceModel> refundInvoice(
     String invoiceId, {
@@ -32,7 +48,10 @@ abstract class FinanceRemoteDataSource {
     String? bankCode,
     String? language,
   });
+  Future<Map<String, dynamic>> checkOverdueInvoices();
   Future<List<PromotionModel>> getPromotions({bool? isActive});
+  Future<PromotionModel> createPromotion(Map<String, dynamic> data);
+  Future<PromotionModel> togglePromotion(String id);
   Future<Map<String, dynamic>> validatePromotion(String code, double orderAmount);
 }
 
@@ -47,6 +66,8 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     String? search,
     String? studentId,
     String? classId,
+    String? branchId,
+    bool? pendingTransferOnly,
     int page = 1,
     int limit = 20,
   }) async {
@@ -58,6 +79,8 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (studentId != null && studentId.isNotEmpty) queryParams['studentId'] = studentId;
     if (classId != null && classId.isNotEmpty) queryParams['classId'] = classId;
+    if (branchId != null && branchId.isNotEmpty) queryParams['branchId'] = branchId;
+    if (pendingTransferOnly == true) queryParams['pendingTransferOnly'] = 'true';
 
     final response = await apiClient.get(
       ApiEndpoints.invoices,
@@ -117,6 +140,84 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     );
     final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
     return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> submitTransferPayment(
+    String invoiceId, {
+    required double amount,
+    String? transactionId,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{
+      'amount': amount,
+      if (transactionId != null && transactionId.trim().isNotEmpty)
+        'transactionId': transactionId.trim(),
+      if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+    };
+    final response = await apiClient.post(
+      '/finance/invoices/$invoiceId/submit-transfer',
+      data: body,
+    );
+    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> approvePendingPayment(
+    String paymentId, {
+    String? notes,
+  }) async {
+    final response = await apiClient.post(
+      '/finance/payments/$paymentId/approve',
+      data: {
+        if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+      },
+    );
+    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> rejectPendingPayment(
+    String paymentId, {
+    String? reason,
+  }) async {
+    final response = await apiClient.post(
+      '/finance/payments/$paymentId/reject',
+      data: {
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> checkOverdueInvoices() async {
+    final response = await apiClient.post(
+      '/finance/invoices/check-overdue',
+      data: <String, dynamic>{},
+    );
+    final data = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<PromotionModel> createPromotion(Map<String, dynamic> data) async {
+    final response = await apiClient.post(ApiEndpoints.promotions, data: data);
+    final resData = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    return PromotionModel.fromJson(Map<String, dynamic>.from(resData as Map));
+  }
+
+  @override
+  Future<PromotionModel> togglePromotion(String id) async {
+    final response = await apiClient.patch(
+      '/finance/promotions/$id/toggle',
+      data: <String, dynamic>{},
+    );
+    final resData = response is Map<String, dynamic> ? (response['data'] ?? response) : response;
+    return PromotionModel.fromJson(Map<String, dynamic>.from(resData as Map));
   }
 
   @override

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
@@ -8,7 +9,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { EnrollmentStatus } from '@prisma/client';
+import { EnrollmentStatus, PaymentMethod } from '@prisma/client';
 
 export class EnrollStudentDto {
   @ApiProperty({
@@ -37,7 +38,40 @@ export class EnrollStudentDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   tuitionPaid?: number;
+
+  @ApiPropertyOptional({ description: 'Mã khuyến mãi áp dụng khi ghi danh' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  promotionCode?: string;
+
+  @ApiPropertyOptional({ description: 'Số tiền giảm trừ trực tiếp / học bổng' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  discountAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Hạn thanh toán học phí (ISO Date)' })
+  @IsOptional()
+  @IsString()
+  dueDate?: string;
+
+  @ApiPropertyOptional({
+    enum: PaymentMethod,
+    description: 'Phương thức thanh toán đợt đầu',
+  })
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
+
+  @ApiPropertyOptional({ description: 'Mã giao dịch ngân hàng (nếu có)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  transactionId?: string;
 
   @ApiPropertyOptional({
     example: 'Đăng ký nhận ưu đãi 10% học phí',

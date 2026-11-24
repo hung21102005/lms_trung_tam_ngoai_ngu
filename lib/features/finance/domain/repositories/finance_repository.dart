@@ -6,6 +6,8 @@ abstract class FinanceRepository {
     String? search,
     String? studentId,
     String? classId,
+    String? branchId,
+    bool? pendingTransferOnly,
     int page = 1,
     int limit = 20,
   });
@@ -19,6 +21,20 @@ abstract class FinanceRepository {
     String? transactionId,
     String? notes,
   });
+  Future<Map<String, dynamic>> submitTransferPayment(
+    String invoiceId, {
+    required double amount,
+    String? transactionId,
+    String? notes,
+  });
+  Future<Map<String, dynamic>> approvePendingPayment(
+    String paymentId, {
+    String? notes,
+  });
+  Future<Map<String, dynamic>> rejectPendingPayment(
+    String paymentId, {
+    String? reason,
+  });
   Future<InvoiceModel> cancelInvoice(String invoiceId, {String? reason});
   Future<InvoiceModel> refundInvoice(
     String invoiceId, {
@@ -30,6 +46,9 @@ abstract class FinanceRepository {
     String? bankCode,
     String? language,
   });
+  Future<Map<String, dynamic>> checkOverdueInvoices();
   Future<List<PromotionModel>> getPromotions({bool? isActive});
+  Future<PromotionModel> createPromotion(Map<String, dynamic> data);
+  Future<PromotionModel> togglePromotion(String id);
   Future<Map<String, dynamic>> validatePromotion(String code, double orderAmount);
 }

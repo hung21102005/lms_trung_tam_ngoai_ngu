@@ -56,11 +56,16 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
       ),
       body: BlocBuilder<FinanceBloc, FinanceState>(
         builder: (context, state) {
-          if (state is FinanceLoadingState) {
+          final bloc = context.read<FinanceBloc>();
+          final allInvoices = state is MyInvoicesLoadedState
+              ? state.invoices
+              : bloc.cachedMyInvoices;
+
+          if (state is FinanceLoadingState && allInvoices.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is FinanceErrorState) {
+          if (state is FinanceErrorState && allInvoices.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -87,10 +92,10 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
             );
           }
 
-          if (state is MyInvoicesLoadedState) {
-            if (isMobile) return _buildMobileInvoices(state.invoices);
+          if (state is MyInvoicesLoadedState || allInvoices.isNotEmpty) {
+            if (isMobile) return _buildMobileInvoices(allInvoices);
             final invoices = _filterInvoices(
-              state.invoices,
+              allInvoices,
               _filters[_tabController.index],
             );
 
@@ -241,6 +246,8 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
 
   Widget _buildMobileInvoiceCard(InvoiceModel invoice) {
     final status = _getStatusConfig(invoice.status);
+    final studentName = invoice.student?['fullName']?.toString();
+    final studentCode = invoice.student?['userCode']?.toString();
     return MobileSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,11 +271,41 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
             invoice.title,
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
+          if (studentName != null && studentName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Học viên: $studentName${studentCode != null && studentCode.isNotEmpty ? ' ($studentCode)' : ''}',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             invoice.classInfo?['name']?.toString() ?? 'Học phí',
             style: const TextStyle(color: AppColors.neutral600),
           ),
+          if (invoice.hasPendingTransfer) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFD97706)),
+              ),
+              child: const Text(
+                'Đang chờ thu ngân xác nhận chuyển khoản',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+            ),
+          ],
           if (invoice.dueDate != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -342,13 +379,19 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
   Widget _buildInvoiceCard(InvoiceModel inv) {
     final statusConfig = _getStatusConfig(inv.status);
     final className = inv.classInfo?['name'] as String? ?? 'Ngoại khóa / Khác';
+    final studentName = inv.student?['fullName']?.toString();
+    final studentCode = inv.student?['userCode']?.toString();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(
+          color: inv.hasPendingTransfer
+              ? const Color(0xFFD97706)
+              : AppColors.borderLight,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(6),
@@ -363,12 +406,38 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                inv.code,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Text(
+                    inv.code,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  if (inv.hasPendingTransfer) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFD97706)),
+                      ),
+                      child: const Text(
+                        'Đang chờ thu ngân xác nhận CK',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -393,6 +462,17 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen>
             inv.title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          if (studentName != null && studentName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Học viên: $studentName${studentCode != null && studentCode.isNotEmpty ? ' ($studentCode)' : ''}',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             'Lớp: $className',
