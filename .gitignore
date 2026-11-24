@@ -128,6 +128,12 @@ scratch/test_mermaid.png
 /Nhom10_*
 /Task*_*
 /scratch/
-docs/*.png
-docs/diagrams_generated/
 /outputs/
+
+# Bo qua cac file markdown thua o thu muc goc (chi giu README.md)
+/*.md
+!/README.md
+
+# Bo qua toan bo thu muc docs/ (chi giu huong dan cai dat)
+/docs/*
+!/docs/HUONG_DAN_CAI_DAT_VA_CHAY_DU_AN.md
