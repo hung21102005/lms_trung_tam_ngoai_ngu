@@ -38,11 +38,14 @@ COPY prisma ./prisma/
 # Install only production dependencies
 RUN npm ci --omit=dev
 
-# Generate Prisma Client for runtime
-RUN npx prisma generate
+# Copy pre-generated Prisma Client from builder (avoids downloading latest Prisma CLI via npx)
+COPY --from=builder /usr/src/app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy built artifacts from builder
 COPY --from=builder /usr/src/app/dist ./dist
+
+# Ensure uploads directory exists and is writable by non-root user
+RUN mkdir -p /usr/src/app/uploads && chown -R node:node /usr/src/app
 
 # Non-root user for security
 USER node

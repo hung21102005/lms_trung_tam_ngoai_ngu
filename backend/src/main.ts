@@ -37,15 +37,27 @@ async function bootstrap() {
   app.use(compression());
 
   // 2. CORS
+  const allowedOrigins = new Set(
+    (configService.get<string>('CORS_ORIGINS') ?? '')
+      .split(',')
+      .map((origin) => origin.trim().replace(/\/$/, ''))
+      .filter((origin) => /^https?:\/\/[^/]+$/.test(origin)),
+  );
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      const allowed =
+        !origin ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+        allowedOrigins.has(origin);
+      callback(null, allowed);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
     allowedHeaders: [
       'Content-Type',
       'Accept',
       'Authorization',
       'X-Requested-With',
+      'ngrok-skip-browser-warning',
     ],
   });
 

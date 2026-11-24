@@ -18,6 +18,12 @@ class InvoiceModel {
   final PromotionModel? promotion;
   final List<PaymentModel> payments;
 
+  bool get hasPendingTransfer =>
+      payments.any((p) => p.status.toUpperCase() == 'PENDING');
+
+  List<PaymentModel> get pendingPayments =>
+      payments.where((p) => p.status.toUpperCase() == 'PENDING').toList();
+
   InvoiceModel({
     required this.id,
     required this.code,
@@ -169,6 +175,8 @@ class PromotionModel {
   final double? maxDiscount;
   final DateTime startDate;
   final DateTime endDate;
+  final int? usageLimit;
+  final int usedCount;
   final bool isActive;
 
   PromotionModel({
@@ -182,6 +190,8 @@ class PromotionModel {
     this.maxDiscount,
     required this.startDate,
     required this.endDate,
+    this.usageLimit,
+    this.usedCount = 0,
     required this.isActive,
   });
 
@@ -201,6 +211,8 @@ class PromotionModel {
       endDate: json['endDate'] != null
           ? DateTime.tryParse(json['endDate'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      usageLimit: (json['usageLimit'] as num?)?.toInt(),
+      usedCount: (json['usedCount'] as num?)?.toInt() ?? 0,
       isActive: json['isActive'] as bool? ?? true,
     );
   }
@@ -217,6 +229,8 @@ class PromotionModel {
       'maxDiscount': maxDiscount,
       'startDate': startDate.toIso8601String(),
       'endDate': endDate.toIso8601String(),
+      'usageLimit': usageLimit,
+      'usedCount': usedCount,
       'isActive': isActive,
     };
   }
@@ -226,11 +240,15 @@ class InvoicesSummaryModel {
   final double totalRevenue;
   final double paidRevenue;
   final double outstandingRevenue;
+  final int pendingTransferCount;
+  final int overdueCount;
 
   InvoicesSummaryModel({
     required this.totalRevenue,
     required this.paidRevenue,
     required this.outstandingRevenue,
+    this.pendingTransferCount = 0,
+    this.overdueCount = 0,
   });
 
   factory InvoicesSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -238,6 +256,8 @@ class InvoicesSummaryModel {
       totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
       paidRevenue: (json['paidRevenue'] as num?)?.toDouble() ?? 0.0,
       outstandingRevenue: (json['outstandingRevenue'] as num?)?.toDouble() ?? 0.0,
+      pendingTransferCount: (json['pendingTransferCount'] as num?)?.toInt() ?? 0,
+      overdueCount: (json['overdueCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

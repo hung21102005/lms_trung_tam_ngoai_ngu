@@ -118,3 +118,13 @@ migrate_working_dir/
 scratch/test.docx
 scratch/test_class.png
 scratch/test_mermaid.png
+# Bai tap, bao cao & script tao tai lieu (khong thuoc source code)
+/*.docx
+/*.xlsx
+/*.pdf
+/*.pptx
+/*.py
+/*.png
+/Nhom10_*
+/Task*_*
+/scratch/

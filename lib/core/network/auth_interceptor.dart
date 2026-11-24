@@ -53,7 +53,11 @@ class AuthInterceptor extends QueuedInterceptor {
           final refreshDio = Dio(
             BaseOptions(
               baseUrl: dio.options.baseUrl.isNotEmpty ? dio.options.baseUrl : ApiEndpoints.baseUrl,
-              headers: {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                if (ApiEndpoints.usesNgrok)
+                  'ngrok-skip-browser-warning': 'true',
+              },
             ),
           );
 

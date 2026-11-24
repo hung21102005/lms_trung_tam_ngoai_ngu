@@ -19,6 +19,8 @@ import '../../../courses/presentation/screens/course_list_screen.dart';
 import '../../../classes/presentation/bloc/classes_bloc.dart';
 import '../../../classes/presentation/bloc/classes_event.dart';
 import '../../../classes/presentation/screens/class_list_screen.dart';
+import '../../../finance/presentation/bloc/finance_bloc.dart';
+import '../../../finance/presentation/screens/invoice_list_screen.dart';
 import '../views/users_management_view.dart';
 import '../views/branches_rooms_view.dart';
 import '../views/admissions_crm_view.dart';
@@ -61,6 +63,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       'badge': null,
     },
     {
+      'title': 'Học phí & Hóa đơn',
+      'icon': Icons.receipt_long_rounded,
+      'badge': null,
+    },
+    {
       'title': 'Báo cáo & Tài chính',
       'icon': Icons.bar_chart_rounded,
       'badge': null,
@@ -85,7 +92,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (!mounted) return;
     switch (index) {
       case 0:
-      case 7:
+      case 8:
         context.read<ReportsBloc?>()?.add(
           const FetchDashboardOverviewEvent(forceRefresh: true),
         );
@@ -95,6 +102,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         break;
       case 5:
         context.read<ClassesBloc?>()?.add(const FetchClasses(refresh: true));
+        break;
+      case 7:
+        context.read<FinanceBloc?>()?.add(FetchInvoicesEvent());
         break;
     }
   }
@@ -138,9 +148,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child = const TeacherAttendanceView();
         break;
       case 7:
-        child = const ReportsOverviewScreen(showAppBar: false);
+        child = const InvoiceListScreen(showAppBar: false);
         break;
       case 8:
+        child = const ReportsOverviewScreen(showAppBar: false);
+        break;
+      case 9:
         child = const SystemSettingsView();
         break;
       default:
@@ -777,6 +790,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 5 => 1,
                 4 => 2,
                 7 => 3,
+                8 => 4,
                 _ => 0,
               },
               type: BottomNavigationBarType.fixed,
@@ -796,6 +810,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   label: 'Khóa học',
                 ),
                 BottomNavigationBarItem(
+                  icon: Icon(Icons.receipt_long_rounded),
+                  label: 'Học phí',
+                ),
+                BottomNavigationBarItem(
                   icon: Icon(Icons.bar_chart_rounded),
                   label: 'Báo cáo',
                 ),
@@ -812,7 +830,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _selectNavTab(4); // Courses
                     break;
                   case 3:
-                    _selectNavTab(7); // Reports
+                    _selectNavTab(7); // Finance / Invoices
+                    break;
+                  case 4:
+                    _selectNavTab(8); // Reports
                     break;
                 }
               },

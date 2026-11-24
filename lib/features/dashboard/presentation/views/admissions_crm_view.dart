@@ -292,65 +292,191 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         : 'Trạng thái đơn sẽ được cập nhật trong CRM.';
 
     final notesCtrl = TextEditingController();
+    final promoCtrl = TextEditingController();
+    final discountCtrl = TextEditingController(text: '0');
+    final initialPaidCtrl = TextEditingController(text: '0');
+    String paymentMethod = 'CASH';
+    final classData = request['class'] is Map
+        ? Map<String, dynamic>.from(request['class'] as Map)
+        : <String, dynamic>{};
+    final classTuition =
+        double.tryParse('${classData['tuitionFee'] ?? 0}') ?? 0.0;
+    final canApproveDirectly = isApprove && (!guest || convertedId != null);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(contentMessage),
-            if (reviewStatus == 'REJECTED' ||
-                reviewStatus == 'CANCELLED' ||
-                reviewStatus == 'REOPEN') ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesCtrl,
-                decoration: InputDecoration(
-                  labelText: reviewStatus == 'REJECTED'
-                      ? 'Lý do từ chối (tùy chọn)'
-                      : 'Ghi chú xử lý (tùy chọn)',
-                  hintText: reviewStatus == 'REJECTED'
-                      ? 'VD: Hồ sơ thử nghiệm / Không phù hợp lịch học'
-                      : 'Nhập ghi chú...',
-                  border: const OutlineInputBorder(),
-                  isDense: true,
-                ),
-                maxLines: 2,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(contentMessage),
+                  if (canApproveDirectly) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Học phí tiêu chuẩn của lớp:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${NumberFormat.decimalPattern('vi_VN').format(classTuition)} đ',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: promoCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Mã khuyến mãi (tùy chọn)',
+                              hintText: 'VD: SUMMER2026',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: discountCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Giảm trừ / Học bổng (VNĐ)',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: initialPaidCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Thu học phí đợt 1 ngay (VNĐ)',
+                              hintText: 'Để 0 nếu đóng sau',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: paymentMethod,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Phương thức thu',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'CASH',
+                                child: Text('Tiền mặt'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'BANK_TRANSFER',
+                                child: Text('Chuyển khoản'),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              if (v != null) {
+                                setDlgState(() => paymentMethod = v);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (reviewStatus == 'REJECTED' ||
+                      reviewStatus == 'CANCELLED' ||
+                      reviewStatus == 'REOPEN') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesCtrl,
+                      decoration: InputDecoration(
+                        labelText: reviewStatus == 'REJECTED'
+                            ? 'Lý do từ chối (tùy chọn)'
+                            : 'Ghi chú xử lý (tùy chọn)',
+                        hintText: reviewStatus == 'REJECTED'
+                            ? 'VD: Hồ sơ thử nghiệm / Không phù hợp lịch học'
+                            : 'Nhập ghi chú...',
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      maxLines: 2,
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Hủy'),
+            ),
+            if (isApprove && guest && convertedId == null)
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(dialogContext, false);
+                  final leadId = request['leadId'];
+                  if (leadId != null) {
+                    _searchController.text = '${request['phone']}';
+                    setState(() => _crmTab = 0);
+                    _fetchLeads();
+                  }
+                },
+                icon: const Icon(Icons.person_add_rounded),
+                label: const Text('Đến chuyển đổi Lead'),
+              )
+            else
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Xác nhận'),
+              ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Hủy'),
-          ),
-          if (isApprove && guest && convertedId == null)
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.pop(dialogContext, false);
-                final leadId = request['leadId'];
-                if (leadId != null) {
-                  _searchController.text = '${request['phone']}';
-                  setState(() => _crmTab = 0);
-                  _fetchLeads();
-                }
-              },
-              icon: const Icon(Icons.person_add_rounded),
-              label: const Text('Đến chuyển đổi Lead'),
-            )
-          else
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Xác nhận'),
-            ),
-        ],
       ),
     );
     final noteText = notesCtrl.text.trim();
+    final promoText = promoCtrl.text.trim().toUpperCase();
+    final discountVal = double.tryParse(discountCtrl.text.trim()) ?? 0.0;
+    final initialPaidVal = double.tryParse(initialPaidCtrl.text.trim()) ?? 0.0;
     notesCtrl.dispose();
+    promoCtrl.dispose();
+    discountCtrl.dispose();
+    initialPaidCtrl.dispose();
 
     if (confirmed != true || !mounted || _busyRegistrationId != null) return;
     setState(() => _busyRegistrationId = id);
@@ -359,7 +485,12 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       if (isApprove) {
         res = await _apiClient.post(
           '/admissions/registrations/$id/approve',
-          data: <String, dynamic>{},
+          data: <String, dynamic>{
+            if (promoText.isNotEmpty) 'promotionCode': promoText,
+            if (discountVal > 0) 'discountAmount': discountVal,
+            if (initialPaidVal > 0) 'initialPaymentAmount': initialPaidVal,
+            if (initialPaidVal > 0) 'paymentMethod': paymentMethod,
+          },
         );
       } else {
         res = await _apiClient.patch(

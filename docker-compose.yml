@@ -49,21 +49,35 @@ services:
     networks:
       - lms_network
 
-  # Backend NestJS Service
+  # Backend NestJS Service (Production Container)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: lms_backend
     restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
     ports:
       - "${PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
+      TZ: Asia/Ho_Chi_Minh
       DATABASE_URL: postgresql://${POSTGRES_USER:-lms_user}:${POSTGRES_PASSWORD:-lms_password_dev}@postgres:5432/${POSTGRES_DB:-lms_db}?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    volumes:
+      - ./backend/uploads:/usr/src/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy

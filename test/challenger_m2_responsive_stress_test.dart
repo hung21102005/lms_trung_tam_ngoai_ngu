@@ -379,11 +379,16 @@ class FakeCoursesRepository implements CoursesRepository {
 
 class FakeFinanceRepository implements FinanceRepository {
   @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
   Future<InvoicesResponseModel> getInvoices({
     String? status,
     String? search,
     String? studentId,
     String? classId,
+    String? branchId,
+    bool? pendingTransferOnly,
     int page = 1,
     int limit = 20,
   }) async {

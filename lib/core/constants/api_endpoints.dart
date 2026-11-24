@@ -3,12 +3,46 @@ import 'package:flutter/foundation.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
+  static bool get usesNgrok {
+    if (!kIsWeb) return false;
+    final host = Uri.parse(baseUrl).host;
+    return host.endsWith('.ngrok-free.dev') ||
+        host.endsWith('.ngrok-free.app');
+  }
+
   /// Địa chỉ base URL của Backend:
   /// - Web / Windows: http://localhost:3000/api
   /// - Android Emulator: http://10.0.2.2:3000/api
   /// - Thiết bị thật: thay bằng IP mạng LAN máy dev
   static String get baseUrl {
+    final configured = _configuredBaseUrl.trim();
+    if (configured.isNotEmpty) {
+      final uri = Uri.tryParse(configured);
+      if (uri == null ||
+          !uri.hasAuthority ||
+          (uri.scheme != 'http' && uri.scheme != 'https') ||
+          !uri.path.endsWith('/api/v1') ||
+          uri.hasQuery ||
+          uri.hasFragment ||
+          (kIsWeb && Uri.base.scheme == 'https' && uri.scheme != 'https')) {
+        throw StateError(
+          'API_BASE_URL phải là URL API đầy đủ, ví dụ '
+          'https://<ngrok-domain>/api/v1 (không có dấu / cuối).',
+        );
+      }
+      return configured;
+    }
     if (kIsWeb) {
+      if (Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
+        throw StateError(
+          'Thiếu API_BASE_URL cho Flutter Web công khai. '
+          'Build lại với --dart-define=API_BASE_URL=https://<ngrok-domain>/api/v1.',
+        );
+      }
       return 'http://localhost:3000/api/v1';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {

@@ -17,6 +17,9 @@ import {
   ClassStatus,
   EnrollmentStatus,
   InvoiceStatus,
+  PaymentMethod,
+  PaymentStatus,
+  PromotionType,
   SessionStatus,
   UserStatus,
   PublicationStatus,
@@ -393,6 +396,22 @@ export class ClassesService {
             createdAt: true,
           },
         },
+        invoices: {
+          where: { status: { not: InvoiceStatus.CANCELLED } },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            code: true,
+            studentId: true,
+            subtotal: true,
+            discount: true,
+            totalAmount: true,
+            paidAmount: true,
+            balance: true,
+            status: true,
+            dueDate: true,
+          },
+        },
         _count: {
           select: {
             students: true,
@@ -483,7 +502,33 @@ export class ClassesService {
       });
     }
 
-    return this.enrichClassCounts(classEntity);
+    const invoiceByStudentId = new Map<string, any>();
+    for (const inv of classEntity.invoices ?? []) {
+      if (!invoiceByStudentId.has(inv.studentId)) {
+        invoiceByStudentId.set(inv.studentId, inv);
+      }
+    }
+
+    const enrichedStudents = classEntity.students.map((item) => {
+      const inv = invoiceByStudentId.get(item.studentId);
+      return {
+        ...item,
+        invoiceId: inv?.id ?? null,
+        invoiceCode: inv?.code ?? null,
+        invoiceStatus: inv?.status ?? null,
+        invoiceTotalAmount: inv ? Number(inv.totalAmount) : Number(classEntity.tuitionFee || 0),
+        invoicePaidAmount: inv ? Number(inv.paidAmount) : Number(item.tuitionPaid || 0),
+        invoiceBalance: inv
+          ? Number(inv.balance)
+          : Math.max(0, Number(classEntity.tuitionFee || 0) - Number(item.tuitionPaid || 0)),
+        invoiceDueDate: inv?.dueDate ?? classEntity.startDate,
+      };
+    });
+
+    return this.enrichClassCounts({
+      ...classEntity,
+      students: enrichedStudents,
+    });
   }
 
   // --------------------------------------------------------------------------
@@ -1150,10 +1195,61 @@ export class ClassesService {
             // Tự động tạo hóa đơn học phí cho học viên nếu lớp có học phí
             const tuitionFee = Number(classEntity.tuitionFee) || 0;
             if (targetStatus === EnrollmentStatus.ENROLLED && tuitionFee > 0) {
+              let discount = 0;
+              let appliedPromotionId: string | undefined;
+
+              if (dto.promotionCode && dto.promotionCode.trim().length > 0) {
+                const promoCode = dto.promotionCode.trim().toUpperCase();
+                const promotion = await tx.promotion.findUnique({
+                  where: { code: promoCode },
+                });
+                if (!promotion) {
+                  throw new NotFoundException(`Mã khuyến mãi '${promoCode}' không tồn tại`);
+                }
+                if (!promotion.isActive) {
+                  throw new BadRequestException(`Mã khuyến mãi '${promoCode}' hiện đang bị khóa`);
+                }
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const start = new Date(promotion.startDate);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(promotion.endDate);
+                end.setHours(23, 59, 59, 999);
+                if (today < start || today > end) {
+                  throw new BadRequestException(`Mã khuyến mãi '${promoCode}' đã hết hạn hoặc chưa bắt đầu`);
+                }
+                if (promotion.usageLimit && promotion.usedCount >= promotion.usageLimit) {
+                  throw new BadRequestException(`Mã khuyến mãi '${promoCode}' đã hết lượt sử dụng`);
+                }
+                if (promotion.minOrderValue && tuitionFee < Number(promotion.minOrderValue)) {
+                  throw new BadRequestException(
+                    `Học phí chưa đạt tối thiểu ${Number(promotion.minOrderValue).toLocaleString('vi-VN')} đ để áp dụng mã`,
+                  );
+                }
+                if (promotion.type === PromotionType.PERCENTAGE) {
+                  discount = (tuitionFee * Number(promotion.value)) / 100;
+                  if (promotion.maxDiscount && discount > Number(promotion.maxDiscount)) {
+                    discount = Number(promotion.maxDiscount);
+                  }
+                } else {
+                  discount = Math.min(tuitionFee, Number(promotion.value));
+                }
+                appliedPromotionId = promotion.id;
+                await tx.promotion.update({
+                  where: { id: promotion.id },
+                  data: { usedCount: { increment: 1 } },
+                });
+              } else if (dto.discountAmount && dto.discountAmount > 0) {
+                discount = Math.min(tuitionFee, Number(dto.discountAmount));
+              }
+
+              const totalAmount = Math.max(0, tuitionFee - discount);
               const year = new Date().getFullYear();
               const code = `HD-${year}-${randomUUID().slice(0, 8).toUpperCase()}`;
-              const paid = dto.tuitionPaid ? Number(dto.tuitionPaid) : 0;
-              const balance = Math.max(0, tuitionFee - paid);
+              const paid = dto.tuitionPaid
+                ? Math.min(totalAmount, Math.max(0, Number(dto.tuitionPaid)))
+                : 0;
+              const balance = Math.max(0, totalAmount - paid);
               const invoiceStatus =
                 balance === 0
                   ? InvoiceStatus.PAID
@@ -1168,22 +1264,45 @@ export class ClassesService {
                   status: { not: InvoiceStatus.CANCELLED },
                 },
               });
-              if (!existingInvoice)
-                await tx.invoice.create({
+              if (!existingInvoice) {
+                const createdInv = await tx.invoice.create({
                   data: {
                     code,
                     title: `Học phí lớp ${classEntity.name}`,
                     studentId,
                     classId: classEntity.id,
                     subtotal: tuitionFee,
-                    discount: 0,
-                    totalAmount: tuitionFee,
+                    discount,
+                    totalAmount,
                     paidAmount: paid,
                     balance,
                     status: invoiceStatus,
-                    dueDate: classEntity.startDate,
+                    dueDate: dto.dueDate
+                      ? new Date(dto.dueDate)
+                      : classEntity.startDate,
+                    promotionId: appliedPromotionId,
+                    notes: dto.notes,
+                    createdById: actor.id,
                   },
                 });
+                if (paid > 0) {
+                  await tx.payment.create({
+                    data: {
+                      code: `PT-${year}-${randomUUID().slice(0, 8).toUpperCase()}`,
+                      invoiceId: createdInv.id,
+                      studentId,
+                      amount: paid,
+                      method: dto.paymentMethod || PaymentMethod.CASH,
+                      status: PaymentStatus.SUCCESS,
+                      transactionId: dto.transactionId,
+                      notes:
+                        dto.notes ||
+                        `Thu học phí đợt đầu khi ghi danh lớp ${classEntity.code}`,
+                      receivedById: actor.id,
+                    },
+                  });
+                }
+              }
             }
 
             if (targetStatus === EnrollmentStatus.ENROLLED) {

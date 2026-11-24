@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -18,6 +19,8 @@ import { FinanceService } from './finance.service.js';
 import {
   CreateInvoiceDto,
   RecordPaymentDto,
+  SubmitTransferPaymentDto,
+  ReviewPaymentDto,
   CreatePromotionDto,
   ValidatePromotionDto,
   PayOnlineDto,
@@ -35,7 +38,7 @@ export class FinanceController {
   @Post('invoices')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'branch_admin', 'cashier')
+  @Roles('super_admin', 'branch_admin', 'cashier', 'academic_staff')
   @ApiOperation({ summary: 'Tạo hóa đơn học phí mới' })
   async createInvoice(@Request() req: any, @Body() dto: CreateInvoiceDto) {
     return this.financeService.createInvoice(dto, req.user.id);
@@ -49,6 +52,8 @@ export class FinanceController {
   @ApiQuery({ name: 'status', required: false, enum: InvoiceStatus })
   @ApiQuery({ name: 'studentId', required: false })
   @ApiQuery({ name: 'classId', required: false })
+  @ApiQuery({ name: 'branchId', required: false })
+  @ApiQuery({ name: 'pendingTransferOnly', required: false, type: Boolean })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
@@ -58,6 +63,8 @@ export class FinanceController {
     @Query('status') status?: InvoiceStatus,
     @Query('studentId') studentId?: string,
     @Query('classId') classId?: string,
+    @Query('branchId') branchId?: string,
+    @Query('pendingTransferOnly') pendingTransferOnly?: string,
     @Query('search') search?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -68,6 +75,8 @@ export class FinanceController {
       status,
       studentId,
       classId,
+      branchId,
+      pendingTransferOnly: pendingTransferOnly === 'true',
       search,
       startDate,
       endDate,
@@ -95,7 +104,7 @@ export class FinanceController {
   @Post('invoices/:id/payments')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'branch_admin', 'cashier')
+  @Roles('super_admin', 'branch_admin', 'cashier', 'academic_staff')
   @ApiOperation({ summary: 'Ghi nhận thanh toán học phí (tiền mặt/chuyển khoản)' })
   async recordPayment(
     @Request() req: any,
@@ -103,6 +112,48 @@ export class FinanceController {
     @Body() dto: RecordPaymentDto,
   ) {
     return this.financeService.recordPayment(id, dto, req.user.id);
+  }
+
+  @Post('invoices/:id/submit-transfer')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Học viên/Phụ huynh gửi xác nhận đã chuyển khoản VietQR chờ Thu ngân duyệt' })
+  async submitTransferPayment(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: SubmitTransferPaymentDto,
+  ) {
+    return this.financeService.submitTransferPayment(id, dto, req.user);
+  }
+
+  @Post('payments/:paymentId/approve')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'cashier', 'academic_staff')
+  @ApiOperation({ summary: 'Thu ngân xác nhận đã nhận khoản chuyển khoản chờ duyệt' })
+  async approvePendingPayment(
+    @Request() req: any,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: ReviewPaymentDto,
+  ) {
+    return this.financeService.approvePendingPayment(paymentId, req.user.id, dto?.notes);
+  }
+
+  @Post('payments/:paymentId/reject')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin', 'cashier', 'academic_staff')
+  @ApiOperation({ summary: 'Thu ngân từ chối khoản chuyển khoản chờ duyệt' })
+  async rejectPendingPayment(
+    @Request() req: any,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: ReviewPaymentDto,
+  ) {
+    return this.financeService.rejectPendingPayment(
+      paymentId,
+      req.user.id,
+      dto?.reason || dto?.notes,
+    );
   }
 
   @Post('invoices/:id/cancel')
@@ -125,7 +176,7 @@ export class FinanceController {
     @Body('amount') amount: number,
     @Body('reason') reason?: string,
   ) {
-    return this.financeService.refundInvoice(id, amount, reason, req.user.id);
+    return this.financeService.refundInvoice(id, Number(amount), reason, req.user.id);
   }
 
   @Post('invoices/:id/pay-online')
@@ -162,7 +213,7 @@ export class FinanceController {
   @Post('invoices/check-overdue')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'branch_admin')
+  @Roles('super_admin', 'branch_admin', 'cashier')
   @ApiOperation({ summary: 'Kích hoạt quét hóa đơn quá hạn và gửi thông báo nhắc nợ' })
   async checkOverdueInvoices() {
     return this.financeService.checkOverdueInvoices();
@@ -189,6 +240,15 @@ export class FinanceController {
   async getPromotions(@Query('isActive') isActive?: string) {
     const activeBool = isActive !== undefined ? isActive === 'true' : undefined;
     return this.financeService.getPromotions(activeBool);
+  }
+
+  @Patch('promotions/:id/toggle')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'branch_admin')
+  @ApiOperation({ summary: 'Bật / tắt trạng thái hoạt động của mã khuyến mãi' })
+  async togglePromotion(@Param('id') id: string) {
+    return this.financeService.togglePromotion(id);
   }
 
   @Post('promotions/validate')

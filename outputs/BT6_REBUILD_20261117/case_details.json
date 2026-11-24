@@ -1,0 +1,373 @@
+{
+  "CC-01": {
+    "pre": "Không cần đăng nhập.",
+    "flow": "Trang công khai tải GET /public/programs. Service chọn TrainingProgram có status=PUBLISHED và isPublic=true, sắp xếp theo displayOrder rồi tên; Flutter hiển thị danh mục.",
+    "alt": "Nếu không có chương trình hợp lệ, danh mục trống. Nếu API lỗi, không suy ra chương trình chưa tồn tại.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Chương trình nháp hoặc không công khai không được trả qua API này."
+  },
+  "CC-02": {
+    "pre": "Không cần đăng nhập.",
+    "flow": "Actor mở danh mục khóa học. Flutter gọi GET /public/courses. Service chỉ lấy Course PUBLISHED, isActive=true, có slug và thuộc Program PUBLISHED/isPublic; trả cấp độ theo thứ tự.",
+    "alt": "Không có khóa đủ điều kiện: danh mục rỗng. Lỗi API phải được xử lý như lỗi tải dữ liệu, không hiển thị khóa giả.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Khóa chưa công bố, ngừng hoạt động hoặc chương trình chưa công khai không xuất hiện."
+  },
+  "CC-03": {
+    "pre": "Có slug khóa học công khai.",
+    "flow": "Actor chọn một khóa. Flutter gọi GET /public/courses/:slug. Service lọc lại trạng thái công bố, hoạt động và chương trình; trả cấp độ, học phần, bài học theo order để dựng lộ trình.",
+    "alt": "Slug không tồn tại hoặc khóa không còn đủ điều kiện công khai: 404.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Truy cập trực tiếp URL không bỏ qua bộ lọc publication ở Backend."
+  },
+  "CC-04": {
+    "pre": "Không cần đăng nhập.",
+    "flow": "Actor mở danh sách lớp. Flutter gọi GET /public/classes với bộ lọc trang/chi nhánh/khóa học; service chỉ trả lớp thỏa publicOfferingWhere tại ngày Việt Nam, kèm enrolledCount/remainingSeats. Actor chọn lớp để gọi GET /public/classes/:id.",
+    "alt": "Lớp hết hạn, hết chỗ hoặc không còn mở đăng ký không được trả; chi tiết không đủ điều kiện cho 404.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Điều kiện công khai được kiểm tra lại ở cả danh sách và chi tiết, không dựa vào dữ liệu Flutter."
+  },
+  "CC-05": {
+    "pre": "Khách điền biểu mẫu tư vấn; không cần JWT.",
+    "flow": "Actor nhập họ tên, số điện thoại và các trường tùy chọn. Flutter gửi POST /admissions/leads; service chuẩn hóa dữ liệu, tạo AdmissionLead với status=NEW, source/branch theo yêu cầu và trả thông báo tiếp nhận.",
+    "alt": "Thiếu trường hoặc sai định dạng theo DTO: request bị từ chối; lỗi ghi DB không được hiển thị như đã tiếp nhận.",
+    "post": "Có Lead mới trạng thái NEW khi request thành công.",
+    "rules": "Đây là yêu cầu tư vấn, chưa phải ghi danh hoặc tài khoản học viên."
+  },
+  "CC-06": {
+    "pre": "Chọn lớp đang mở đăng ký và còn chỗ; khách có số điện thoại hợp lệ.",
+    "flow": "Actor gửi form đăng ký. Backend chuẩn hóa số điện thoại, dùng applicantKey theo số, kiểm tra đơn cũ và lớp còn nhận; transaction tạo AdmissionLead và ClassRegistration gắn cùng lớp/chi nhánh; trả xác nhận đã tiếp nhận.",
+    "alt": "Số điện thoại sai: 400; lớp hết chỗ: 409; đơn cũ REJECTED hoặc APPROVED: 409. Đơn trùng đang xử lý trả kết quả tiếp nhận; xung đột unique P2002 được xử lý như yêu cầu lặp.",
+    "post": "Có Lead và Registration mới nếu chưa trùng; chưa tự ghi danh vào ClassStudent.",
+    "rules": "Ràng buộc duy nhất classId+applicantKey và transaction bảo vệ bước tạo Lead/đơn."
+  },
+  "CC-07": {
+    "pre": "JWT có role student, User ACTIVE, có StudentProfile và số điện thoại.",
+    "flow": "Học viên chọn lớp. Flutter gửi POST /my/registrations. Service kiểm tra tài khoản, lớp đang mở/còn chỗ, chưa ENROLLED; tìm đơn khách đã chuyển đổi hoặc đơn theo user, sau đó upsert ClassRegistration với applicantKey user:id.",
+    "alt": "Thiếu số điện thoại: 400; đã ghi danh hoặc đơn bị từ chối: 409; role/tài khoản sai: 403. Đơn đang có được trả lại thay vì tạo bản ghi trùng.",
+    "post": "Đơn đăng ký tồn tại và chờ quy trình duyệt; chưa có ClassStudent chỉ vì gửi đơn.",
+    "rules": "Một học viên không tạo nhiều đơn cho cùng một lớp qua cùng applicantKey."
+  },
+  "CC-08": {
+    "pre": "Đã đăng nhập bằng tài khoản học viên.",
+    "flow": "Flutter gọi GET /my/registrations. Service tìm đơn theo studentId hoặc Lead đã chuyển thành user này, sắp xếp mới trước và trả trạng thái cùng lớp/khóa/ngày bắt đầu.",
+    "alt": "Không có đơn: danh sách rỗng; token không hợp lệ: guard từ chối.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Không trả đơn của học viên khác theo tham số do client tự chọn."
+  },
+  "TS-01": {
+    "pre": "JWT thuộc Super Admin, Branch Admin hoặc Academic Staff.",
+    "flow": "Nhân sự mở CRM, tìm kiếm/lọc Lead qua GET /admissions/leads, xem chi tiết qua GET /:id; controller và service trả dữ liệu trong phạm vi chi nhánh được phép.",
+    "alt": "Ngoài phạm vi chi nhánh: 403; Lead không tồn tại: 404; danh sách không có bản ghi: trạng thái trống.",
+    "post": "Không thay đổi Lead.",
+    "rules": "Super Admin được xem toàn hệ thống; nhân sự còn lại chịu giới hạn chi nhánh."
+  },
+  "TS-02": {
+    "pre": "Lead tồn tại và actor được phép quản lý chi nhánh đó.",
+    "flow": "Actor mở hồ sơ, sửa thông tin/trạng thái có trên form và gửi PATCH /admissions/leads/:id. Controller kiểm tra chi nhánh; service cập nhật AdmissionLead, trả bản ghi mới.",
+    "alt": "Lead không tồn tại: 404; ngoài chi nhánh: 403; dữ liệu DTO không hợp lệ: từ chối.",
+    "post": "Các trường được gửi hợp lệ của Lead thay đổi; không tự tạo tài khoản học viên.",
+    "rules": "Chuyển Lead thành user là thao tác riêng TS-04."
+  },
+  "TS-03": {
+    "pre": "Actor có quyền trên Lead đích.",
+    "flow": "Actor chọn Đóng, Lưu trữ hoặc Khôi phục. Flutter gọi endpoint tương ứng; service kiểm tra trạng thái, cập nhật status/ghi chú hoặc trạng thái trước lưu trữ rồi trả Lead.",
+    "alt": "Trạng thái không cho phép thao tác hoặc Lead đã liên kết nghiệp vụ bị chặn: API trả lỗi; không coi là lưu trữ/xóa thành công.",
+    "post": "Lead chuyển trạng thái theo thao tác hợp lệ; dữ liệu không bị xóa bởi đóng/lưu trữ.",
+    "rules": "Các chuyển trạng thái có điều kiện trong admissions.service.ts; không dùng thao tác xóa để thay lưu trữ."
+  },
+  "TS-04": {
+    "pre": "Lead phù hợp quy trình chuyển đổi; actor được phép quản lý chi nhánh.",
+    "flow": "Nhân sự chọn chuyển đổi và gửi POST /admissions/leads/:id/convert. Service đối chiếu Lead/tài khoản, thực hiện transaction tạo hoặc liên kết User, StudentProfile và các quan hệ tuyển sinh cần thiết; trả kết quả chuyển đổi.",
+    "alt": "Lead không hợp lệ, đã chuyển hoặc dữ liệu nhận dạng xung đột: 400/409; lỗi transaction không được xem là chuyển đổi thành công.",
+    "post": "Lead có liên kết convertedUserId khi hoàn tất; tài khoản học viên được cấp theo nhánh xử lý thực tế.",
+    "rules": "Không mặc định mọi Lead đều tạo user mới; service có nhánh liên kết tài khoản đã tồn tại."
+  },
+  "TS-05": {
+    "pre": "Actor thuộc nhóm nhân sự tuyển sinh và có quyền với chi nhánh của đơn.",
+    "flow": "Actor xem danh sách/chi tiết đơn qua GET /admissions/registrations, rồi cập nhật kết quả liên hệ/rà soát bằng PATCH /admissions/registrations/:id/review. Service thực hiện kiểm tra trạng thái và cập nhật đơn.",
+    "alt": "Đơn bị người khác cập nhật trước, trạng thái không phù hợp hoặc ngoài chi nhánh: 403/409; không ghi đè im lặng.",
+    "post": "Trạng thái/ghi chú rà soát thay đổi nếu request được chấp nhận; chưa tự ghi danh.",
+    "rules": "Rà soát và phê duyệt là hai thao tác khác nhau."
+  },
+  "TS-06": {
+    "pre": "Đơn còn chờ duyệt; lớp còn mở, còn chỗ; actor được phép quản lý chi nhánh.",
+    "flow": "Actor bấm phê duyệt. Service thực hiện transaction: khóa/đọc lại đơn và lớp, kiểm tra năng lực, lịch, dữ liệu học viên; tạo hoặc xác định User, ghi danh ClassStudent, cập nhật đơn và phần học phí/hóa đơn theo quy trình. Trả kết quả để UI cập nhật.",
+    "alt": "Đơn đã xử lý, lớp đóng/hết chỗ, trùng lịch, xung đột concurrent hoặc transaction lỗi: từ chối; service có nhánh retry/xung đột, không tuyên bố ghi danh khi chưa commit.",
+    "post": "Chỉ khi transaction thành công: đơn được phê duyệt và học viên có ghi danh; kiểm tra hóa đơn theo nhánh nghiệp vụ.",
+    "rules": "Đây là điểm kiểm soát sĩ số và tính nhất quán cao; không suy diễn rằng gửi đơn CC-06/07 đã ghi danh."
+  },
+  "CT-01": {
+    "pre": "JWT role super_admin hoặc academic_staff.",
+    "flow": "Actor mở quản lý chương trình, nhập các trường và gửi POST /programs. DTO kiểm tra dữ liệu, service tạo TrainingProgram ở trạng thái theo request.",
+    "alt": "Mã/slug trùng hoặc dữ liệu không hợp lệ: API từ chối; UI không được báo tạo thành công.",
+    "post": "Có TrainingProgram mới; chưa tự công khai nếu trạng thái chưa đáp ứng.",
+    "rules": "Chương trình và khóa học là hai thực thể và hai luồng tạo riêng."
+  },
+  "CT-02": {
+    "pre": "Program tồn tại; actor có role quản lý học thuật.",
+    "flow": "Actor sửa thông tin hoặc chọn thay trạng thái/hiển thị. Flutter gửi PATCH /programs/:id, /status hoặc /visibility; service kiểm tra chuyển trạng thái và cập nhật Program.",
+    "alt": "Chuyển trạng thái không hợp lệ hoặc Program không tồn tại: từ chối.",
+    "post": "Dữ liệu/chế độ công khai của Program đổi theo request hợp lệ.",
+    "rules": "Chỉ status=PUBLISHED và isPublic=true mới xuất hiện trong CC-01."
+  },
+  "CT-03": {
+    "pre": "Actor có role super_admin hoặc academic_staff; Program đích hợp lệ nếu được chọn.",
+    "flow": "Actor chọn tạo khóa, điền mã, tên, Program và dữ liệu học thuật trong form; Flutter gửi POST /courses. Service kiểm tra code, slug không trùng và Program chưa ARCHIVED, rồi tạo Course.",
+    "alt": "Mã/slug trùng: 409; Program không tồn tại/đã lưu trữ: 400.",
+    "post": "Course mới tồn tại; không tự công bố.",
+    "rules": "Tạo Course tách khỏi tạo Program và công bố."
+  },
+  "CT-04": {
+    "pre": "Course tồn tại; actor được phép quản lý học thuật.",
+    "flow": "Actor mở form chỉnh sửa, gửi PATCH /courses/:id. Service tìm Course; nếu đổi trường học thuật thì gọi assertCurriculumEditable, kiểm tra code/slug/Program, rồi cập nhật.",
+    "alt": "Course đang PUBLISHED hoặc đã có lớp mở/đang học/đã hoàn tất: thay nội dung học thuật bị chặn 409. Code/slug trùng: 409.",
+    "post": "Chỉ các trường hợp lệ được cập nhật; không âm thầm sửa chương trình lớp đang vận hành.",
+    "rules": "Muốn sửa giáo trình của khóa có lịch sử lớp cần tạo phiên bản học thuật mới."
+  },
+  "CT-05": {
+    "pre": "Course đã hoàn thiện nội dung; Program liên quan có thể được công khai.",
+    "flow": "Actor gọi publication-check để xem blocker, chuyển Course sang IN_REVIEW, xác nhận rà soát học thuật, rồi yêu cầu PUBLISHED. Service kiểm tra slug/mô tả/đối tượng/cấp độ/học phần/bài học/nội dung, Program công khai và reviewHash trước khi cập nhật status.",
+    "alt": "Thiếu nội dung hoặc xác nhận rà soát: trả blocker, không công bố. Ngừng công bố khi còn lớp OPEN_FOR_ENROLLMENT/IN_PROGRESS bị chặn.",
+    "post": "Chỉ Course đạt canPublish chuyển PUBLISHED và đủ điều kiện xuất hiện ở CC-02.",
+    "rules": "Rà soát gắn digest nội dung; thay đổi nội dung làm yêu cầu rà soát lại."
+  },
+  "CT-06": {
+    "pre": "Course tồn tại và nội dung học thuật còn được sửa.",
+    "flow": "Actor xem level, thêm qua POST /courses/:id/levels hoặc sửa qua PATCH /levels/:id. Service kiểm tra mã cấp độ và khóa học rồi lưu CourseLevel.",
+    "alt": "Mã cấp độ trùng trong khóa: 409; Course đã khóa nội dung học thuật: từ chối.",
+    "post": "Level được thêm/cập nhật với thứ tự và chuẩn đầu ra theo dữ liệu gửi.",
+    "rules": "Level nằm dưới Course, không phải Course độc lập."
+  },
+  "CT-07": {
+    "pre": "Level/Module đích tồn tại; giáo trình còn được sửa.",
+    "flow": "Actor thêm/sửa Module thuộc Level, thêm/sửa Lesson thuộc Module qua các endpoint riêng. Service kiểm tra quan hệ cha và bảo vệ chỉnh sửa giáo trình rồi lưu thứ tự/nội dung.",
+    "alt": "Đối tượng cha không tồn tại hoặc Course đã có lớp được bảo vệ: từ chối.",
+    "post": "Cây Level → Module → Lesson thay đổi theo thao tác đã lưu.",
+    "rules": "Lộ trình học thuật là cấu trúc nhiều tầng; không gộp Module và Lesson thành cùng một bảng."
+  },
+  "CT-08": {
+    "pre": "Lesson tồn tại; actor có role được controller cho phép.",
+    "flow": "Actor chọn tài liệu và nhập metadata/upload qua giao diện; Repository tải file nếu cần rồi gửi POST /lessons/:id/materials. Service tạo LessonMaterial liên kết bài học.",
+    "alt": "Lesson không tồn tại hoặc thông tin tài liệu không hợp lệ: API từ chối. Upload file lỗi thì không coi tài liệu đã gắn.",
+    "post": "Lesson có tài liệu mới khi cả upload và tạo metadata hoàn tất.",
+    "rules": "Controller cho super_admin, academic_staff và teacher; quyền thao tác cụ thể phải theo guard/backend."
+  },
+  "LH-01": {
+    "pre": "Actor thuộc nhóm quản lý lớp; Course/Level, chi nhánh và dữ liệu lịch cần thiết đã tồn tại.",
+    "flow": "Actor mở form tạo lớp, chọn khóa/cấp độ, lịch, phòng, giáo viên, học phí và thời gian đăng ký; Flutter gửi POST /classes. Service kiểm tra quan hệ và xung đột, tạo Class cùng các ClassSession theo dữ liệu hợp lệ.",
+    "alt": "Thông tin lịch, phòng, giáo viên, thời gian hoặc sĩ số không phù hợp: service từ chối; không coi lớp đã mở khi tạo thất bại.",
+    "post": "Có Class mới và lịch tương ứng nếu transaction thành công.",
+    "rules": "Tạo lớp không đồng nghĩa công khai lớp; trạng thái lớp và điều kiện tuyển sinh quyết định CC-04."
+  },
+  "LH-02": {
+    "pre": "Class tồn tại; actor thuộc role quản lý và có phạm vi chi nhánh.",
+    "flow": "Actor sửa thông tin hoặc chọn hủy/xóa lớp; Flutter gửi PATCH hoặc DELETE /classes/:id. Service kiểm tra trạng thái, dữ liệu phụ thuộc và quyền trước khi lưu hoặc xóa.",
+    "alt": "Lớp đã phát sinh dữ liệu được bảo vệ hoặc ngoài chi nhánh: thao tác bị từ chối; không mô tả xóa vật lý cho mọi lớp.",
+    "post": "Lớp được cập nhật/hủy theo nhánh hợp lệ, các đăng ký và lịch còn liên quan phải theo service.",
+    "rules": "Quy tắc bảo vệ lịch sử lớp nằm trong classes.service.ts, không chỉ nút xác nhận UI."
+  },
+  "LH-03": {
+    "pre": "Class và Student tồn tại; actor có quyền; lớp cho phép thay danh sách.",
+    "flow": "Actor chọn học viên và gửi POST /classes/:id/students để ghi danh, hoặc DELETE /classes/:id/students/:studentId để rút. Service kiểm tra sĩ số, trạng thái, quan hệ và ghi ClassStudent.",
+    "alt": "Hết chỗ, học viên đã có trong lớp hoặc dữ liệu lịch/học phí xung đột: API từ chối. Xóa học viên có lịch sử phụ thuộc có thể bị chặn.",
+    "post": "ClassStudent được tạo/cập nhật/xóa theo nhánh hợp lệ; sĩ số hiển thị được tải lại.",
+    "rules": "Ghi danh trực tiếp khác với phê duyệt đơn TS-06 nhưng đều phải tuân thủ năng lực lớp."
+  },
+  "LH-04": {
+    "pre": "Đã đăng nhập; role là teacher, student hoặc parent có học viên liên kết.",
+    "flow": "Actor mở Lớp học/Lịch học. Flutter gọi GET /my/classes và GET /my/schedule; Backend dùng user id/role để tìm lớp được phân công, đã ghi danh hoặc lớp của con liên kết, rồi trả buổi học.",
+    "alt": "Chưa có lớp/lịch: empty state. JWT sai: từ chối; không được tự truyền userId khác để xem lớp.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Danh sách được lọc theo danh tính từ token; phụ huynh chỉ xem lớp/lịch của con có liên kết ParentStudent."
+  },
+  "LH-05": {
+    "pre": "ClassSession tồn tại; actor có role được phép và quyền trên lớp.",
+    "flow": "Actor mở chi tiết buổi học, sửa thông tin được phép và gửi PATCH /sessions/:id. Service kiểm tra lịch, phòng, giáo viên, trạng thái rồi cập nhật ClassSession.",
+    "alt": "Xung đột lịch hoặc buổi học ngoài phạm vi: API từ chối; giao diện không được coi thay đổi đã lưu.",
+    "post": "Buổi học hợp lệ được cập nhật trong lịch lớp.",
+    "rules": "Teacher cũng được phép PATCH session theo controller; phạm vi cụ thể do service kiểm tra."
+  },
+  "LH-06": {
+    "pre": "Buổi học và danh sách học viên lớp tồn tại; actor được phân quyền.",
+    "flow": "Actor mở danh sách điểm danh, chọn trạng thái từng học viên rồi gửi POST /sessions/:id/attendance. Service kiểm tra quyền và học viên thuộc lớp, ghi nhiều bản ghi Attendance và trả kết quả.",
+    "alt": "Học viên không thuộc lớp, session không hợp lệ hoặc role ngoài phạm vi: từ chối; không đánh dấu thành công chỉ vì checkbox trên UI đổi.",
+    "post": "Attendance của buổi học được lưu theo trạng thái hợp lệ.",
+    "rules": "Đây là ghi nhận thủ công; không có căn cứ gọi là điểm danh tự động."
+  },
+  "LH-07": {
+    "pre": "Actor có quyền xem dữ liệu chuyên cần tương ứng.",
+    "flow": "Actor mở lịch sử của mình, của con liên kết hoặc tổng kết lớp. Flutter gọi GET /students/:id/attendance hoặc /classes/:id/attendance-summary; service kiểm tra quan hệ actor–student/class rồi tính lịch sử, tỷ lệ.",
+    "alt": "Actor yêu cầu dữ liệu người không liên kết hoặc lớp ngoài quyền: từ chối. Chưa có buổi điểm danh: hiển thị dữ liệu trống, không tự suy ra vắng mặt.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Phân quyền xem lịch sử được xử lý trong attendance.service.ts; không dựa vào ẩn menu."
+  },
+  "LH-08": {
+    "pre": "Học viên đã đăng nhập và có lịch sử buổi học phù hợp.",
+    "flow": "Học viên chọn Đăng ký học bù từ màn hình chuyên cần, nhập thông tin theo form và gửi POST /makeup-requests. Service tạo MakeupRequest gắn học viên và buổi học theo DTO.",
+    "alt": "Dữ liệu yêu cầu không hợp lệ hoặc quan hệ buổi học không phù hợp: API từ chối; không coi lời nhắn UI là kết quả duyệt.",
+    "post": "Có yêu cầu học bù chờ xử lý khi API thành công.",
+    "rules": "PATCH duyệt học bù có Backend/Repository nhưng chưa thấy UI kích hoạt; không đưa nhánh duyệt vào sơ đồ."
+  },
+  "BT-01": {
+    "pre": "Giảng viên hoặc nhân sự học vụ được quyền trên lớp đích.",
+    "flow": "Actor nhập tiêu đề, mô tả, loại bài, hạn nộp/thang điểm trong form. Flutter gửi POST /classes/:id/assignments; service kiểm tra quyền lớp và tạo Assignment.",
+    "alt": "Không tìm thấy lớp hoặc ngoài chi nhánh/không được phân công: 404/403; DTO không hợp lệ: từ chối.",
+    "post": "Assignment mới thuộc lớp; khả năng học viên thấy bài phụ thuộc trạng thái PUBLISHED.",
+    "rules": "Chỉ role theo controller và lớp được service cho phép mới giao bài."
+  },
+  "BT-02": {
+    "pre": "Assignment tồn tại; actor có quyền chỉnh sửa lớp.",
+    "flow": "Actor mở form chỉnh sửa rồi gửi PATCH /assignments/:id. Service kiểm tra quyền, thang điểm và trạng thái bài nộp trước khi cập nhật.",
+    "alt": "Thang điểm ngoài 1–100 hoặc thay đổi không phù hợp với bài đã nộp: 400; thiếu Assignment: 404.",
+    "post": "Thông tin bài tập hợp lệ được cập nhật.",
+    "rules": "Không mặc định có thể đổi mọi trường sau khi học viên đã nộp."
+  },
+  "BT-03": {
+    "pre": "Actor thuộc lớp hoặc được giao quản lý lớp.",
+    "flow": "Actor mở danh sách qua GET /classes/:id/assignments rồi chi tiết qua GET /assignments/:id. Backend kiểm tra quan hệ với lớp; học viên chỉ nhận Assignment đã PUBLISHED và thông tin bài nộp của mình.",
+    "alt": "Bài chưa xuất bản với học viên: 404; không thuộc lớp: 403; chưa có bài: empty state.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "UI không phải nguồn phân quyền cuối cùng; service lọc bài theo actor."
+  },
+  "BT-04": {
+    "pre": "Học viên đã ghi danh; Assignment PUBLISHED và chưa quá hạn.",
+    "flow": "Học viên soạn nội dung/tệp, chọn Lưu nháp. Flutter gửi POST /assignments/:id/draft; service kiểm tra lớp, hạn và trạng thái trước đó rồi tạo/cập nhật Submission DRAFT.",
+    "alt": "Bài đã nộp hoặc trạng thái đổi đồng thời: 409; quá hạn: 400; ngoài lớp: 403. Không có căn cứ khẳng định tự lưu khi mất mạng.",
+    "post": "Submission trạng thái DRAFT tồn tại; submittedAt=null.",
+    "rules": "Lưu nháp cho phép dữ liệu chưa hoàn chỉnh; nộp bài BT-05 có yêu cầu nội dung hoặc tệp."
+  },
+  "BT-05": {
+    "pre": "Học viên thuộc lớp; Assignment PUBLISHED; có nội dung hoặc ít nhất một file URL.",
+    "flow": "Học viên gửi bài từ form Text/Voice/File. Flutter upload tệp nếu có rồi POST /assignments/:id/submit; service upsert theo assignmentId+studentId, lưu content/fileUrls/submittedAt, đặt SUBMITTED hoặc LATE; khi nộp lại hợp lệ xóa điểm/feedback cũ.",
+    "alt": "Không có nội dung/tệp: 400; ngoài lớp hoặc bài chưa công bố: 403; bài GRADED: 400. Bài đã nộp quá hạn không sửa được trừ nhánh DRAFT/RETURNED theo service.",
+    "post": "Một Submission cập nhật trạng thái SUBMITTED/LATE; không tự có điểm công bố.",
+    "rules": "Một học viên có một bản ghi submission cho một Assignment; Voice được gửi như tệp URL, không phải API chấm giọng nói riêng."
+  },
+  "BT-06": {
+    "pre": "Submission đã nộp; actor có quyền chấm lớp.",
+    "flow": "Actor xem bài nộp, nhập score/feedback rồi gửi PATCH /submissions/:id/grade. Service kiểm tra lớp, trạng thái, điểm không vượt maxScore; lưu score, feedback, gradedById/gradedAt và GRADED.",
+    "alt": "Bản nháp/RETURNED chưa sẵn sàng chấm: 400; điểm vượt thang: 400; thiếu bài: 404.",
+    "post": "Điểm đã lưu nhưng resultPublishedAt=null; học viên chưa được coi là đã xem kết quả công bố.",
+    "rules": "Lưu điểm và công bố điểm là hai bước riêng."
+  },
+  "BT-07": {
+    "pre": "Actor có quyền trên lớp; Submission phù hợp trạng thái thao tác.",
+    "flow": "Actor chọn công bố bài GRADED hoặc trả bài SUBMITTED/LATE kèm hướng dẫn. Flutter gọi PATCH /submissions/:id/publish hoặc /return; service kiểm tra trạng thái, cập nhật resultPublishedAt hoặc RETURNED/feedback.",
+    "alt": "Công bố bài chưa chấm: 400. Trả bài không có feedback hoặc bài đã chấm/không ở trạng thái nộp: 400.",
+    "post": "Bài GRADED có thời điểm công bố, hoặc bài được trả về RETURNED để học viên làm lại.",
+    "rules": "Công bố lặp trả kết quả cũ; trả bài xóa điểm và thời điểm công bố."
+  },
+  "KT-01": {
+    "pre": "Actor thuộc role quản lý đề thi.",
+    "flow": "Actor mở ngân hàng, tạo bank hoặc thêm câu hỏi qua GET/POST /question-banks và POST /question-banks/:id/questions. Service lưu QuestionBank/Question và trả danh sách.",
+    "alt": "Bank/câu hỏi không tồn tại: 404; DTO câu hỏi không hợp lệ: từ chối. Các endpoint sửa/xóa/import có Backend nhưng chỉ đưa vào luồng giao diện khi có thao tác tương ứng.",
+    "post": "Bank/câu hỏi mới tồn tại sau thao tác thành công.",
+    "rules": "Không nhầm ngân hàng câu hỏi với bài thi đã phát hành cho lớp."
+  },
+  "KT-02": {
+    "pre": "Actor có role quản lý đề; lớp và câu hỏi sử dụng có thật.",
+    "flow": "Actor chọn lớp/câu hỏi, thời gian và thông số đề, gửi POST /exams. Service tạo Exam và liên kết ExamQuestion theo DTO.",
+    "alt": "Lớp/câu hỏi không hợp lệ hoặc thời gian/DTO sai: từ chối; không mặc định đề ở trạng thái OPEN.",
+    "post": "Có Exam mới với trạng thái theo quy trình backend.",
+    "rules": "Chỉ bài thi ở trạng thái và thời gian hợp lệ mới cho học viên bắt đầu."
+  },
+  "KT-03": {
+    "pre": "Học viên có quyền trong lớp; Exam mở và ở trong khoảng thời gian.",
+    "flow": "Học viên chọn Làm bài; Flutter gửi POST /exams/:id/start. Service kiểm tra Exam, trạng thái/thời gian, xác định hoặc tạo ExamAttempt đang làm và trả câu hỏi.",
+    "alt": "Exam chưa mở, chưa đến giờ, quá hạn hoặc Attempt đã hết thời gian: 400; thiếu exam: 404.",
+    "post": "Có Attempt đang làm hoặc tiếp tục attempt hợp lệ.",
+    "rules": "Học viên không thể bắt đầu tùy ý ngoài cửa sổ thời gian quy định."
+  },
+  "KT-04": {
+    "pre": "ExamAttempt thuộc học viên đang làm và chưa nộp/hết giờ.",
+    "flow": "Học viên chọn/nhập đáp án; Flutter gửi PATCH /exam-attempts/:id/answers. Service kiểm tra chủ Attempt, trạng thái, thời gian rồi lưu ExamAnswer.",
+    "alt": "Không phải chủ bài: 403; đã nộp/hết thời gian: 400; attempt không có: 404.",
+    "post": "Các đáp án gửi thành công được lưu; không đồng nghĩa đã nộp bài.",
+    "rules": "Lưu đáp án là request tới Backend; không khẳng định tự lưu offline khi mất kết nối."
+  },
+  "KT-05": {
+    "pre": "Học viên có ExamAttempt hợp lệ cần nộp.",
+    "flow": "Actor chọn Nộp bài; Flutter gửi POST /exams/:id/submit. Service xác định Attempt đang diễn ra, hoàn tất, tính phần có thể chấm tự động và lưu kết quả theo loại câu hỏi.",
+    "alt": "Không có Attempt đang diễn ra: 404; hết giờ có nhánh tự thu bài của service. Không tự coi câu tự luận đã chấm nếu chưa có điểm.",
+    "post": "Attempt không còn trạng thái đang làm; kết quả theo quy tắc chấm hiện có.",
+    "rules": "Chấm tự động chỉ áp dụng loại câu hỏi mà service hỗ trợ."
+  },
+  "KT-07": {
+    "pre": "Actor có quyền xem kết quả tương ứng.",
+    "flow": "Học viên mở kết quả của mình qua GET /my/exam-results; giảng viên/nhân sự xem kết quả đề qua GET /exams/:id/results. Backend trả Attempt/điểm và thông tin bài thi.",
+    "alt": "Không có kết quả: danh sách rỗng; đề không có: 404; role không phù hợp: guard từ chối.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Endpoint quản lý kết quả và endpoint kết quả cá nhân có phạm vi truy cập khác nhau."
+  },
+  "TC-01": {
+    "pre": "Actor có role super_admin, branch_admin hoặc cashier; học viên và lớp liên quan tồn tại.",
+    "flow": "Actor chọn tạo hóa đơn từ giao diện công nợ, nhập dữ liệu và gửi POST /finance/invoices. Service kiểm tra học viên/lớp/chi phí, sinh mã, tính số tiền và tạo Invoice.",
+    "alt": "Thiếu học viên, dữ liệu phí không hợp lệ hoặc hóa đơn trùng theo quy tắc service: API từ chối; không tự hiện hóa đơn mới.",
+    "post": "Invoice mới tồn tại và được tra cứu trong danh sách tài chính.",
+    "rules": "Hóa đơn có thể được tạo tự động ở luồng ghi danh; thao tác này là tạo thủ công."
+  },
+  "TC-02": {
+    "pre": "JWT hợp lệ và actor được phép xem hóa đơn tương ứng.",
+    "flow": "Nhân sự lọc GET /finance/invoices; học viên/phụ huynh mở GET /finance/my-invoices; actor chọn chi tiết qua GET /finance/invoices/:id để xem số tiền, trạng thái và payments.",
+    "alt": "Không có hóa đơn: empty state; yêu cầu ngoài quyền hoặc token sai: Backend từ chối.",
+    "post": "Không thay đổi dữ liệu.",
+    "rules": "Danh sách của tôi dùng danh tính xác thực; không dựa vào userId do Flutter tự gửi."
+  },
+  "TC-03": {
+    "pre": "Actor được phép thu tiền; Invoice tồn tại, chưa CANCELLED/REFUNDED và còn balance.",
+    "flow": "Actor mở form, nhập số tiền/phương thức, gửi POST /finance/invoices/:id/payments. Service kiểm tra số tiền không vượt balance, tạo Payment SUCCESS, cập nhật paidAmount/balance/status, cập nhật ClassStudent.tuitionPaid nếu có lớp và tạo thông báo.",
+    "alt": "Invoice đã thanh toán đủ/hủy/hoàn: 400; amount vượt balance: 400. Service hiện ghi Payment và Invoice ở các bước riêng, chưa có transaction bao trùm toàn bộ.",
+    "post": "Payment và số dư hóa đơn được cập nhật nếu toàn luồng thành công; trạng thái PAID hoặc PARTIALLY_PAID.",
+    "rules": "Rủi ro nhất quán nếu lỗi giữa các bước ghi phải được ghi nhận, không tuyên bố atomic."
+  },
+  "TC-04": {
+    "pre": "Actor có role quản lý tài chính; Invoice ở trạng thái cho phép hủy.",
+    "flow": "Actor xác nhận Hủy hóa đơn ở màn hình chi tiết. Flutter gửi POST /finance/invoices/:id/cancel; service kiểm tra Invoice, cập nhật status theo quy trình và trả kết quả.",
+    "alt": "Invoice không tồn tại hoặc trạng thái không cho hủy: API từ chối; hủy dialog không gửi request.",
+    "post": "Invoice chuyển trạng thái hủy khi hợp lệ.",
+    "rules": "Refund là API/Bloc riêng nhưng chưa thấy nút kích hoạt trên màn hình; không mô tả như một phần UC này."
+  },
+  "TC-05": {
+    "pre": "Actor đã đăng nhập, có hóa đơn cần thanh toán trực tuyến.",
+    "flow": "Actor chọn thanh toán trong màn hình PayOnline. Flutter gọi POST /finance/invoices/:id/pay-online; controller lấy Invoice, service tạo URL VNPay từ amount/balance và trả paymentUrl để điều hướng.",
+    "alt": "Không tìm thấy Invoice, cấu hình VNPay thiếu hoặc lỗi tạo URL: không có giao dịch thành công. Callback VNPay là bước tích hợp riêng, không đồng nghĩa chỉ tạo URL đã trả tiền.",
+    "post": "Có URL thanh toán; chưa cập nhật PAID chỉ vì tạo URL.",
+    "rules": "Cần xác nhận callback hợp lệ để ghi nhận kết quả thanh toán."
+  },
+  "VH-01": {
+    "pre": "Super Admin để tạo; Super/Branch Admin để cập nhật trong phạm vi quyền.",
+    "flow": "Actor mở màn hình Chi nhánh, thêm qua POST /branches hoặc sửa qua PATCH /branches/:id. Service kiểm tra dữ liệu và lưu Branch.",
+    "alt": "Branch Admin gọi POST bị 403; mã/chi nhánh không hợp lệ hoặc ngoài quyền: API từ chối.",
+    "post": "Branch mới hoặc thông tin Branch được cập nhật theo quyền.",
+    "rules": "Sơ đồ nối Branch Admin vì có nhánh cập nhật, không phải quyền tạo."
+  },
+  "VH-02": {
+    "pre": "Actor là Super/Branch Admin; chi nhánh quản lý và phòng đích tồn tại nếu sửa.",
+    "flow": "Actor thêm/sửa phòng ở màn hình Chi nhánh & Phòng học; Flutter gửi POST /rooms hoặc PATCH /rooms/:id; service lưu Room liên kết Branch.",
+    "alt": "Phòng/chi nhánh không tồn tại, mã trùng hoặc ngoài phạm vi: API từ chối.",
+    "post": "Room được tạo hoặc cập nhật; không tự gán phòng cho lịch lớp.",
+    "rules": "Phòng thuộc một chi nhánh, nên thay đổi lịch lớp là nghiệp vụ LH-01/LH-05."
+  },
+  "VH-03": {
+    "pre": "Actor có JWT và quyền với loại báo cáo cần xem.",
+    "flow": "Actor mở Dashboard/Báo cáo; Flutter gọi endpoint reports phù hợp (dashboard, revenue, attendance, academic, debts hoặc teacher dashboard). Service truy vấn dữ liệu theo vai trò và trả số liệu/biểu đồ.",
+    "alt": "Role không được phép với loại báo cáo: 403. Lỗi truy vấn DB: UI hiển thị lỗi, không thay bằng số liệu giả.",
+    "post": "Không thay đổi dữ liệu nghiệp vụ.",
+    "rules": "Teacher chỉ có phạm vi báo cáo được controller cho phép; không mặc nhiên xem doanh thu."
+  },
+  "VH-04": {
+    "pre": "Actor thuộc role controller cho xuất báo cáo và chọn loại hỗ trợ.",
+    "flow": "Actor chọn Xuất Excel. Flutter tải GET /reports/export/:type; service lập file theo loại báo cáo và trả nội dung để browser lưu.",
+    "alt": "Loại không hỗ trợ hoặc API lỗi: không tải file thành công; UI phải báo lỗi thay vì thông báo giả.",
+    "post": "Có tệp báo cáo ở client nếu response thành công; DB không thay đổi.",
+    "rules": "Role teacher không có quyền endpoint export theo controller."
+  },
+  "VH-06": {
+    "pre": "Người dùng đã đăng nhập.",
+    "flow": "Actor mở danh sách qua GET /notifications hoặc /my/notifications, chọn một thông báo để PATCH /notifications/:id/read hoặc chọn Đọc tất cả để POST /notifications/read-all. Service lọc theo user id và cập nhật isRead.",
+    "alt": "Thông báo không thuộc actor hoặc không tồn tại: API từ chối; lỗi tải danh sách không đồng nghĩa không có thông báo.",
+    "post": "Thông báo đã đọc được đánh dấu tương ứng; thông báo khác không đổi.",
+    "rules": "Chức năng gửi thông báo có API nhưng chưa thấy form người dùng tương ứng, nên không đưa vào sơ đồ chính."
+  }
+}

@@ -1629,19 +1629,140 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                               style: AppTextStyles.caption(context),
                             ),
                             if (_canManageEnrollment) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                'Đã nộp: ${_currencyFormat.format(student.tuitionPaid)}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.success,
-                                ),
+                              const SizedBox(height: 6),
+                              Builder(
+                                builder: (context) {
+                                  final total = student.invoiceTotalAmount > 0
+                                      ? student.invoiceTotalAmount
+                                      : classObj.tuitionFee;
+                                  final paid = student.invoicePaidAmount > 0
+                                      ? student.invoicePaidAmount
+                                      : student.tuitionPaid;
+                                  final balance = student.invoiceId != null
+                                      ? student.invoiceBalance
+                                      : (total - paid).clamp(
+                                          0.0,
+                                          double.infinity,
+                                        );
+                                  final invStatus =
+                                      student.invoiceStatus ??
+                                      (total <= 0 || balance <= 0
+                                          ? 'PAID'
+                                          : paid > 0
+                                          ? 'PARTIALLY_PAID'
+                                          : 'PENDING');
+                                  final badgeColor = invStatus == 'PAID'
+                                      ? AppColors.success
+                                      : invStatus == 'PARTIALLY_PAID'
+                                      ? const Color(0xFF0284C7)
+                                      : invStatus == 'OVERDUE'
+                                      ? AppColors.error
+                                      : const Color(0xFFD97706);
+                                  final badgeLabel = total <= 0
+                                      ? 'Miễn học phí'
+                                      : invStatus == 'PAID'
+                                      ? 'Đã đóng đủ'
+                                      : invStatus == 'PARTIALLY_PAID'
+                                      ? 'Đóng 1 phần'
+                                      : invStatus == 'OVERDUE'
+                                      ? 'Quá hạn'
+                                      : 'Chưa đóng';
+
+                                  return Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: badgeColor.withAlpha(25),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: badgeColor.withAlpha(80),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          badgeLabel,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: badgeColor,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        'Đã nộp: ${_currencyFormat.format(paid)}${total > 0 ? ' / ${_currencyFormat.format(total)}' : ''}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.success,
+                                        ),
+                                      ),
+                                      if (balance > 0)
+                                        Text(
+                                          '(Còn nợ: ${_currencyFormat.format(balance)})',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ],
                         ),
                       ),
+                      if (_canManageEnrollment &&
+                          student.invoiceId != null &&
+                          student.invoiceId!.isNotEmpty) ...[
+                        if (student.invoiceBalance > 0)
+                          IconButton(
+                            onPressed: () async {
+                              await context.push(
+                                '/invoices/${student.invoiceId}/record-payment',
+                              );
+                              if (context.mounted) {
+                                context.read<ClassesBloc>().add(
+                                  FetchClassDetail(widget.classId),
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.point_of_sale_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            tooltip: 'Thu học phí',
+                          ),
+                        IconButton(
+                          onPressed: () async {
+                            await context.push(
+                              '/invoices/${student.invoiceId}',
+                            );
+                            if (context.mounted) {
+                              context.read<ClassesBloc>().add(
+                                FetchClassDetail(widget.classId),
+                              );
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.receipt_long_outlined,
+                            color: AppColors.secondary,
+                            size: 20,
+                          ),
+                          tooltip: 'Xem hóa đơn học phí',
+                        ),
+                      ],
                       if (_canManageEnrollment)
                         IconButton(
                           onPressed: () async {

@@ -12,7 +12,10 @@ import {
   InvoiceStatus,
   LeadSource,
   LeadStatus,
+  PaymentMethod,
+  PaymentStatus,
   Prisma,
+  PromotionType,
   RegistrationStatus,
   UserStatus,
 } from '@prisma/client';
@@ -272,6 +275,8 @@ export class ClassRegistrationsService {
             branchId: true,
             status: true,
             maxCapacity: true,
+            tuitionFee: true,
+            startDate: true,
             startTime: true,
             endTime: true,
             scheduleDays: true,
@@ -745,12 +750,79 @@ export class ClassRegistrationsService {
             });
             if (changed.count !== 1)
               throw new ConflictException('Đơn đã được xử lý bởi người khác');
+            const subtotal = Math.max(0, Number(request.class.tuitionFee) || 0);
+            let discount = 0;
+            let appliedPromotionId: string | undefined;
+
+            if (dto.promotionCode && dto.promotionCode.trim().length > 0 && subtotal > 0) {
+              const promoCode = dto.promotionCode.trim().toUpperCase();
+              const promotion = await tx.promotion.findUnique({
+                where: { code: promoCode },
+              });
+              if (!promotion) {
+                throw new NotFoundException(`Mã khuyến mãi '${promoCode}' không tồn tại`);
+              }
+              if (!promotion.isActive) {
+                throw new BadRequestException(`Mã khuyến mãi '${promoCode}' hiện đang bị khóa`);
+              }
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const start = new Date(promotion.startDate);
+              start.setHours(0, 0, 0, 0);
+              const end = new Date(promotion.endDate);
+              end.setHours(23, 59, 59, 999);
+              if (today < start || today > end) {
+                throw new BadRequestException(
+                  `Mã khuyến mãi '${promoCode}' đã hết hạn hoặc chưa đến ngày áp dụng`,
+                );
+              }
+              if (promotion.usageLimit && promotion.usedCount >= promotion.usageLimit) {
+                throw new BadRequestException(`Mã khuyến mãi '${promoCode}' đã hết lượt sử dụng`);
+              }
+              if (promotion.minOrderValue && subtotal < Number(promotion.minOrderValue)) {
+                throw new BadRequestException(
+                  `Học phí lớp chưa đạt mức tối thiểu ${Number(promotion.minOrderValue).toLocaleString('vi-VN')} đ để áp dụng mã`,
+                );
+              }
+              if (promotion.type === PromotionType.PERCENTAGE) {
+                discount = (subtotal * Number(promotion.value)) / 100;
+                if (promotion.maxDiscount && discount > Number(promotion.maxDiscount)) {
+                  discount = Number(promotion.maxDiscount);
+                }
+              } else {
+                discount = Math.min(subtotal, Number(promotion.value));
+              }
+              appliedPromotionId = promotion.id;
+              await tx.promotion.update({
+                where: { id: promotion.id },
+                data: { usedCount: { increment: 1 } },
+              });
+            } else if (dto.discountAmount !== undefined && dto.discountAmount > 0) {
+              discount = Math.min(subtotal, Number(dto.discountAmount));
+            }
+
+            const totalAmount = Math.max(0, subtotal - discount);
+            const initialPaid =
+              dto.initialPaymentAmount && dto.initialPaymentAmount > 0
+                ? Math.min(totalAmount, Number(dto.initialPaymentAmount))
+                : 0;
+            const balance = Math.max(0, totalAmount - initialPaid);
+            const invoiceStatus =
+              balance <= 0
+                ? InvoiceStatus.PAID
+                : initialPaid > 0
+                  ? InvoiceStatus.PARTIALLY_PAID
+                  : InvoiceStatus.PENDING;
+
             if (existing) {
               await tx.classStudent.update({
                 where: { id: existing.id },
                 data: {
                   status: EnrollmentStatus.ENROLLED,
                   joinedAt: new Date(),
+                  ...(initialPaid > 0
+                    ? { tuitionPaid: { increment: initialPaid } }
+                    : {}),
                 },
               });
             } else {
@@ -759,35 +831,63 @@ export class ClassRegistrationsService {
                   classId: request.classId,
                   studentId,
                   status: EnrollmentStatus.ENROLLED,
-                  tuitionPaid: 0,
+                  tuitionPaid: initialPaid,
                 },
               });
             }
-            if (Number(request.class.tuitionFee) > 0) {
-              const invoice = await tx.invoice.findFirst({
+
+            let createdInvoice: any = null;
+            let createdPayment: any = null;
+
+            if (subtotal > 0) {
+              const existingInvoice = await tx.invoice.findFirst({
                 where: {
                   classId: request.classId,
                   studentId,
                   status: { not: InvoiceStatus.CANCELLED },
                 },
               });
-              if (!invoice) {
-                await tx.invoice.create({
+              if (!existingInvoice) {
+                const year = new Date().getFullYear();
+                createdInvoice = await tx.invoice.create({
                   data: {
-                    code: `HD-${new Date().getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+                    code: `HD-${year}-${randomUUID().slice(0, 8).toUpperCase()}`,
                     title: `Học phí lớp ${request.class.name}`,
                     classId: request.classId,
                     studentId,
-                    subtotal: request.class.tuitionFee,
-                    discount: 0,
-                    totalAmount: request.class.tuitionFee,
-                    paidAmount: 0,
-                    balance: request.class.tuitionFee,
-                    status: InvoiceStatus.PENDING,
-                    dueDate: request.class.startDate,
+                    subtotal,
+                    discount,
+                    totalAmount,
+                    paidAmount: initialPaid,
+                    balance,
+                    status: invoiceStatus,
+                    dueDate: dto.dueDate
+                      ? new Date(dto.dueDate)
+                      : request.class.startDate,
+                    promotionId: appliedPromotionId,
+                    notes: dto.invoiceNotes,
                     createdById: actor.id,
                   },
                 });
+                if (initialPaid > 0) {
+                  createdPayment = await tx.payment.create({
+                    data: {
+                      code: `PT-${year}-${randomUUID().slice(0, 8).toUpperCase()}`,
+                      invoiceId: createdInvoice.id,
+                      studentId,
+                      amount: initialPaid,
+                      method: dto.paymentMethod || PaymentMethod.CASH,
+                      status: PaymentStatus.SUCCESS,
+                      transactionId: dto.transactionId,
+                      notes:
+                        dto.invoiceNotes ||
+                        `Thu học phí đợt đầu khi duyệt ghi danh lớp ${request.class.code}`,
+                      receivedById: actor.id,
+                    },
+                  });
+                }
+              } else {
+                createdInvoice = existingInvoice;
               }
             }
             if (request.leadId) {
@@ -800,7 +900,13 @@ export class ClassRegistrationsService {
                 },
               });
             }
-            return { id, status: RegistrationStatus.APPROVED, studentId };
+            return {
+              id,
+              status: RegistrationStatus.APPROVED,
+              studentId,
+              invoice: createdInvoice,
+              payment: createdPayment,
+            };
           },
           { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
         );
