@@ -335,7 +335,7 @@ class _QuestionBankListScreenState extends State<QuestionBankListScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.quiz_outlined, color: AppColors.primary),
+                Icon(Icons.quiz_outlined, color: AppColors.primaryOf(context)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -353,12 +353,12 @@ class _QuestionBankListScreenState extends State<QuestionBankListScreen> {
               children: [
                 MobileStatusPill(
                   label: '${bank.questionCount} câu hỏi',
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
                 if (bank.level?.isNotEmpty == true)
                   MobileStatusPill(
                     label: bank.level!,
-                    color: AppColors.secondary,
+                    color: AppColors.tealFg(context),
                   ),
               ],
             ),
@@ -384,12 +384,12 @@ class _QuestionBankListScreenState extends State<QuestionBankListScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.brandBg(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.quiz,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                   size: 24,
                 ),
               ),
@@ -403,7 +403,7 @@ class _QuestionBankListScreenState extends State<QuestionBankListScreen> {
                       Text(
                         'Trình độ: ${bank.level}',
                         style: AppTextStyles.caption(context)
-                            .copyWith(color: AppColors.neutral600),
+                            .copyWith(color: AppColors.textSecondary(context)),
                       ),
                   ],
                 ),
@@ -414,14 +414,14 @@ class _QuestionBankListScreenState extends State<QuestionBankListScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.neutral100,
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${bank.questionCount} câu hỏi',
                   style: AppTextStyles.caption(context).copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
               ),
@@ -432,7 +432,7 @@ class _QuestionBankListScreenState extends State<QuestionBankListScreen> {
             Text(
               bank.description!,
               style: AppTextStyles.bodyMedium(context)
-                  .copyWith(color: AppColors.neutral600),
+                  .copyWith(color: AppColors.textSecondary(context)),
             ),
           ],
         ],

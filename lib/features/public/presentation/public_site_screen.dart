@@ -130,10 +130,10 @@ class _PublicSiteScreenState extends State<PublicSiteScreen> {
           'Tư vấn',
         ];
         return Scaffold(
-          backgroundColor: AppColors.backgroundLight,
+          backgroundColor: AppColors.background(context),
           appBar: widget.page == PublicPage.home ? null : AppBar(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
+            backgroundColor: AppColors.surface(context),
+            surfaceTintColor: Colors.transparent,
             title: const Text(
               'EduLMS',
               style: TextStyle(fontWeight: FontWeight.w800),
@@ -738,9 +738,9 @@ class _PageHeading extends StatelessWidget {
       const SizedBox(height: 8),
       Text(
         subtitle,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
-          color: AppColors.textSecondaryLight,
+          color: AppColors.textSecondary(context),
         ),
       ),
     ],
@@ -764,11 +764,11 @@ class _InfoCard extends StatelessWidget {
   final String? actionLabel;
   @override
   Widget build(BuildContext context) => Card(
-    color: Colors.white,
+    color: AppColors.surface(context),
     elevation: 0,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(18),
-      side: const BorderSide(color: AppColors.borderLight),
+      side: BorderSide(color: AppColors.border(context)),
     ),
     child: InkWell(
       borderRadius: BorderRadius.circular(18),
@@ -779,8 +779,8 @@ class _InfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.neutral100,
-              child: Icon(icon, color: AppColors.primary),
+              backgroundColor: AppColors.surfaceSubtle(context),
+              child: Icon(icon, color: AppColors.primaryOf(context)),
             ),
             const SizedBox(height: 14),
             Text(
@@ -792,14 +792,14 @@ class _InfoCard extends StatelessWidget {
               subtitle,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textSecondaryLight),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             if (footnote.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(
                 footnote,
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: AppColors.primaryOf(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -808,8 +808,8 @@ class _InfoCard extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 actionLabel!,
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: AppColors.primaryOf(context),
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -826,15 +826,15 @@ class _EmptyCard extends StatelessWidget {
   final String message;
   @override
   Widget build(BuildContext context) => Card(
-    color: Colors.white,
+    color: AppColors.surface(context),
     child: Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.inbox_outlined,
             size: 40,
-            color: AppColors.textMutedLight,
+            color: AppColors.textMuted(context),
           ),
           const SizedBox(height: 12),
           Text(message, textAlign: TextAlign.center),
@@ -862,7 +862,7 @@ class _MessageState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 48, color: AppColors.textSecondaryLight),
+          Icon(icon, size: 48, color: AppColors.textSecondary(context)),
           const SizedBox(height: 12),
           Text(
             title,
@@ -1300,11 +1300,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       ),
                       const SizedBox(height: 20),
                       Card(
-                        color: Colors.white,
+                        color: AppColors.surface(context),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          side: BorderSide(color: AppColors.border(context)),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
@@ -1317,12 +1317,12 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      color: AppColors.brandBg(context),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.event_available_rounded,
-                                      color: AppColors.primary,
+                                      color: AppColors.primaryOf(context),
                                       size: 28,
                                     ),
                                   ),
@@ -1341,9 +1341,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         const SizedBox(height: 2),
                                         Text(
                                           'Mã lớp: ${_string(widget.offering['code'])}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: AppColors.textSecondaryLight,
+                                            color: AppColors.textSecondary(context),
                                           ),
                                         ),
                                       ],
@@ -1354,7 +1354,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                               const Divider(height: 24),
                               Row(
                                 children: [
-                                  const Icon(Icons.menu_book_rounded, size: 18, color: AppColors.textSecondaryLight),
+                                  Icon(Icons.menu_book_rounded, size: 18, color: AppColors.textSecondary(context)),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -1367,7 +1367,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const Icon(Icons.location_on_outlined, size: 18, color: AppColors.textSecondaryLight),
+                                  Icon(Icons.location_on_outlined, size: 18, color: AppColors.textSecondary(context)),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -1380,7 +1380,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.schedule_rounded, size: 18, color: AppColors.textSecondaryLight),
+                                    Icon(Icons.schedule_rounded, size: 18, color: AppColors.textSecondary(context)),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -1394,7 +1394,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.textSecondaryLight),
+                                    Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.textSecondary(context)),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -1413,14 +1413,14 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondaryLight),
+                                      Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondary(context)),
                                       const SizedBox(width: 8),
                                       Flexible(
                                         child: Text(
                                           'Học phí: $feeFormatted',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
+                                            color: AppColors.primaryOf(context),
                                           ),
                                         ),
                                       ),
@@ -1430,8 +1430,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: remaining <= 3
-                                          ? const Color(0xFFFEE2E2)
-                                          : const Color(0xFFDCFCE7),
+                                          ? AppColors.errorBg(context)
+                                          : AppColors.successBg(context),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -1440,8 +1440,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                         color: remaining <= 3
-                                            ? const Color(0xFFB91C1C)
-                                            : const Color(0xFF15803D),
+                                            ? AppColors.errorFg(context)
+                                            : AppColors.successFg(context),
                                       ),
                                     ),
                                   ),
@@ -1456,13 +1456,15 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
+                            color: AppColors.brandBg(context),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                            border: Border.all(
+                              color: AppColors.primaryOf(context).withAlpha(90),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.verified_user_rounded, color: Color(0xFF1D4ED8)),
+                              Icon(Icons.verified_user_rounded, color: AppColors.primaryOf(context)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -1470,17 +1472,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                   children: [
                                     Text(
                                       'Đăng ký bằng tài khoản học viên: ${widget.studentName ?? "Học viên EduLMS"}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1E3A8A),
+                                        color: AppColors.textPrimary(context),
                                       ),
                                     ),
                                     const SizedBox(height: 2),
-                                    const Text(
+                                    Text(
                                       'Hồ sơ và lịch sử học tập của bạn được tự động liên kết.',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF1E40AF),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ],
@@ -1568,9 +1570,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Học vụ sẽ kiểm tra chỗ trống và liên hệ xác nhận. Chưa phát sinh học phí khi gửi yêu cầu.',
-                        style: TextStyle(color: AppColors.textSecondaryLight),
+                        style: TextStyle(color: AppColors.textSecondary(context)),
                       ),
                     ],
                   ),

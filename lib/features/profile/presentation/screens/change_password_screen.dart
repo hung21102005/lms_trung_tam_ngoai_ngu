@@ -99,7 +99,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               'Mật khẩu mới phải có tối thiểu 6 ký tự, bao gồm chữ hoa, chữ thường và chữ số.',
                               style: AppTextStyles.bodySmall(
                                 context,
-                              ).copyWith(color: AppColors.textSecondaryLight),
+                              ).copyWith(color: AppColors.textSecondary(context)),
                             ),
                             const SizedBox(height: 20),
                             AppTextField(
@@ -178,31 +178,31 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               key: const ValueKey('change-password-mobile'),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                const MobileSectionCard(
+                MobileSectionCard(
                   child: Row(
                     children: [
                       Icon(
                         Icons.shield_outlined,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                         size: 32,
                       ),
-                      SizedBox(width: 14),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Bảo vệ tài khoản',
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               'Đặt mật khẩu riêng và dễ ghi nhớ với bạn.',
                               style: TextStyle(
-                                color: AppColors.neutral600,
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                               ),
                             ),
@@ -245,7 +245,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       Text(
                         'Tối thiểu 6 ký tự, gồm chữ hoa, chữ thường và chữ số.',
                         style: AppTextStyles.bodySmall(context)
-                            .copyWith(color: AppColors.textSecondaryLight),
+                            .copyWith(color: AppColors.textSecondary(context)),
                       ),
                       const SizedBox(height: 16),
                       AppTextField(

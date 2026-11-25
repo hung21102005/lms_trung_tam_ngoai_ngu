@@ -231,7 +231,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         builder: (ctx, setDialogState) => AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.domain_add_rounded, color: AppColors.primary),
+              Icon(Icons.domain_add_rounded, color: AppColors.primaryOf(ctx)),
               const SizedBox(width: 8),
               Text(
                 isEdit ? 'Chỉnh sửa Chi nhánh' : 'Thêm Chi Nhánh Mới',
@@ -318,7 +318,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             : 'Tạm ngưng hoạt động',
                       ),
                       value: isActive,
-                      activeThumbColor: const Color(0xFF003FB1),
+                      activeThumbColor: AppColors.brand(ctx),
                       onChanged: (v) => setDialogState(() => isActive = v),
                     ),
                   ],
@@ -481,7 +481,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         builder: (ctx, setDialogState) => AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.meeting_room_rounded, color: AppColors.primary),
+              Icon(Icons.meeting_room_rounded, color: AppColors.primaryOf(ctx)),
               const SizedBox(width: 8),
               Text(
                 isEdit
@@ -503,6 +503,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   if (!isEdit && _branches.isNotEmpty) ...[
                     DropdownButtonFormField<String>(
                       isExpanded: true,
+                      dropdownColor: AppColors.surface(ctx),
                       initialValue: branchId,
                       decoration: const InputDecoration(
                         labelText: 'Thuộc Chi nhánh *',
@@ -582,13 +583,13 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             : 'Đang tạm khóa để Bảo trì kỹ thuật',
                         style: TextStyle(
                           color: isActive
-                              ? const Color(0xFF047857)
-                              : const Color(0xFFB91C1C),
+                              ? AppColors.successFg(ctx)
+                              : AppColors.errorFg(ctx),
                           fontSize: 12,
                         ),
                       ),
                       value: isActive,
-                        activeThumbColor: const Color(0xFF003FB1),
+                      activeThumbColor: AppColors.brand(ctx),
                       onChanged: (v) => setDialogState(() => isActive = v),
                     ),
                   ],
@@ -775,7 +776,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.calendar_month_rounded, color: Color(0xFF003FB1)),
+            Icon(Icons.calendar_month_rounded, color: AppColors.brand(ctx)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -791,21 +792,21 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         content: SizedBox(
           width: 520,
           child: assignedClasses.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.event_available_rounded,
                         size: 48,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted(ctx),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       Text(
                         'Phòng học hiện đang trống, chưa có lớp học nào xếp lịch cố định.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Color(0xFF64748B)),
+                        style: TextStyle(color: AppColors.textSecondary(ctx)),
                       ),
                     ],
                   ),
@@ -829,9 +830,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: AppColors.surfaceElevated(ctx),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: AppColors.border(ctx)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -841,10 +842,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             children: [
                               Text(
                                 '$classCode • $className',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary(ctx),
                                 ),
                               ),
                               Container(
@@ -853,15 +854,15 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
+                                  color: AppColors.successBg(ctx),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   '$enrolled / $maxStudents HV',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF047857),
+                                    color: AppColors.successFg(ctx),
                                   ),
                                 ),
                               ),
@@ -870,9 +871,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           const SizedBox(height: 6),
                           Text(
                             'Giảng viên: $teacherName',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF475569),
+                              color: AppColors.textBody(ctx),
                             ),
                           ),
                         ],
@@ -907,11 +908,11 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.table_view_rounded, color: Color(0xFF003FB1)),
-            SizedBox(width: 8),
-            Text(
+            Icon(Icons.table_view_rounded, color: AppColors.brand(ctx)),
+            const SizedBox(width: 8),
+            const Text(
               'Báo cáo Sơ đồ Cơ sở & Phòng học',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
@@ -926,9 +927,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
               children: [
                 Text(
                   'Tổng hợp dữ liệu thời gian thực từ hệ thống (${_branches.length} chi nhánh • ${_rooms.length} phòng học):',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF475569),
+                    color: AppColors.textBody(ctx),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -938,9 +939,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   return ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.meeting_room_rounded,
-                      color: Color(0xFF003FB1),
+                      color: AppColors.brand(ctx),
                     ),
                     title: Text(
                       '${map['code']} - ${map['name']}',
@@ -1077,7 +1078,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         .length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(isDesktop ? 24 : 16),
         child: Column(
@@ -1086,8 +1087,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
             // 1. PAGE HEADING & QUICK ACTIONS
             Container(
               padding: const EdgeInsets.only(bottom: 16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border(context)),
+                ),
               ),
               child: isDesktop
                   ? Row(
@@ -1135,8 +1138,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                 'Đang hoạt động')
                           : 'Chưa có chi nhánh',
                       icon: Icons.apartment_rounded,
-                      iconBg: const Color(0xFFEEF2FF),
-                      iconColor: const Color(0xFF003FB1),
+                      iconBg: AppColors.infoBg(context),
+                      iconColor: AppColors.brand(context),
                       width: cardWidth,
                       onTap: () => setState(() => _activeTab = 1),
                     ),
@@ -1146,10 +1149,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       subtext:
                           '$activeRooms hoạt động • $maintenanceCount bảo trì',
                       icon: Icons.meeting_room_rounded,
-                      iconBg: const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
-                      pillColor: const Color(0xFFECFDF5),
-                      pillTextColor: const Color(0xFF047857),
+                      iconBg: AppColors.brandBg(context),
+                      iconColor: AppColors.infoFg(context),
+                      pillColor: AppColors.successBg(context),
+                      pillTextColor: AppColors.successFg(context),
                       width: cardWidth,
                       onTap: () => setState(() => _activeTab = 0),
                     ),
@@ -1160,10 +1163,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           ? 'Trung bình ${(totalCapacity / roomCount).toStringAsFixed(0)} chỗ/phòng'
                           : '0 chỗ/phòng',
                       icon: Icons.pie_chart_rounded,
-                      iconBg: const Color(0xFFF0FDF4),
-                      iconColor: const Color(0xFF16A34A),
-                      pillColor: const Color(0xFFDCFCE7),
-                      pillTextColor: const Color(0xFF15803D),
+                      iconBg: AppColors.successBg(context),
+                      iconColor: AppColors.successFg(context),
+                      pillColor: AppColors.successBg(context),
+                      pillTextColor: AppColors.successFg(context),
                       width: cardWidth,
                       onTap: () => setState(() => _activeTab = 2),
                     ),
@@ -1174,10 +1177,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           ? '100% phòng sẵn sàng'
                           : '$maintenanceCount phòng đang bảo trì',
                       icon: Icons.build_rounded,
-                      iconBg: const Color(0xFFFEF3C7),
-                      iconColor: const Color(0xFFD97706),
-                      pillColor: const Color(0xFFFFFBEB),
-                      pillTextColor: const Color(0xFFB45309),
+                      iconBg: AppColors.warningBg(context),
+                      iconColor: AppColors.warningFg(context),
+                      pillColor: AppColors.warningBg(context),
+                      pillTextColor: AppColors.warningFg(context),
                       width: cardWidth,
                       onTap: () => setState(() => _activeTab = 3),
                     ),
@@ -1191,14 +1194,14 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
+                border: Border.all(color: AppColors.border(context)),
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x06000000),
+                    color: AppColors.shadow(context),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -1232,7 +1235,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       ],
                     ),
                   ),
-                  const Divider(color: Color(0xFFE2E8F0), height: 1),
+                  Divider(color: AppColors.border(context), height: 1),
                   const SizedBox(height: 14),
 
                   Wrap(
@@ -1248,14 +1251,14 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             hintText: _activeTab == 1
                                 ? 'Tìm tên chi nhánh, mã cơ sở, địa chỉ...'
                                 : 'Tìm tên phòng, mã phòng, thiết bị...',
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted(context),
                             ),
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.search,
                               size: 20,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
@@ -1267,21 +1270,21 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                   )
                                 : null,
                             filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
+                            fillColor: AppColors.surfaceSubtle(context),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              borderSide: BorderSide(
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              borderSide: BorderSide(
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                           ),
@@ -1294,15 +1297,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             width: isDesktop ? null : width - 32,
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 isExpanded: !isDesktop,
+                                dropdownColor: AppColors.surface(context),
                                 value: _selectedBranchId,
                                 items: _branches.map((b) {
                                   return DropdownMenuItem<String>(
@@ -1325,13 +1329,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           width: isDesktop ? null : width - 32,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: AppColors.surfaceSubtle(context),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                            border: Border.all(
+                              color: AppColors.borderStrong(context),
+                            ),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               isExpanded: !isDesktop,
+                              dropdownColor: AppColors.surface(context),
                               value: _selectedFloor,
                               items: const [
                                 DropdownMenuItem(
@@ -1363,13 +1370,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           width: isDesktop ? null : width - 32,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: AppColors.surfaceSubtle(context),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                            border: Border.all(
+                              color: AppColors.borderStrong(context),
+                            ),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               isExpanded: !isDesktop,
+                              dropdownColor: AppColors.surface(context),
                               value: _selectedStatus,
                               items: [
                                 const DropdownMenuItem(
@@ -1400,9 +1410,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       ],
                       IconButton(
                         onPressed: () => _fetchBranches(),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.refresh_rounded,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                         tooltip: 'Làm mới dữ liệu',
                       ),
@@ -1452,19 +1462,19 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
               'Quản lý Chi nhánh & Hệ thống Phòng học',
               style: AppTextStyles.h2(context).copyWith(
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
+                color: AppColors.textPrimary(context),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.successBg(context),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
+              child: Text(
                 '● Giám sát cơ sở thời gian thực',
                 style: TextStyle(
-                  color: Color(0xFF2E7D32),
+                  color: AppColors.successFg(context),
                   fontWeight: FontWeight.w600,
                   fontSize: 11,
                 ),
@@ -1475,12 +1485,19 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         const SizedBox(height: 6),
         Row(
           children: [
-            const Icon(Icons.today_rounded, size: 16, color: Color(0xFF64748B)),
+            Icon(
+              Icons.today_rounded,
+              size: 16,
+              color: AppColors.textSecondary(context),
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 'Hôm nay: $todayStr • Tổng cộng ${_branches.length} chi nhánh & ${_rooms.length} phòng học vận hành',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ),
           ],
@@ -1509,11 +1526,11 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.build_circle_rounded, color: Color(0xFFD97706)),
-              SizedBox(width: 8),
-              Text(
+              Icon(Icons.build_circle_rounded, color: AppColors.warningFg(ctx)),
+              const SizedBox(width: 8),
+              const Text(
                 'Lập Lịch Kiểm Tra & Bảo Trì Kỹ Thuật',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
               ),
@@ -1533,6 +1550,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
+                    dropdownColor: AppColors.surface(ctx),
                     initialValue: selectedRoomId,
                     items: _rooms.map((r) {
                       final map = Map<String, dynamic>.from(r as Map);
@@ -1581,7 +1599,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       style: TextStyle(fontSize: 12),
                     ),
                     value: setMaintenanceNow,
-                    activeThumbColor: const Color(0xFFD97706),
+                    activeThumbColor: AppColors.warningFg(ctx),
                     onChanged: (v) => setDialogState(() => setMaintenanceNow = v),
                   ),
                 ],
@@ -1676,16 +1694,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
       children: [
         OutlinedButton.icon(
           onPressed: _showExportSummaryDialog,
-          icon: const Icon(
+          icon: Icon(
             Icons.file_download_outlined,
             size: 18,
-            color: AppColors.primary,
+            color: AppColors.primaryOf(context),
           ),
           label: const Text('Xuất sơ đồ cơ sở (.xlsx)'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF0F172A),
-            side: const BorderSide(color: Color(0xFFCBD5E1)),
-            backgroundColor: Colors.white,
+            foregroundColor: AppColors.textPrimary(context),
+            side: BorderSide(color: AppColors.borderStrong(context)),
+            backgroundColor: AppColors.surface(context),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -1695,16 +1713,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         if (_activeTab != 1)
           OutlinedButton.icon(
             onPressed: () => _showAddBranchDialog(),
-            icon: const Icon(
+            icon: Icon(
               Icons.domain_add_rounded,
               size: 18,
-              color: Color(0xFF003FB1),
+              color: AppColors.brand(context),
             ),
             label: const Text('+ Thêm chi nhánh'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF003FB1),
-              side: const BorderSide(color: Color(0xFF003FB1)),
-              backgroundColor: Colors.white,
+              foregroundColor: AppColors.brand(context),
+              side: BorderSide(color: AppColors.brand(context)),
+              backgroundColor: AppColors.surface(context),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1836,19 +1854,19 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: id == _selectedBranchId
-                  ? const Color(0xFF003FB1)
-                  : const Color(0xFFE2E8F0),
+                  ? AppColors.brand(context)
+                  : AppColors.border(context),
               width: id == _selectedBranchId ? 1.5 : 1,
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x06000000),
+                color: AppColors.shadow(context),
                 blurRadius: 4,
-                offset: Offset(0, 1),
+                offset: const Offset(0, 1),
               ),
             ],
           ),
@@ -1870,15 +1888,15 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
+                          color: AppColors.infoBg(context),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           code,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
-                            color: Color(0xFF003FB1),
+                            color: AppColors.brand(context),
                           ),
                         ),
                       ),
@@ -1886,10 +1904,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       Flexible(
                         child: Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                       ),
@@ -1902,8 +1920,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                     ),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? const Color(0xFFECFDF5)
-                          : const Color(0xFFFEF2F2),
+                          ? AppColors.successBg(context)
+                          : AppColors.errorBg(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -1912,8 +1930,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: isActive
-                            ? const Color(0xFF047857)
-                            : const Color(0xFFB91C1C),
+                            ? AppColors.successFg(context)
+                            : AppColors.errorFg(context),
                       ),
                     ),
                   ),
@@ -1927,18 +1945,18 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on_outlined,
                         size: 16,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           address,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF334155),
+                            color: AppColors.textBody(context),
                           ),
                         ),
                       ),
@@ -1947,18 +1965,18 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.phone_outlined,
                         size: 16,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           'Hotline: $phone',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF334155),
+                            color: AppColors.textBody(context),
                           ),
                         ),
                       ),
@@ -1967,18 +1985,18 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.email_outlined,
                         size: 16,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           'Email: $email',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF334155),
+                            color: AppColors.textBody(context),
                           ),
                         ),
                       ),
@@ -1986,7 +2004,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   ),
                 ],
               ),
-              const Divider(height: 28, color: Color(0xFFE2E8F0)),
+              Divider(height: 28, color: AppColors.border(context)),
               Wrap(
                 spacing: 12,
                 runSpacing: 10,
@@ -2066,31 +2084,39 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated(context),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+              border: Border(
+                bottom: BorderSide(color: AppColors.border(context)),
+              ),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.devices_rounded, color: Color(0xFF003FB1), size: 20),
-                SizedBox(width: 10),
+                Icon(
+                  Icons.devices_rounded,
+                  color: AppColors.brand(context),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Danh Mục Trang Thiết Bị Giảng Dạy Theo Phòng Học',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                 ),
@@ -2107,8 +2133,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
 
             return Container(
               padding: const EdgeInsets.all(18),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.divider(context)),
+                ),
               ),
               child: Wrap(
                 spacing: 16,
@@ -2125,10 +2153,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           children: [
                             Text(
                               code,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
-                                color: Color(0xFF003FB1),
+                                color: AppColors.brand(context),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -2139,8 +2167,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                               ),
                               decoration: BoxDecoration(
                                 color: isActive
-                                    ? const Color(0xFFECFDF5)
-                                    : const Color(0xFFFEF2F2),
+                                    ? AppColors.successBg(context)
+                                    : AppColors.errorBg(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -2149,8 +2177,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   color: isActive
-                                      ? const Color(0xFF047857)
-                                      : const Color(0xFFB91C1C),
+                                      ? AppColors.successFg(context)
+                                      : AppColors.errorFg(context),
                                 ),
                               ),
                             ),
@@ -2159,9 +2187,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         const SizedBox(height: 4),
                         Text(
                           '$name ($cap chỗ)',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -2170,11 +2198,11 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   SizedBox(
                     width: isDesktop ? 420 : double.infinity,
                     child: equips.isEmpty
-                        ? const Text(
+                        ? Text(
                             'Chưa kê khai thiết bị',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted(context),
                             ),
                           )
                         : Wrap(
@@ -2196,8 +2224,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                     icon: const Icon(Icons.edit_note_rounded, size: 18),
                     label: const Text('Cập nhật thiết bị'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF003FB1),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      foregroundColor: AppColors.brand(context),
+                      side: BorderSide(color: AppColors.borderStrong(context)),
                     ),
                   ),
                 ],
@@ -2219,37 +2247,40 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.build_circle_rounded,
-                    color: Color(0xFFD97706),
+                    color: AppColors.warningFg(context),
                     size: 22,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Điều Phối Bảo Trì & Kiểm Tra Kỹ Thuật Phòng Học',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Bật/tắt chế độ bảo trì trực tiếp cho từng phòng học để khóa hoặc mở xếp lịch giảng dạy.',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
               const SizedBox(height: 16),
               ...filteredRooms.map((raw) {
@@ -2264,13 +2295,13 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFFF8FAFC)
-                        : const Color(0xFFFFFBEB),
+                        ? AppColors.surfaceElevated(context)
+                        : AppColors.warningBg(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isActive
-                          ? const Color(0xFFE2E8F0)
-                          : const Color(0xFFFCD34D),
+                          ? AppColors.border(context)
+                          : AppColors.warningFg(context).withAlpha(120),
                     ),
                   ),
                   child: Wrap(
@@ -2288,10 +2319,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                             children: [
                               Text(
                                 '$code • $name',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary(context),
                                 ),
                               ),
                               Container(
@@ -2301,8 +2332,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? const Color(0xFFECFDF5)
-                                      : const Color(0xFFFEF2F2),
+                                      ? AppColors.successBg(context)
+                                      : AppColors.errorBg(context),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -2313,8 +2344,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                     color: isActive
-                                        ? const Color(0xFF047857)
-                                        : const Color(0xFFB91C1C),
+                                        ? AppColors.successFg(context)
+                                        : AppColors.errorFg(context),
                                   ),
                                 ),
                               ),
@@ -2323,9 +2354,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           const SizedBox(height: 4),
                           Text(
                             'Thiết bị kiểm tra: $equip',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -2367,12 +2398,12 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
               }),
               if (_maintenanceLogs.isNotEmpty) ...[
                 const Divider(height: 28),
-                const Text(
+                Text(
                   'Nhật ký thao tác bảo trì trong phiên làm việc:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -2385,8 +2416,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           ? Icons.check_circle_rounded
                           : Icons.warning_amber_rounded,
                       color: log['status'] == 'RESOLVED'
-                          ? const Color(0xFF047857)
-                          : const Color(0xFFD97706),
+                          ? AppColors.successFg(context)
+                          : AppColors.warningFg(context),
                     ),
                     title: Text(
                       '${log['roomCode']} - ${log['action']}',
@@ -2413,7 +2444,7 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? const Color(0xFF003FB1) : Colors.transparent,
+              color: isSelected ? AppColors.brand(context) : Colors.transparent,
               width: 2.5,
             ),
           ),
@@ -2424,16 +2455,16 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
               icon,
               size: 18,
               color: isSelected
-                  ? const Color(0xFF003FB1)
-                  : const Color(0xFF64748B),
+                  ? AppColors.brand(context)
+                  : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 color: isSelected
-                    ? const Color(0xFF003FB1)
-                    : const Color(0xFF64748B),
+                    ? AppColors.brand(context)
+                    : AppColors.textSecondary(context),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -2463,14 +2494,14 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
         width: width,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: const [
+          border: Border.all(color: AppColors.border(context)),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x05000000),
+              color: AppColors.shadow(context),
               blurRadius: 3,
-              offset: Offset(0, 1),
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -2483,9 +2514,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF64748B),
+                      color: AppColors.textSecondary(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -2505,10 +2536,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+                color: AppColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 6),
@@ -2533,7 +2564,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 subtext,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
           ],
         ),
@@ -2569,14 +2603,14 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x06000000),
+            color: AppColors.shadow(context),
             blurRadius: 4,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -2600,15 +2634,15 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
+                              color: AppColors.brandBg(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Tầng $floor',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF003FB1),
+                                color: AppColors.brand(context),
                               ),
                             ),
                           ),
@@ -2618,10 +2652,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                               code,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Color(0xFF0F172A),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                           ),
@@ -2635,15 +2669,17 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       ),
                       decoration: BoxDecoration(
                         color: isOccupied
-                            ? const Color(0xFFECFDF5)
+                            ? AppColors.successBg(context)
                             : (isAvailable
-                                  ? const Color(0xFFF1F5F9)
-                                  : const Color(0xFFFEF2F2)),
+                                  ? AppColors.surfaceSubtle(context)
+                                  : AppColors.errorBg(context)),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isOccupied
-                              ? const Color(0xFFA7F3D0)
-                              : const Color(0xFFCBD5E1),
+                              ? AppColors.successFg(context).withAlpha(90)
+                              : (isAvailable
+                                    ? AppColors.borderStrong(context)
+                                    : AppColors.errorFg(context).withAlpha(90)),
                         ),
                       ),
                       child: Row(
@@ -2652,10 +2688,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           CircleAvatar(
                             radius: 3,
                             backgroundColor: isOccupied
-                                ? const Color(0xFF059669)
+                                ? AppColors.successFg(context)
                                 : (isAvailable
-                                      ? const Color(0xFF64748B)
-                                      : const Color(0xFFDC2626)),
+                                      ? AppColors.textSecondary(context)
+                                      : AppColors.errorFg(context)),
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -2666,10 +2702,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: isOccupied
-                                  ? const Color(0xFF047857)
+                                  ? AppColors.successFg(context)
                                   : (isAvailable
-                                        ? const Color(0xFF475569)
-                                        : const Color(0xFFB91C1C)),
+                                        ? AppColors.textBody(context)
+                                        : AppColors.errorFg(context)),
                             ),
                           ),
                         ],
@@ -2680,9 +2716,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 const SizedBox(height: 4),
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -2691,9 +2727,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: AppColors.surfaceElevated(context),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Column(
                     children: [
@@ -2702,19 +2738,19 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         spacing: 8,
                         runSpacing: 2,
                         children: [
-                          const Text(
+                          Text(
                             'Sĩ số / Sức chứa:',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                           Text(
                             '$enrolledStudents / $cap học viên (${(occupancyRatio * 100).toStringAsFixed(0)}%)',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                         ],
@@ -2724,11 +2760,11 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: occupancyRatio,
-                          backgroundColor: const Color(0xFFE2E8F0),
+                          backgroundColor: AppColors.border(context),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             isOccupied
-                                ? const Color(0xFF003FB1)
-                                : const Color(0xFF94A3B8),
+                                ? AppColors.brand(context)
+                                : AppColors.textMuted(context),
                           ),
                           minHeight: 5,
                         ),
@@ -2745,8 +2781,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                     border: Border(
                       left: BorderSide(
                         color: isOccupied
-                            ? const Color(0xFF003FB1)
-                            : const Color(0xFF94A3B8),
+                            ? AppColors.brand(context)
+                            : AppColors.textMuted(context),
                         width: 2.5,
                       ),
                     ),
@@ -2762,8 +2798,8 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: isOccupied
-                              ? const Color(0xFF003FB1)
-                              : const Color(0xFF64748B),
+                              ? AppColors.brand(context)
+                              : AppColors.textSecondary(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -2771,10 +2807,10 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         primaryClass != null
                             ? (primaryClass['name']?.toString() ?? 'Lớp học')
                             : 'Sẵn sàng xếp ca học mới',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -2782,9 +2818,9 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                         primaryClass != null && primaryClass['teacher'] is Map
                             ? 'GV: ${primaryClass['teacher']['fullName'] ?? 'Chưa phân công'}'
                             : 'GV: Chưa phân công',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -2793,19 +2829,22 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                 const SizedBox(height: 12),
 
                 // Real Equipment Tags from DB
-                const Text(
+                Text(
                   'TRANG THIẾT BỊ:',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textMuted(context),
                   ),
                 ),
                 const SizedBox(height: 6),
                 if (equips.isEmpty)
-                  const Text(
+                  Text(
                     'Chưa cập nhật thiết bị',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted(context),
+                    ),
                   )
                 else
                   Wrap(
@@ -2825,10 +2864,14 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
           // Footer Actions
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-              border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated(context),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(12),
+              ),
+              border: Border(
+                top: BorderSide(color: AppColors.divider(context)),
+              ),
             ),
             child: Wrap(
               alignment: WrapAlignment.spaceBetween,
@@ -2837,29 +2880,29 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
               children: [
                 TextButton.icon(
                   onPressed: () => _showRoomScheduleDialog(room),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.event_note_rounded,
                     size: 15,
-                    color: Color(0xFF003FB1),
+                    color: AppColors.brand(context),
                   ),
-                  label: const Text(
+                  label: Text(
                     'Xem lịch phòng',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF003FB1),
+                      color: AppColors.brand(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 OutlinedButton.icon(
                   onPressed: () => _showAddOrEditRoomDialog(existingRoom: room),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.edit_outlined,
                     size: 14,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    side: BorderSide(color: AppColors.borderStrong(context)),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
@@ -2868,9 +2911,12 @@ class _BranchesRoomsViewState extends State<BranchesRoomsView> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  label: const Text(
+                  label: Text(
                     'Chỉnh sửa',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF0F172A)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textPrimary(context),
+                    ),
                   ),
                 ),
               ],
@@ -2897,21 +2943,24 @@ class _Badge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color: AppColors.surfaceSubtle(context),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 12, color: const Color(0xFF003FB1)),
+              Icon(icon, size: 12, color: AppColors.brand(context)),
               const SizedBox(width: 4),
             ],
             Flexible(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textBody(context),
+                ),
               ),
             ),
           ],

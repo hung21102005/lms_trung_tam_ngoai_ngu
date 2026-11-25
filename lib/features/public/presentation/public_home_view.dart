@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/router/route_names.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// The public landing page uses the same API records as the catalog screens.
 /// Only its presentation differs from the other public routes.
@@ -55,6 +56,7 @@ class PublicHomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      final isDark = AppColors.isDark(context);
       final mobile = constraints.maxWidth < 768;
       final tablet = constraints.maxWidth < 1200;
       final side = mobile
@@ -63,11 +65,11 @@ class PublicHomeView extends StatelessWidget {
           ? 28.0
           : 40.0;
       return ColoredBox(
-        color: canvas,
+        color: isDark ? AppColors.backgroundDark : canvas,
         child: SingleChildScrollView(
           child: Column(
             children: [
-              _header(constraints.maxWidth < 1100),
+              _header(context, constraints.maxWidth < 1100),
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1296),
@@ -79,15 +81,15 @@ class PublicHomeView extends StatelessWidget {
                         SizedBox(height: mobile ? 16 : 30),
                         mobile ? _mobileHero() : _desktopHero(),
                         SizedBox(height: mobile ? 16 : 24),
-                        mobile ? _mobileFinder() : _desktopFinder(),
+                        mobile ? _mobileFinder(context) : _desktopFinder(context),
                         SizedBox(height: mobile ? 30 : 44),
-                        _programSection(mobile),
+                        _programSection(context, mobile),
                         SizedBox(height: mobile ? 30 : 44),
-                        _courseSection(mobile),
+                        _courseSection(context, mobile),
                         SizedBox(height: mobile ? 30 : 44),
-                        _classSection(mobile),
+                        _classSection(context, mobile),
                         SizedBox(height: mobile ? 30 : 34),
-                        _steps(mobile),
+                        _steps(context, mobile),
                         SizedBox(height: mobile ? 24 : 34),
                         _consultationBanner(mobile),
                         const SizedBox(height: 28),
@@ -104,101 +106,113 @@ class PublicHomeView extends StatelessWidget {
     },
   );
 
-  Widget _header(bool mobile) => ColoredBox(
-    color: Colors.white,
-    child: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1296),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: mobile ? 18 : 40,
-            vertical: mobile ? 18 : 17,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: mobile ? 40 : 46,
-                height: mobile ? 40 : 46,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: blue,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'E',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+  Widget _header(BuildContext context, bool mobile) {
+    final isDark = AppColors.isDark(context);
+    return ColoredBox(
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1296),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: mobile ? 18 : 40,
+              vertical: mobile ? 18 : 17,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: mobile ? 40 : 46,
+                  height: mobile ? 40 : 46,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: blue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'E',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'EduLMS',
-                      style: TextStyle(
-                        color: ink,
-                        fontWeight: FontWeight.w800,
-                        fontSize: mobile ? 20 : 23,
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'EduLMS',
+                        style: TextStyle(
+                          color: isDark ? AppColors.textPrimaryDark : ink,
+                          fontWeight: FontWeight.w800,
+                          fontSize: mobile ? 20 : 23,
+                        ),
                       ),
-                    ),
-                    Text(
-                      mobile
-                          ? 'English Learning Center'
-                          : 'Trung tâm đào tạo tiếng Anh',
-                      maxLines: 1,
-                      style: const TextStyle(color: muted, fontSize: 10),
-                    ),
-                  ],
+                      Text(
+                        mobile
+                            ? 'English Learning Center'
+                            : 'Trung tâm đào tạo tiếng Anh',
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: isDark ? AppColors.textSecondaryDark : muted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (mobile)
-                PopupMenuButton<String>(
-                  tooltip: 'Mở menu',
-                  onSelected: navigate,
-                  icon: const Icon(Icons.menu_rounded, color: navy),
-                  itemBuilder: (context) => [
-                    _menu('Chương trình', RouteNames.publicPrograms),
-                    _menu('Khóa học', RouteNames.publicCourses),
-                    _menu('Lớp khai giảng', RouteNames.publicClasses),
-                    _menu('Tư vấn', RouteNames.publicConsultation),
-                    _menu(
-                      dashboardRoute == null ? 'Đăng nhập' : 'Vào LMS',
-                      dashboardRoute ?? RouteNames.login,
+                if (mobile)
+                  PopupMenuButton<String>(
+                    tooltip: 'Mở menu',
+                    onSelected: navigate,
+                    icon: Icon(
+                      Icons.menu_rounded,
+                      color: isDark ? AppColors.textPrimaryDark : navy,
                     ),
-                  ],
-                )
-              else ...[
-                _nav('Chương trình', RouteNames.publicPrograms),
-                _nav('Khóa học', RouteNames.publicCourses),
-                _nav('Lớp khai giảng', RouteNames.publicClasses),
-                _nav('Tư vấn', RouteNames.publicConsultation),
-                const SizedBox(width: 16),
-                _action(
-                  dashboardRoute == null ? 'Đăng nhập ↗' : 'Vào LMS ↗',
-                  () => navigate(dashboardRoute ?? RouteNames.login),
-                  dark: true,
-                ),
+                    itemBuilder: (context) => [
+                      _menu('Chương trình', RouteNames.publicPrograms),
+                      _menu('Khóa học', RouteNames.publicCourses),
+                      _menu('Lớp khai giảng', RouteNames.publicClasses),
+                      _menu('Tư vấn', RouteNames.publicConsultation),
+                      _menu(
+                        dashboardRoute == null ? 'Đăng nhập' : 'Vào LMS',
+                        dashboardRoute ?? RouteNames.login,
+                      ),
+                    ],
+                  )
+                else ...[
+                  _nav(context, 'Chương trình', RouteNames.publicPrograms),
+                  _nav(context, 'Khóa học', RouteNames.publicCourses),
+                  _nav(context, 'Lớp khai giảng', RouteNames.publicClasses),
+                  _nav(context, 'Tư vấn', RouteNames.publicConsultation),
+                  const SizedBox(width: 16),
+                  _action(
+                    dashboardRoute == null ? 'Đăng nhập ↗' : 'Vào LMS ↗',
+                    () => navigate(dashboardRoute ?? RouteNames.login),
+                    dark: !isDark,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   PopupMenuItem<String> _menu(String label, String route) =>
       PopupMenuItem(value: route, child: Text(label));
 
-  Widget _nav(String label, String route) => TextButton(
+  Widget _nav(BuildContext context, String label, String route) => TextButton(
     onPressed: () => navigate(route),
     child: Text(
       label,
-      style: const TextStyle(color: ink, fontWeight: FontWeight.w600),
+      style: TextStyle(
+        color: AppColors.isDark(context) ? AppColors.textPrimaryDark : ink,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   );
 
@@ -403,149 +417,167 @@ class PublicHomeView extends StatelessWidget {
     ),
   );
 
-  Widget _mobileFinder() => _surface(
-    padding: 18,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Bạn đang tìm khóa học gì?',
-          style: TextStyle(
-            color: ink,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        InkWell(
-          onTap: () => navigate(RouteNames.publicCourses),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 46,
-            padding: const EdgeInsets.symmetric(horizontal: 13),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F8FF),
-              borderRadius: BorderRadius.circular(12),
+  Widget _mobileFinder(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    return _surface(
+      context,
+      padding: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Bạn đang tìm khóa học gì?',
+            style: TextStyle(
+              color: isDark ? AppColors.textPrimaryDark : ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
             ),
-            child: const Row(
-              children: [
-                Icon(Icons.search, color: muted, size: 19),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Tìm IELTS, TOEIC, giao tiếp...',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: muted, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => navigate(RouteNames.publicCourses),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 13),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceSubtleDark : const Color(0xFFF5F8FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: isDark ? AppColors.textMutedDark : muted, size: 19),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tìm IELTS, TOEIC, giao tiếp...',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: isDark ? AppColors.textMutedDark : muted, fontSize: 13),
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _desktopFinder(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    return _surface(
+      context,
+      padding: 24,
+      child: Wrap(
+        spacing: 14,
+        runSpacing: 14,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 240,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bạn muốn học gì?',
+                  style: TextStyle(
+                    color: isDark ? AppColors.textPrimaryDark : ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  'Chọn mục tiêu để bắt đầu',
+                  style: TextStyle(color: isDark ? AppColors.textSecondaryDark : muted, fontSize: 12),
                 ),
               ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _desktopFinder() => _surface(
-    padding: 24,
-    child: Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        const SizedBox(
-          width: 240,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Bạn muốn học gì?',
+          for (final item in programs.take(3))
+            ActionChip(
+              label: Text(
+                _value(item['nameVi']),
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  color: isDark ? AppColors.primaryOf(context) : navy,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              Text(
-                'Chọn mục tiêu để bắt đầu',
-                style: TextStyle(color: muted, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        for (final item in programs.take(3))
-          ActionChip(
-            label: Text(
-              _value(item['nameVi']),
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: navy, fontWeight: FontWeight.w700),
+              onPressed: () => _program(item),
+              backgroundColor: isDark ? AppColors.brandBg(context) : const Color(0xFFEAF0FC),
+              side: BorderSide.none,
             ),
-            onPressed: () => _program(item),
-            backgroundColor: const Color(0xFFEAF0FC),
-            side: BorderSide.none,
-          ),
-        _action('Tìm lớp học ↗', () => navigate(RouteNames.publicClasses)),
-      ],
-    ),
-  );
+          _action('Tìm lớp học ↗', () => navigate(RouteNames.publicClasses)),
+        ],
+      ),
+    );
+  }
 
   Widget _sectionTitle(
+    BuildContext context,
     String title,
     String subtitle,
     String link,
     VoidCallback onTap, {
     required bool mobile,
-  }) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      if (mobile) ...[
-        Text(
-          title,
-          style: const TextStyle(
-            color: ink,
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        if (subtitle.isNotEmpty) ...[
-          const SizedBox(height: 5),
-          Text(subtitle, style: const TextStyle(color: muted, fontSize: 13)),
-        ],
-      ] else
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: ink,
-                      fontSize: 29,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: muted, fontSize: 14),
-                  ),
-                ],
-              ),
+  }) {
+    final isDark = AppColors.isDark(context);
+    final titleColor = isDark ? AppColors.textPrimaryDark : ink;
+    final subColor = isDark ? AppColors.textSecondaryDark : muted;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (mobile) ...[
+          Text(
+            title,
+            style: TextStyle(
+              color: titleColor,
+              fontSize: 23,
+              fontWeight: FontWeight.w800,
             ),
-            TextButton(onPressed: onTap, child: Text(link)),
+          ),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(subtitle, style: TextStyle(color: subColor, fontSize: 13)),
           ],
-        ),
-    ],
-  );
+        ] else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: titleColor,
+                        fontSize: 29,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      subtitle,
+                      style: TextStyle(color: subColor, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(onPressed: onTap, child: Text(link)),
+            ],
+          ),
+      ],
+    );
+  }
 
-  Widget _programSection(bool mobile) => Column(
+  Widget _programSection(BuildContext context, bool mobile) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _sectionTitle(
+        context,
         mobile ? 'Khám phá theo mục tiêu' : 'Bắt đầu từ mục tiêu của bạn',
         mobile ? '' : 'Chọn chương trình phù hợp, sau đó khám phá khóa học và lớp đang tuyển sinh.',
         'Xem tất cả',
@@ -554,12 +586,12 @@ class PublicHomeView extends StatelessWidget {
       ),
       const SizedBox(height: 17),
       if (programs.isEmpty)
-        _empty('Chương trình đang được chuẩn bị công bố.')
+        _empty(context, 'Chương trình đang được chuẩn bị công bố.')
       else
         _grid(
           programs.take(4).toList(),
           mobile ? 2 : 4,
-          (item, index) => _programCard(item, index, mobile),
+          (item, index) => _programCard(context, item, index, mobile),
         ),
       if (mobile)
         _textLink(
@@ -569,59 +601,82 @@ class PublicHomeView extends StatelessWidget {
     ],
   );
 
-  Widget _programCard(Map<String, dynamic> item, int index, bool mobile) =>
-      _tapCard(
-        () => _program(item),
-        color: [
-          const Color(0xFFEAF1FF),
-          const Color(0xFFF3EDFF),
-          const Color(0xFFFFF1E8),
-          const Color(0xFFECF8EA),
-        ][index % 4],
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              mobile ? '↗' : '${index + 1}'.padLeft(2, '0'),
-              style: const TextStyle(color: blue, fontWeight: FontWeight.w800),
+  Widget _programCard(
+    BuildContext context,
+    Map<String, dynamic> item,
+    int index,
+    bool mobile,
+  ) {
+    final isDark = AppColors.isDark(context);
+    final cardColors = isDark
+        ? const [
+            Color(0xFF1A2942),
+            Color(0xFF261E3D),
+            Color(0xFF31241B),
+            Color(0xFF172E26),
+          ]
+        : const [
+            Color(0xFFEAF1FF),
+            Color(0xFFF3EDFF),
+            Color(0xFFFFF1E8),
+            Color(0xFFECF8EA),
+          ];
+    final accentColor = isDark ? AppColors.primaryOf(context) : blue;
+    return _tapCard(
+      context,
+      () => _program(item),
+      color: cardColors[index % 4],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            mobile ? '↗' : '${index + 1}'.padLeft(2, '0'),
+            style: TextStyle(color: accentColor, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _value(item['nameVi']),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark ? AppColors.textPrimaryDark : ink,
+              fontSize: mobile ? 17 : 19,
+              fontWeight: FontWeight.w800,
             ),
-            const SizedBox(height: 12),
-            Text(
-              _value(item['nameVi']),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: ink,
-                fontSize: mobile ? 17 : 19,
-                fontWeight: FontWeight.w800,
-              ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            _value(item['description']).isEmpty
+                ? _value(item['targetAudience'])
+                : _value(item['description']),
+            maxLines: mobile ? 2 : 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark ? AppColors.textSecondaryDark : muted,
+              fontSize: 12,
+              height: 1.4,
             ),
-            const SizedBox(height: 9),
+          ),
+          if (!mobile) ...[
+            const SizedBox(height: 18),
             Text(
-              _value(item['description']).isEmpty
-                  ? _value(item['targetAudience'])
-                  : _value(item['description']),
-              maxLines: mobile ? 2 : 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: muted, fontSize: 12, height: 1.4),
+              'Khám phá →',
+              style: TextStyle(color: accentColor, fontWeight: FontWeight.w700),
             ),
-            if (!mobile) ...[
-              const SizedBox(height: 18),
-              const Text(
-                'Khám phá →',
-                style: TextStyle(color: blue, fontWeight: FontWeight.w700),
-              ),
-            ],
           ],
-        ),
-      );
+        ],
+      ),
+    );
+  }
 
-  Widget _courseSection(bool mobile) => _surface(
+  Widget _courseSection(BuildContext context, bool mobile) => _surface(
+    context,
     padding: mobile ? 20 : 32,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _sectionTitle(
+          context,
           'Khóa học nổi bật',
           'Xem lộ trình trước khi chọn lớp.',
           'Tất cả khóa học',
@@ -630,12 +685,12 @@ class PublicHomeView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         if (courses.isEmpty)
-          _empty('Khóa học đang được chuẩn bị công bố.')
+          _empty(context, 'Khóa học đang được chuẩn bị công bố.')
         else
           _grid(
             courses.take(3).toList(),
             mobile ? 1 : 3,
-            (item, index) => _courseCard(item, index, mobile),
+            (item, index) => _courseCard(context, item, index, mobile),
           ),
         if (mobile)
           _textLink(
@@ -646,17 +701,31 @@ class PublicHomeView extends StatelessWidget {
     ),
   );
 
-  Widget _courseCard(Map<String, dynamic> item, int index, bool mobile) {
+  Widget _courseCard(
+    BuildContext context,
+    Map<String, dynamic> item,
+    int index,
+    bool mobile,
+  ) {
+    final isDark = AppColors.isDark(context);
     final program = item['program'] as Map?;
-    final cover = [
-      const Color(0xFFDFEBFF),
-      const Color(0xFFEAE3FF),
-      const Color(0xFFDDF3F1),
-    ][index % 3];
+    final cover = (isDark
+        ? const [
+            Color(0xFF1A2D4F),
+            Color(0xFF2B2147),
+            Color(0xFF17363A),
+          ]
+        : const [
+            Color(0xFFDFEBFF),
+            Color(0xFFEAE3FF),
+            Color(0xFFDDF3F1),
+          ])[index % 3];
+    final accentColor = isDark ? AppColors.primaryOf(context) : blue;
     return _tapCard(
+      context,
       () => _course(item),
       padding: 0,
-      color: Colors.white,
+      color: isDark ? AppColors.surfaceElevatedDark : Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -676,7 +745,7 @@ class PublicHomeView extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: navy,
+                  color: isDark ? AppColors.textPrimaryDark : navy,
                   fontWeight: FontWeight.w800,
                   fontSize: mobile ? 21 : 25,
                 ),
@@ -691,8 +760,8 @@ class PublicHomeView extends StatelessWidget {
                 if (_value(program?['nameVi']).isNotEmpty) ...[
                   _pill(
                     _value(program?['nameVi']),
-                    const Color(0xFFEAF0FC),
-                    blue,
+                    isDark ? AppColors.brandBg(context) : const Color(0xFFEAF0FC),
+                    accentColor,
                   ),
                   const SizedBox(height: 10),
                 ],
@@ -701,7 +770,7 @@ class PublicHomeView extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: ink,
+                    color: isDark ? AppColors.textPrimaryDark : ink,
                     fontSize: mobile ? 17 : 19,
                     fontWeight: FontWeight.w800,
                   ),
@@ -711,8 +780,8 @@ class PublicHomeView extends StatelessWidget {
                   _value(item['publicDescription']),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: muted,
+                  style: TextStyle(
+                    color: isDark ? AppColors.textSecondaryDark : muted,
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -720,8 +789,8 @@ class PublicHomeView extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   mobile ? 'Xem khóa học ↗' : 'Xem lộ trình khóa học ↗',
-                  style: const TextStyle(
-                    color: blue,
+                  style: TextStyle(
+                    color: accentColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -734,10 +803,11 @@ class PublicHomeView extends StatelessWidget {
     );
   }
 
-  Widget _classSection(bool mobile) => Column(
+  Widget _classSection(BuildContext context, bool mobile) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _sectionTitle(
+        context,
         'Lớp đang mở đăng ký',
         'Chọn ca học phù hợp và gửi đăng ký trực tuyến.',
         'Xem lịch khai giảng',
@@ -746,12 +816,12 @@ class PublicHomeView extends StatelessWidget {
       ),
       const SizedBox(height: 20),
       if (offerings.isEmpty)
-        _empty('Hiện chưa có lớp mở đăng ký.')
+        _empty(context, 'Hiện chưa có lớp mở đăng ký.')
       else
         _grid(
           offerings.take(mobile ? 1 : 2).toList(),
           mobile ? 1 : 2,
-          (item, _) => _classCard(item, mobile),
+          (item, _) => _classCard(context, item, mobile),
         ),
       if (!mobile) ...[const SizedBox(height: 16), _adviceCard(false)],
       if (mobile)
@@ -762,28 +832,35 @@ class PublicHomeView extends StatelessWidget {
     ],
   );
 
-  Widget _classCard(Map<String, dynamic> item, bool mobile) {
+  Widget _classCard(
+    BuildContext context,
+    Map<String, dynamic> item,
+    bool mobile,
+  ) {
+    final isDark = AppColors.isDark(context);
     final course = item['course'] as Map?;
     final branch = item['branch'] as Map?;
     final remaining = _value(item['remainingSeats']);
     final fee = num.tryParse(_value(item['tuitionFee']));
     final start = DateTime.tryParse(_value(item['startDate']));
     final time = '${_value(item['startTime'])}–${_value(item['endTime'])}';
+    final subColor = isDark ? AppColors.textSecondaryDark : muted;
     return _surface(
+      context,
       padding: mobile ? 19 : 26,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _pill(
             'ĐANG TUYỂN SINH',
-            const Color(0xFFE0F5E7),
-            const Color(0xFF16804C),
+            AppColors.successBg(context),
+            AppColors.successFg(context),
           ),
           const SizedBox(height: 16),
           Text(
             _value(item['name']),
             style: TextStyle(
-              color: ink,
+              color: isDark ? AppColors.textPrimaryDark : ink,
               fontSize: mobile ? 19 : 21,
               fontWeight: FontWeight.w800,
             ),
@@ -791,25 +868,25 @@ class PublicHomeView extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             _value(course?['title']),
-            style: const TextStyle(color: muted, fontSize: 13),
+            style: TextStyle(color: subColor, fontSize: 13),
           ),
           const SizedBox(height: 14),
           if (start != null)
             Text(
               'Khai giảng ${start.day}/${start.month}/${start.year} · $time',
-              style: const TextStyle(color: muted, fontSize: 13),
+              style: TextStyle(color: subColor, fontSize: 13),
             ),
           if (_value(branch?['name']).isNotEmpty) ...[
             const SizedBox(height: 7),
             Text(
               _value(branch?['name']),
-              style: const TextStyle(color: muted, fontSize: 13),
+              style: TextStyle(color: subColor, fontSize: 13),
             ),
           ],
           const SizedBox(height: 12),
           Text(
             '$remaining chỗ còn · ${fee == null ? 'Liên hệ học phí' : '${NumberFormat.decimalPattern('vi_VN').format(fee)} đ'}',
-            style: const TextStyle(color: muted, fontSize: 12),
+            style: TextStyle(color: subColor, fontSize: 12),
           ),
           const SizedBox(height: 16),
           _action('Đăng ký lớp', () => _class(item), stretch: mobile),
@@ -848,88 +925,102 @@ class PublicHomeView extends StatelessWidget {
     ),
   );
 
-  Widget _steps(bool mobile) => _surface(
-    padding: mobile ? 20 : 34,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _steps(BuildContext context, bool mobile) {
+    final isDark = AppColors.isDark(context);
+    final accentColor = isDark ? AppColors.primaryOf(context) : blue;
+    return _surface(
+      context,
+      padding: mobile ? 20 : 34,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            mobile ? 'Bắt đầu chỉ trong 3 bước' : 'Ba bước bắt đầu hành trình',
+            style: TextStyle(
+              color: isDark ? AppColors.textPrimaryDark : ink,
+              fontSize: mobile ? 21 : 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 18),
+          _grid(
+            const [
+              ('01', 'Khám phá chương trình', 'Chọn lộ trình đúng với mục tiêu.'),
+              (
+                '02',
+                'Chọn khóa và lớp',
+                'Xem thời khóa biểu, học phí, chỗ trống.',
+              ),
+              ('03', 'Gửi đăng ký', 'Học vụ tiếp nhận và xác nhận.'),
+            ],
+            mobile ? 1 : 3,
+            (item, _) => Container(
+              padding: const EdgeInsets.all(17),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceElevatedDark : const Color(0xFFF5F8FF),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: mobile
+                  ? Row(
+                      children: [
+                        Text(
+                          item.$1,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(child: _stepCopy(context, item)),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.$1,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _stepCopy(context, item),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepCopy(BuildContext context, (String, String, String) item) {
+    final isDark = AppColors.isDark(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          mobile ? 'Bắt đầu chỉ trong 3 bước' : 'Ba bước bắt đầu hành trình',
+          item.$2,
           style: TextStyle(
-            color: ink,
-            fontSize: mobile ? 21 : 28,
+            color: isDark ? AppColors.textPrimaryDark : ink,
+            fontSize: 14,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 18),
-        _grid(
-          const [
-            ('01', 'Khám phá chương trình', 'Chọn lộ trình đúng với mục tiêu.'),
-            (
-              '02',
-              'Chọn khóa và lớp',
-              'Xem thời khóa biểu, học phí, chỗ trống.',
-            ),
-            ('03', 'Gửi đăng ký', 'Học vụ tiếp nhận và xác nhận.'),
-          ],
-          mobile ? 1 : 3,
-          (item, _) => Container(
-            padding: const EdgeInsets.all(17),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F8FF),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: mobile
-                ? Row(
-                    children: [
-                      Text(
-                        item.$1,
-                        style: const TextStyle(
-                          color: blue,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(child: _stepCopy(item)),
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.$1,
-                        style: const TextStyle(
-                          color: blue,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _stepCopy(item),
-                    ],
-                  ),
+        const SizedBox(height: 4),
+        Text(
+          item.$3,
+          style: TextStyle(
+            color: isDark ? AppColors.textSecondaryDark : muted,
+            fontSize: 12,
           ),
         ),
       ],
-    ),
-  );
-
-  Widget _stepCopy((String, String, String) item) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        item.$2,
-        style: const TextStyle(
-          color: ink,
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(item.$3, style: const TextStyle(color: muted, fontSize: 12)),
-    ],
-  );
+    );
+  }
 
   Widget _consultationBanner(bool mobile) => Container(
     padding: EdgeInsets.all(mobile ? 23 : 35),
@@ -1065,17 +1156,21 @@ class PublicHomeView extends StatelessWidget {
     ),
   );
 
-  Widget _surface({required Widget child, double padding = 20}) => Container(
-    padding: EdgeInsets.all(padding),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: border),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: child,
-  );
+  Widget _surface(BuildContext context, {required Widget child, double padding = 20}) {
+    final isDark = AppColors.isDark(context);
+    return Container(
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        border: Border.all(color: isDark ? AppColors.borderDark : border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: child,
+    );
+  }
 
   Widget _tapCard(
+    BuildContext context,
     VoidCallback onTap, {
     required Widget child,
     required Color color,
@@ -1090,7 +1185,9 @@ class PublicHomeView extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 115),
         padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
-          border: Border.all(color: border),
+          border: Border.all(
+            color: AppColors.isDark(context) ? AppColors.borderDark : border,
+          ),
           borderRadius: BorderRadius.circular(17),
         ),
         child: child,
@@ -1098,8 +1195,15 @@ class PublicHomeView extends StatelessWidget {
     ),
   );
 
-  Widget _empty(String message) => _surface(
-    child: Text(message, style: const TextStyle(color: muted, fontSize: 14)),
+  Widget _empty(BuildContext context, String message) => _surface(
+    context,
+    child: Text(
+      message,
+      style: TextStyle(
+        color: AppColors.isDark(context) ? AppColors.textSecondaryDark : muted,
+        fontSize: 14,
+      ),
+    ),
   );
 
   Widget _textLink(String label, VoidCallback onTap) => Align(

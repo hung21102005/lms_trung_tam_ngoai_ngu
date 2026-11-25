@@ -101,7 +101,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         if (isDesktop) {
           // ==================== WEB DESKTOP PORTAL LAYOUT ====================
           return Scaffold(
-            backgroundColor: AppColors.backgroundLight,
+            backgroundColor: AppColors.background(context),
             body: Row(
               children: [
                 _buildDesktopSidebar(context, user),
@@ -111,7 +111,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       _buildDesktopHeader(context, user),
                       Expanded(
                         child: Container(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppColors.background(context),
                           child: SizedBox.expand(
                             child: _buildActiveBody(user, true),
                           ),
@@ -154,8 +154,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               _ => 0,
             },
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textSecondaryLight,
+            backgroundColor: AppColors.surface(context),
+            selectedItemColor: AppColors.primaryOf(context),
+            unselectedItemColor: AppColors.textMuted(context),
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.dashboard_rounded),
@@ -198,11 +199,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
   // ==================== DESKTOP SIDEBAR ====================
   Widget _buildDesktopSidebar(BuildContext context, UserEntity? user) {
+    final primaryBtn = AppColors.isDark(context)
+        ? AppColors.primaryLight
+        : AppColors.primary;
     return Container(
       width: 260,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.neutral200)),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(right: BorderSide(color: AppColors.border(context))),
       ),
       child: Column(
         children: [
@@ -215,7 +219,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: primaryBtn,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -243,25 +247,25 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: AppColors.brandBg(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               'v2.4',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const Text(
+                      Text(
                         'Cổng Học Viên',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.neutral500,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -270,7 +274,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.neutral200),
+          Divider(height: 1, color: AppColors.border(context)),
           // Quick Action Button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -292,7 +296,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: primaryBtn,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -327,7 +331,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary
+                            ? primaryBtn
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -338,7 +342,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                             size: 20,
                             color: isSelected
                                 ? Colors.white
-                                : AppColors.neutral600,
+                                : AppColors.textSecondary(context),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -351,7 +355,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                     : FontWeight.w500,
                                 color: isSelected
                                     ? Colors.white
-                                    : AppColors.neutral800,
+                                    : AppColors.textPrimary(context),
                               ),
                             ),
                           ),
@@ -364,7 +368,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? Colors.white.withValues(alpha: 0.25)
-                                    : Colors.amber.shade100,
+                                    : AppColors.warningBg(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -374,7 +378,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.amber.shade900,
+                                      : AppColors.warningFg(context),
                                 ),
                               ),
                             ),
@@ -386,7 +390,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               },
             ),
           ),
-          const Divider(height: 1, color: AppColors.neutral200),
+          Divider(height: 1, color: AppColors.border(context)),
           // Student Profile Footer
           Container(
             padding: const EdgeInsets.all(16),
@@ -394,14 +398,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.brandBg(context),
                   child: Text(
                     user != null && user.fullName.isNotEmpty
                         ? user.fullName[0].toUpperCase()
                         : 'H',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                     ),
                   ),
                 ),
@@ -420,19 +424,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ),
                       Text(
                         user?.userCode ?? 'HV-2026-0001',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.neutral500,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.logout_rounded,
                     size: 20,
-                    color: AppColors.error,
+                    color: AppColors.errorFg(context),
                   ),
                   tooltip: 'Đăng xuất',
                   onPressed: () {
@@ -452,9 +456,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.neutral200)),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(bottom: BorderSide(color: AppColors.border(context))),
       ),
       child: Row(
         children: [
@@ -462,9 +466,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.school_outlined,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -495,18 +499,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     hintText: MediaQuery.of(context).size.width <= 1100
                         ? 'Tìm kiếm...'
                         : 'Tìm khóa học, bài tập, lịch học...',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 13,
-                      color: AppColors.neutral400,
+                      color: AppColors.textMuted(context),
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: AppColors.neutral500,
+                      color: AppColors.textSecondary(context),
                     ),
                     contentPadding: EdgeInsets.zero,
                     filled: true,
-                    fillColor: const Color(0xFFF1F5F9),
+                    fillColor: AppColors.surfaceSubtle(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -522,28 +526,28 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: AppColors.brandBg(context),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: AppColors.primaryOf(context).withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_outlined,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                     size: 16,
                   ),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       user?.branchName ?? 'Học Kỳ 1 - 2026',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -564,14 +568,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.brandBg(context),
                   child: Text(
                     user != null && user.fullName.isNotEmpty
                         ? user.fullName[0].toUpperCase()
                         : 'H',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                     ),
                   ),
                 ),
@@ -590,9 +594,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ),
                       Text(
                         user?.userCode ?? 'Học viên chính thức',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondaryLight,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -645,8 +649,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   leading: Icon(
                     item['icon'] as IconData,
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.neutral700,
+                        ? AppColors.primaryOf(context)
+                        : AppColors.textSecondary(context),
                   ),
                   title: Text(
                     item['title'] as String,
@@ -655,8 +659,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                           ? FontWeight.bold
                           : FontWeight.normal,
                       color: isSelected
-                          ? AppColors.primary
-                          : AppColors.neutral900,
+                          ? AppColors.primaryOf(context)
+                          : AppColors.textPrimary(context),
                     ),
                   ),
                   trailing: item['badge'] != null
@@ -666,13 +670,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
+                            color: AppColors.warningBg(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             item['badge'] as String,
                             style: TextStyle(
-                              color: Colors.amber.shade900,
+                              color: AppColors.warningFg(context),
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),
@@ -680,7 +684,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         )
                       : null,
                   selected: isSelected,
-                  selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
+                  selectedTileColor: AppColors.brandBg(context),
                   onTap: () {
                     setState(() {
                       _selectedIndex = index;
@@ -693,9 +697,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.person_outline_rounded,
-              color: AppColors.neutral700,
+              color: AppColors.textSecondary(context),
             ),
             title: const Text('Hồ sơ cá nhân'),
             onTap: () {
@@ -704,11 +708,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text(
+            leading: Icon(Icons.logout, color: AppColors.errorFg(context)),
+            title: Text(
               'Đăng xuất',
               style: TextStyle(
-                color: AppColors.error,
+                color: AppColors.errorFg(context),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -953,17 +957,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.access_time_rounded,
-                                  color: AppColors.primary,
+                                  color: AppColors.primaryOf(context),
                                   size: 20,
                                 ),
-                                SizedBox(width: 8),
-                                Flexible(
+                                const SizedBox(width: 8),
+                                const Flexible(
                                   child: Text(
                                     'Buổi Học Tiếp Theo',
                                     style: TextStyle(
@@ -984,13 +988,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
+                                color: AppColors.brandBg(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 timeStr,
-                                style: const TextStyle(
-                                  color: AppColors.primary,
+                                style: TextStyle(
+                                  color: AppColors.primaryOf(context),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1011,8 +1015,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'Chủ đề: $topic',
-                        style: const TextStyle(
-                          color: AppColors.textSecondaryLight,
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 13,
                         ),
                       ),
@@ -1024,18 +1028,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_outlined,
                                 size: 14,
-                                color: AppColors.textSecondaryLight,
+                                color: AppColors.textSecondary(context),
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   room,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondaryLight,
+                                    color: AppColors.textSecondary(context),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1045,18 +1049,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.person_outline,
                                 size: 14,
-                                color: AppColors.textSecondaryLight,
+                                color: AppColors.textSecondary(context),
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   teacher,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondaryLight,
+                                    color: AppColors.textSecondary(context),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1106,9 +1110,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 5),
-        const Text(
+        Text(
           'Cùng tiếp tục hành trình học tập hôm nay.',
-          style: TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: MobileTokens.sectionGap),
         FutureBuilder<List<ClassSessionModel>>(
@@ -1232,9 +1236,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         MobileSectionCard(
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.person_outline_rounded,
-                color: AppColors.primary,
+                color: AppColors.primaryOf(context),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1247,7 +1251,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     ),
                     Text(
                       user?.userCode ?? 'Xem thông tin cá nhân',
-                      style: const TextStyle(color: AppColors.neutral600),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -1270,20 +1274,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     Color color,
     int index,
   ) {
+    final adaptedColor = AppColors.adaptAccent(context, color);
     return MobileSectionCard(
       child: InkWell(
         onTap: () => setState(() => _selectedIndex = index),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 27),
+            Icon(icon, color: adaptedColor, size: 27),
             const SizedBox(height: 12),
             Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            const Icon(
+            Icon(
               Icons.arrow_forward_rounded,
               size: 17,
-              color: AppColors.neutral500,
+              color: AppColors.textMuted(context),
             ),
           ],
         ),
@@ -1298,6 +1303,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final adaptedColor = AppColors.adaptAccent(context, color);
     return AppCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1308,10 +1314,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: adaptedColor.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: adaptedColor, size: 22),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1323,9 +1329,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           const SizedBox(height: 2),
           Text(
             desc,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondaryLight,
+              color: AppColors.textSecondary(context),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

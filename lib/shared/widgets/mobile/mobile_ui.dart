@@ -22,7 +22,7 @@ class MobileSectionCard extends StatelessWidget {
     color: Theme.of(context).colorScheme.surface,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(MobileTokens.radius),
-      side: const BorderSide(color: AppColors.borderLight),
+      side: BorderSide(color: AppColors.border(context)),
     ),
     child: Padding(padding: padding ?? const EdgeInsets.all(16), child: child),
   );
@@ -35,15 +35,19 @@ class MobileStatusPill extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: color.withAlpha(24),
-      borderRadius: BorderRadius.circular(100),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final fg = AppColors.adaptAccent(context, color);
+    final bgAlpha = AppColors.isDark(context) ? 42 : 24;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: fg.withAlpha(bgAlpha),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
 }

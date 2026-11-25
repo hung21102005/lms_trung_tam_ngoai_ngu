@@ -66,14 +66,19 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget> {
   @override
   Widget build(BuildContext context) {
     final isUrgent = _remainingSeconds < 300; // Dưới 5 phút
+    final accent = isUrgent
+        ? AppColors.errorFg(context)
+        : AppColors.primaryOf(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: isUrgent ? AppColors.error.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
+        color: isUrgent
+            ? AppColors.errorBg(context)
+            : AppColors.brandBg(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isUrgent ? AppColors.error : AppColors.primary,
+          color: accent,
           width: 1.5,
         ),
       ),
@@ -83,13 +88,13 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget> {
           Icon(
             Icons.timer_outlined,
             size: 18,
-            color: isUrgent ? AppColors.error : AppColors.primary,
+            color: accent,
           ),
           const SizedBox(width: 6),
           Text(
             _formatTime(_remainingSeconds),
             style: AppTextStyles.h4(context).copyWith(
-              color: isUrgent ? AppColors.error : AppColors.primary,
+              color: accent,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.1,
             ),

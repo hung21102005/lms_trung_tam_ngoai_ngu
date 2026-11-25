@@ -52,8 +52,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
 
     return Container(
       padding: const EdgeInsets.all(16),

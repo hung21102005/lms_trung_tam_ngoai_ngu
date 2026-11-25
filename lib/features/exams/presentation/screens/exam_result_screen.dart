@@ -81,7 +81,9 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                         Text(
                           state.message,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.neutral600),
+                          style: TextStyle(
+                            color: AppColors.textSecondary(context),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         TextButton.icon(
@@ -123,7 +125,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                           Text(
                             'Lớp: ${exam.className}',
                             style: AppTextStyles.caption(context)
-                                .copyWith(color: AppColors.neutral600),
+                                .copyWith(color: AppColors.textSecondary(context)),
                           ),
                         ],
                         const SizedBox(height: 16),
@@ -133,17 +135,17 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                             _buildSummaryItem(
                               'Lượt thi',
                               '${summary.totalAttempts}',
-                              AppColors.primary,
+                              AppColors.primaryOf(context),
                             ),
                             _buildSummaryItem(
                               'Điểm TB',
                               '${summary.averageScore}',
-                              AppColors.accent,
+                              AppColors.warningFg(context),
                             ),
                             _buildSummaryItem(
                               'Tỷ lệ Đạt',
                               '${summary.passRate}%',
-                              AppColors.success,
+                              AppColors.successFg(context),
                             ),
                           ],
                         ),
@@ -223,7 +225,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
           Text(
             'Theo dõi lượt thi và kết quả của học viên',
             style: AppTextStyles.bodySmall(context)
-                .copyWith(color: AppColors.neutral600),
+                .copyWith(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: MobileTokens.sectionGap),
           MobileSectionCard(
@@ -235,7 +237,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                   const SizedBox(height: 5),
                   Text(
                     exam.className!,
-                    style: const TextStyle(color: AppColors.neutral600),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -246,17 +248,17 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                     _mobileMetric(
                       'Lượt thi',
                       '${summary.totalAttempts}',
-                      AppColors.primary,
+                      AppColors.primaryOf(context),
                     ),
                     _mobileMetric(
                       'Điểm TB',
                       summary.averageScore.toStringAsFixed(1),
-                      AppColors.accent,
+                      AppColors.warningFg(context),
                     ),
                     _mobileMetric(
                       'Tỷ lệ đạt',
                       '${summary.passRate.toStringAsFixed(0)}%',
-                      AppColors.success,
+                      AppColors.successFg(context),
                     ),
                   ],
                 ),
@@ -312,7 +314,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         ),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.neutral600),
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary(context),
+          ),
         ),
       ],
     ),
@@ -334,10 +339,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         ? 'Chưa đạt'
         : 'Chờ chấm';
     final color = attempt.isPassed == true
-        ? AppColors.success
+        ? AppColors.successFg(context)
         : attempt.isPassed == false
-        ? AppColors.error
-        : AppColors.warning;
+        ? AppColors.errorFg(context)
+        : AppColors.warningFg(context);
     return MobileSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,13 +350,13 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                backgroundColor: AppColors.brandBg(context),
                 child: Text(
                   attempt.studentName?.isNotEmpty == true
                       ? attempt.studentName![0].toUpperCase()
                       : 'H',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: AppColors.primaryOf(context),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -371,8 +376,8 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                     if (attempt.studentCode?.isNotEmpty == true)
                       Text(
                         attempt.studentCode!,
-                        style: const TextStyle(
-                          color: AppColors.neutral600,
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 12,
                         ),
                       ),
@@ -389,7 +394,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
               Expanded(
                 child: Text(
                   'Lượt ${attempt.attemptNumber}',
-                  style: const TextStyle(color: AppColors.neutral600),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
               ),
               Text(
@@ -430,7 +435,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         Text(
           label,
           style: AppTextStyles.caption(context)
-              .copyWith(color: AppColors.neutral600),
+              .copyWith(color: AppColors.textSecondary(context)),
         ),
       ],
     );
@@ -439,8 +444,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   Widget _buildAttemptCard(ExamAttemptModel att, ExamModel exam) {
     final isPassed = att.isPassed;
     final color = isPassed == true
-        ? AppColors.success
-        : (isPassed == false ? AppColors.error : AppColors.warning);
+        ? AppColors.successFg(context)
+        : (isPassed == false
+            ? AppColors.errorFg(context)
+            : AppColors.warningFg(context));
 
     return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
@@ -448,14 +455,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            backgroundColor: AppColors.brandBg(context),
             child: Text(
               att.studentName != null && att.studentName!.isNotEmpty
                   ? att.studentName![0].toUpperCase()
                   : 'H',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: AppColors.primaryOf(context),
               ),
             ),
           ),
@@ -473,7 +480,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                   Text(
                     'Mã: ${att.studentCode}',
                     style: AppTextStyles.caption(context)
-                        .copyWith(color: AppColors.neutral500),
+                        .copyWith(color: AppColors.textSecondary(context)),
                   ),
               ],
             ),

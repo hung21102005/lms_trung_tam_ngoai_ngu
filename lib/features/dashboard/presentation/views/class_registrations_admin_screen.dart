@@ -210,7 +210,7 @@ class _ClassRegistrationsAdminScreenState
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.backgroundLight,
+    backgroundColor: AppColors.background(context),
     appBar: AppBar(
       title: const Text('Đơn đăng ký lớp'),
       actions: [
@@ -232,10 +232,10 @@ class _ClassRegistrationsAdminScreenState
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   size: 40,
-                  color: AppColors.error,
+                  color: AppColors.errorFg(context),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -268,9 +268,9 @@ class _ClassRegistrationsAdminScreenState
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Chỉ duyệt sau khi đã xác minh tài khoản học viên. Đơn mới chưa giữ chỗ và chưa phát sinh thanh toán.',
-                      style: TextStyle(color: AppColors.textSecondaryLight),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                     const SizedBox(height: 16),
                     SingleChildScrollView(
@@ -344,10 +344,10 @@ class _ClassRegistrationsAdminScreenState
     final lead = item['lead'] as Map?;
     final hasVerifiedStudent = !guest || lead?['convertedUserId'] != null;
     return Card(
-      color: Colors.white,
+      color: AppColors.surface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.borderLight),
+        side: BorderSide(color: AppColors.border(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -373,22 +373,22 @@ class _ClassRegistrationsAdminScreenState
             const SizedBox(height: 4),
             Text(
               '${item['phone']}${item['email'] == null ? '' : ' · ${item['email']}'}',
-              style: const TextStyle(color: AppColors.textSecondaryLight),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             if (guest && pending) ...[
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Khách mới: chuyển Lead thành học viên hoặc xác minh tài khoản trùng số điện thoại trước khi duyệt.',
-                style: TextStyle(color: AppColors.textSecondaryLight),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
             ],
             if (terminal) ...[
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Hồ sơ lịch sử • Không giữ chỗ trong lớp.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondaryLight,
+                  color: AppColors.textSecondary(context),
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -443,7 +443,7 @@ class _ClassRegistrationsAdminScreenState
                   if (canDelete)
                     TextButton(
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.error,
+                        foregroundColor: AppColors.errorFg(context),
                       ),
                       onPressed: _busyId == null
                           ? () => _deleteRegistration(item)

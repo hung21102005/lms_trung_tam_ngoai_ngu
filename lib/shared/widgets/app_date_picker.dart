@@ -75,13 +75,21 @@ class _AppDatePickerState extends State<AppDatePicker> {
       firstDate: first,
       lastDate: last,
       builder: (context, child) {
+        final isDark = AppColors.isDark(context);
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimaryLight,
-            ),
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.primaryLight,
+                    onPrimary: Colors.white,
+                    surface: AppColors.surfaceDark,
+                    onSurface: AppColors.textPrimaryDark,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.primary,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.textPrimaryLight,
+                  ),
           ),
           child: child!,
         );
@@ -122,14 +130,14 @@ class _AppDatePickerState extends State<AppDatePicker> {
               style: AppTextStyles.bodyLarge(context),
               decoration: InputDecoration(
                 hintText: widget.hintText,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.calendar_today_rounded,
                   size: 20,
-                  color: AppColors.textSecondaryLight,
+                  color: AppColors.textSecondary(context),
                 ),
-                suffixIcon: const Icon(
+                suffixIcon: Icon(
                   Icons.arrow_drop_down_rounded,
-                  color: AppColors.textSecondaryLight,
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ),

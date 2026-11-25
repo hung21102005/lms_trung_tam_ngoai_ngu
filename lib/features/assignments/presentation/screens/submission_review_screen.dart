@@ -222,7 +222,7 @@ class _SubmissionReviewScreenState extends State<SubmissionReviewScreen> {
           Text(
             '${_student!.fullName} · ${_student!.userCode}',
             style: AppTextStyles.bodyMedium(context)
-                .copyWith(color: AppColors.neutral600),
+                .copyWith(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: 12),
           if (AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
@@ -348,7 +348,7 @@ class _SubmissionReviewScreenState extends State<SubmissionReviewScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.neutral100,
+          color: AppColors.surfaceSubtle(context),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(

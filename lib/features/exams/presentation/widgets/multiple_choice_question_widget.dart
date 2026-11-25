@@ -37,13 +37,13 @@ class MultipleChoiceQuestionWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: AppColors.neutral100,
+              color: AppColors.surfaceSubtle(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.neutral200),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.volume_up, color: AppColors.primary),
+                Icon(Icons.volume_up, color: AppColors.primaryOf(context)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -64,6 +64,7 @@ class MultipleChoiceQuestionWidget extends StatelessWidget {
           final isSelected = selectedAnswer != null &&
               (selectedAnswer == opt.id ||
                   (selectedAnswer is List && selectedAnswer.contains(opt.id)));
+          final primaryColor = AppColors.primaryOf(context);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -79,11 +80,11 @@ class MultipleChoiceQuestionWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.08)
-                      : Theme.of(context).cardColor,
+                      ? AppColors.brandBg(context)
+                      : AppColors.surface(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.neutral200,
+                    color: isSelected ? primaryColor : AppColors.border(context),
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -93,17 +94,23 @@ class MultipleChoiceQuestionWidget extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : AppColors.neutral100,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.surfaceSubtle(context),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.neutral300,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.borderStrong(context),
                         ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         opt.id,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.neutral700,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textBody(context),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -114,13 +121,13 @@ class MultipleChoiceQuestionWidget extends StatelessWidget {
                       child: Text(
                         opt.text,
                         style: AppTextStyles.bodyMedium(context).copyWith(
-                          color: isSelected ? AppColors.primary : null,
+                          color: isSelected ? primaryColor : null,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
                     ),
                     if (isSelected)
-                      const Icon(Icons.check_circle, color: AppColors.primary, size: 22),
+                      Icon(Icons.check_circle, color: primaryColor, size: 22),
                   ],
                 ),
               ),

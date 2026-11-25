@@ -261,9 +261,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Theo dõi các buổi học và thời gian của bạn',
-          style: TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 16),
         MobileSectionCard(
@@ -466,15 +466,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               width: 64,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(20),
+                color: AppColors.brandBg(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
                   Text(
                     session.startTime,
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: TextStyle(
+                      color: AppColors.primaryOf(context),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -510,17 +510,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     '${room == null ? '' : ' · $room'}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.neutral600,
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.neutral500,
+              color: AppColors.textMuted(context),
             ),
           ],
         ),
@@ -800,7 +800,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
             const SizedBox(height: 8),
             if (daily.isEmpty)
-              const Text('Không có lịch', style: TextStyle(color: Colors.grey)),
+              Text(
+                'Không có lịch',
+                style: TextStyle(color: AppColors.textSecondary(context)),
+              ),
             ...daily.map((session) => _buildSession(session, isTeacher)),
           ],
         ),
@@ -946,7 +949,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            Text(_mapStatus(session.status), style: const TextStyle(color: Colors.grey)),
+            Text(
+              _mapStatus(session.status),
+              style: TextStyle(color: AppColors.textSecondary(context)),
+            ),
             if (isTeacher && session.status != 'CANCELLED')
               TextButton.icon(
                 onPressed: () => context.push(

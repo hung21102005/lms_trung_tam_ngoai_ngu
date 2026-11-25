@@ -104,13 +104,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           children: [
                             CircleAvatar(
                               radius: 50,
-                              backgroundColor: AppColors.primaryLight.withAlpha(
-                                50,
-                              ),
-                              child: const Icon(
+                              backgroundColor: AppColors.brandBg(context),
+                              child: Icon(
                                 Icons.person,
                                 size: 60,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                               ),
                             ),
                             Positioned(
@@ -223,35 +221,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               key: const ValueKey('edit-profile-mobile'),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                const MobileSectionCard(
+                MobileSectionCard(
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 27,
-                        backgroundColor: AppColors.primaryLight,
+                        backgroundColor: AppColors.brandBg(context),
                         child: Icon(
                           Icons.person_outline,
-                          color: AppColors.primary,
+                          color: AppColors.primaryOf(context),
                           size: 30,
                         ),
                       ),
-                      SizedBox(width: 14),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Thông tin cá nhân',
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               'Cập nhật thông tin liên hệ của bạn',
                               style: TextStyle(
-                                color: AppColors.neutral600,
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                               ),
                             ),

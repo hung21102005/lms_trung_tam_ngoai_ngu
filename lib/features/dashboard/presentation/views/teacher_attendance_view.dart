@@ -499,24 +499,24 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
       return _buildMobile(context);
     }
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       body: RefreshIndicator(
         onRefresh: _loadClasses,
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const Text(
+            Text(
               'Điểm danh & Sổ đầu bài Buổi học',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+                color: AppColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Chọn lớp và buổi học để cập nhật chuyên cần và nhật ký giảng dạy.',
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: 18),
             _buildSelectors(),
@@ -566,7 +566,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
   }
 
   Widget _buildMobile(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF8F9FF),
+    backgroundColor: AppColors.background(context),
     body: RefreshIndicator(
       onRefresh: _loadClasses,
       child: ListView(
@@ -775,17 +775,27 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
           'Sĩ số',
           students.length,
           Icons.groups_outlined,
-          AppColors.primary,
+          AppColors.primaryOf(context),
         ),
-        _stat('Có mặt', present, Icons.check_circle_outline, AppColors.success),
-        _stat('Đi trễ', late, Icons.schedule, AppColors.warning),
-        _stat('Vắng', absent, Icons.person_off_outlined, AppColors.error),
+        _stat(
+          'Có mặt',
+          present,
+          Icons.check_circle_outline,
+          AppColors.successFg(context),
+        ),
+        _stat('Đi trễ', late, Icons.schedule, AppColors.warningFg(context)),
+        _stat(
+          'Vắng',
+          absent,
+          Icons.person_off_outlined,
+          AppColors.errorFg(context),
+        ),
         if (unmarked > 0)
           _stat(
             'Chưa đánh dấu',
             unmarked,
             Icons.help_outline,
-            AppColors.neutral600,
+            AppColors.textSecondary(context),
           ),
       ],
     );
@@ -870,8 +880,8 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
   Widget _studentRow(StudentAttendanceItemModel student) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border(context))),
       ),
       child: Column(
         children: [
@@ -895,9 +905,9 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                     ),
                     Text(
                       '${student.userCode}${student.phone == null ? '' : ' · ${student.phone}'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],
@@ -906,7 +916,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
               if (student.checkInTime != null)
                 Text(
                   student.checkInTime!,
-                  style: const TextStyle(color: Color(0xFF64748B)),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
             ],
           ),
@@ -943,16 +953,17 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
     Color color,
   ) {
     final selected = student.status == value;
+    final fg = AppColors.adaptAccent(context, color);
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: _locked ? null : (_) => _setStatus(student, value),
       selectedColor: color,
       labelStyle: TextStyle(
-        color: selected ? Colors.white : color,
+        color: selected ? Colors.white : fg,
         fontWeight: FontWeight.w600,
       ),
-      side: BorderSide(color: color.withAlpha(120)),
+      side: BorderSide(color: fg.withAlpha(120)),
     );
   }
 
@@ -1158,7 +1169,7 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Color(0xFF64748B)),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                   Text(
                     '$value HV',
@@ -1188,15 +1199,15 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
             : 'Chưa hoàn tất',
       ),
       backgroundColor: locked
-          ? const Color(0xFFE2E8F0)
-          : const Color(0xFFDCFCE7),
+          ? AppColors.surfaceSubtle(context)
+          : AppColors.successBg(context),
     );
   }
 
   Widget _buildError() => _card(
     child: Column(
       children: [
-        Text(_error!, style: const TextStyle(color: AppColors.error)),
+        Text(_error!, style: TextStyle(color: AppColors.errorFg(context))),
         const SizedBox(height: 8),
         FilledButton(onPressed: _loadClasses, child: const Text('Thử lại')),
       ],
@@ -1217,9 +1228,9 @@ class _TeacherAttendanceViewState extends State<TeacherAttendanceView> {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: child,
     );

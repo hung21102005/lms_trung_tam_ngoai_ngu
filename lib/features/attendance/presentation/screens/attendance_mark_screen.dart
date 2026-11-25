@@ -187,7 +187,7 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                   children: [
                     MobileStatusPill(
                       label: 'Buổi ${data.sessionNumber}',
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -206,7 +206,7 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                     const SizedBox(height: 6),
                     Text(
                       '${data.date.split('T').first} · ${data.startTime}–${data.endTime}',
-                      style: const TextStyle(color: AppColors.neutral600),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                     const SizedBox(height: 14),
                     SingleChildScrollView(
@@ -215,22 +215,22 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                         children: [
                           MobileStatusPill(
                             label: '$present có mặt',
-                            color: AppColors.success,
+                            color: AppColors.successFg(context),
                           ),
                           const SizedBox(width: 8),
                           MobileStatusPill(
                             label: '$late muộn',
-                            color: AppColors.warning,
+                            color: AppColors.warningFg(context),
                           ),
                           const SizedBox(width: 8),
                           MobileStatusPill(
                             label: '$absent vắng',
-                            color: AppColors.error,
+                            color: AppColors.errorFg(context),
                           ),
                           const SizedBox(width: 8),
                           MobileStatusPill(
                             label: '$excused phép',
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                         ],
                       ),
@@ -350,7 +350,7 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                     ),
                     Text(
                       student.userCode,
-                      style: const TextStyle(color: AppColors.neutral600),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -471,13 +471,13 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(25),
+                      color: AppColors.brandBg(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Buổi ${data.sessionNumber}',
                       style: AppTextStyles.caption(context).copyWith(
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -488,21 +488,21 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
               Text(
                 'Lớp: ${data.className} (${data.classCode})',
                 style: AppTextStyles.bodyMedium(context)
-                    .copyWith(color: AppColors.neutral600),
+                    .copyWith(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today,
                     size: 14,
-                    color: AppColors.neutral500,
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '${data.date.split('T')[0]}  |  ${data.startTime} - ${data.endTime}',
                     style: AppTextStyles.caption(context)
-                        .copyWith(color: AppColors.neutral600),
+                        .copyWith(color: AppColors.textSecondary(context)),
                   ),
                 ],
               ),
@@ -510,13 +510,25 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
               // Summary chips & Quick action
               Row(
                 children: [
-                  _buildStatBadge('Có mặt: $countPresent', AppColors.success),
+                  _buildStatBadge(
+                    'Có mặt: $countPresent',
+                    AppColors.successFg(context),
+                  ),
                   const SizedBox(width: 8),
-                  _buildStatBadge('Muộn: $countLate', AppColors.warning),
+                  _buildStatBadge(
+                    'Muộn: $countLate',
+                    AppColors.warningFg(context),
+                  ),
                   const SizedBox(width: 8),
-                  _buildStatBadge('Vắng: $countAbsent', AppColors.error),
+                  _buildStatBadge(
+                    'Vắng: $countAbsent',
+                    AppColors.errorFg(context),
+                  ),
                   const SizedBox(width: 8),
-                  _buildStatBadge('Phép: $countExcused', AppColors.primary),
+                  _buildStatBadge(
+                    'Phép: $countExcused',
+                    AppColors.primaryOf(context),
+                  ),
                   const Spacer(),
                   TextButton.icon(
                     icon: const Icon(Icons.done_all, size: 16),
@@ -636,14 +648,14 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.primary.withAlpha(30),
+                backgroundColor: AppColors.brandBg(context),
                 child: Text(
                   student.fullName.isNotEmpty
                       ? student.fullName.substring(0, 1).toUpperCase()
                       : 'H',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
               ),
@@ -660,7 +672,7 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                     Text(
                       student.userCode,
                       style: AppTextStyles.caption(context)
-                          .copyWith(color: AppColors.neutral500),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -678,28 +690,28 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                 label: 'Có mặt',
                 statusKey: 'PRESENT',
                 currentStatus: currentStatus,
-                activeColor: AppColors.success,
+                activeColor: AppColors.successFg(context),
                 onSelected: () => _updateStatus(student.studentId, 'PRESENT'),
               ),
               _buildChoiceChip(
                 label: 'Đi muộn',
                 statusKey: 'LATE',
                 currentStatus: currentStatus,
-                activeColor: AppColors.warning,
+                activeColor: AppColors.warningFg(context),
                 onSelected: () => _updateStatus(student.studentId, 'LATE'),
               ),
               _buildChoiceChip(
                 label: 'Vắng',
                 statusKey: 'ABSENT',
                 currentStatus: currentStatus,
-                activeColor: AppColors.error,
+                activeColor: AppColors.errorFg(context),
                 onSelected: () => _updateStatus(student.studentId, 'ABSENT'),
               ),
               _buildChoiceChip(
                 label: 'Có phép',
                 statusKey: 'EXCUSED',
                 currentStatus: currentStatus,
-                activeColor: AppColors.primary,
+                activeColor: AppColors.primaryOf(context),
                 onSelected: () => _updateStatus(student.studentId, 'EXCUSED'),
               ),
             ],
@@ -722,7 +734,7 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
                 isDense: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.neutral300),
+                  borderSide: BorderSide(color: AppColors.borderStrong(context)),
                 ),
               ),
             ),
@@ -740,6 +752,9 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
     required VoidCallback onSelected,
   }) {
     final isSelected = currentStatus == statusKey;
+    final selectedFg = activeColor.computeLuminance() > 0.45
+        ? const Color(0xFF0F172A)
+        : Colors.white;
 
     return InkWell(
       onTap: onSelected,
@@ -760,7 +775,7 @@ class _AttendanceMarkScreenState extends State<AttendanceMarkScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : activeColor,
+            color: isSelected ? selectedFg : activeColor,
           ),
         ),
       ),

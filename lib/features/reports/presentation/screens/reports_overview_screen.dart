@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/error_widget.dart';
 import '../../../../shared/widgets/searchable_entity_field.dart';
@@ -69,22 +70,25 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     final isDesktop = size.width > 960;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background(context),
       appBar: widget.showAppBar
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: AppColors.surface(context),
               elevation: 0,
-              title: const Text(
+              title: Text(
                 'Báo Cáo & Tài Chính',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Color(0xFF64748B)),
+                  icon: Icon(
+                    Icons.refresh,
+                    color: AppColors.textSecondary(context),
+                  ),
                   onPressed: () => context.read<ReportsBloc>().add(
                     const FetchDashboardOverviewEvent(forceRefresh: true),
                   ),
@@ -190,12 +194,12 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                     spacing: 10,
                     runSpacing: 6,
                     children: [
-                      const Text(
+                      Text(
                         'Báo cáo Doanh thu & Phân tích Tài chính',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary(context),
                           letterSpacing: -0.4,
                         ),
                       ),
@@ -205,24 +209,26 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                           vertical: 2.5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
+                          color: AppColors.successBg(context),
                           borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                          border: Border.all(
+                            color: AppColors.successFg(context).withAlpha(80),
+                          ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             CircleAvatar(
                               radius: 3,
-                              backgroundColor: Color(0xFF059669),
+                              backgroundColor: AppColors.successFg(context),
                             ),
-                            SizedBox(width: 5),
+                            const SizedBox(width: 5),
                             Text(
                               'Dữ liệu tài chính trực tuyến',
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF065F46),
+                                color: AppColors.successFg(context),
                               ),
                             ),
                           ],
@@ -233,18 +239,18 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                   const SizedBox(height: 5),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.today,
                         size: 14,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted(context),
                       ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           'Hôm nay, ${DateFormat('dd/MM/yyyy').format(DateTime.now())} • Kỳ đối soát: Tháng ${DateTime.now().month}/${DateTime.now().year}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
-                            color: const Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -261,8 +267,8 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 icon: const Icon(Icons.download_rounded, size: 16),
                 label: const Text('Xuất báo cáo (.xlsx)'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF334155),
-                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  foregroundColor: AppColors.textBody(context),
+                  side: BorderSide(color: AppColors.borderStrong(context)),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -282,16 +288,16 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 onPressed: () => context.read<ReportsBloc>().add(
                   const FetchDashboardOverviewEvent(forceRefresh: true),
                 ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.sync_alt_rounded,
                   size: 16,
-                  color: Color(0xFF003FB1),
+                  color: AppColors.brand(context),
                 ),
                 label: const Text('Làm mới số liệu'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF003FB1),
-                  backgroundColor: const Color(0xFFEFF6FF),
-                  side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  foregroundColor: AppColors.brand(context),
+                  backgroundColor: AppColors.brandBg(context),
+                  side: BorderSide(color: AppColors.brand(context).withAlpha(90)),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -352,10 +358,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         title: 'Tổng Doanh Thu Tháng Này',
         value: _currencyFormat.format(monthlyRev),
         badgeText: '${overview?.monthlyRevenueGrowth ?? 0}% so với tháng trước',
-        badgeColor: const Color(0xFF059669),
+        badgeColor: AppColors.successFg(context),
         icon: Icons.payments_outlined,
-        iconBg: const Color(0xFFEFF6FF),
-        iconColor: const Color(0xFF003FB1),
+        iconBg: AppColors.brandBg(context),
+        iconColor: AppColors.brand(context),
       ),
       _buildProgressStatCard(
         title: 'Thực Thu Học Phí (Đã thanh toán)',
@@ -365,31 +371,31 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             ? 'Đã đối soát tự động trên hệ thống'
             : 'Chưa phát sinh phiếu thu đã thanh toán',
         icon: Icons.check_circle_outline,
-        iconBg: const Color(0xFFECFDF5),
-        iconColor: const Color(0xFF059669),
+        iconBg: AppColors.successBg(context),
+        iconColor: AppColors.successFg(context),
       ),
       _buildStatCard(
         title: 'Công Nợ Học Phí Cần Thu',
         value: _currencyFormat.format(totalDebts),
         badgeText: '$debtorsCount học viên nợ học phí',
         badgeColor: totalDebts > 0
-            ? const Color(0xFFDC2626)
-            : const Color(0xFF059669),
+            ? AppColors.errorFg(context)
+            : AppColors.successFg(context),
         valueColor: totalDebts > 0
-            ? const Color(0xFFDC2626)
-            : const Color(0xFF0F172A),
+            ? AppColors.errorFg(context)
+            : AppColors.textPrimary(context),
         icon: Icons.pending_actions_outlined,
-        iconBg: const Color(0xFFFEF2F2),
-        iconColor: const Color(0xFFDC2626),
+        iconBg: AppColors.errorBg(context),
+        iconColor: AppColors.errorFg(context),
       ),
       _buildStatCard(
         title: 'Học Viên & Lớp Hoạt Động',
         value: '$totalStudents HV / $activeClasses Lớp',
         badgeText: '1 cơ sở đang vận hành',
-        badgeColor: const Color(0xFF003FB1),
+        badgeColor: AppColors.brand(context),
         icon: Icons.autorenew_rounded,
-        iconBg: const Color(0xFFEFF6FF),
-        iconColor: const Color(0xFF003FB1),
+        iconBg: AppColors.brandBg(context),
+        iconColor: AppColors.brand(context),
       ),
     ];
 
@@ -450,12 +456,12 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -470,10 +476,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -494,7 +500,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: valueColor ?? const Color(0xFF0F172A),
+              color: valueColor ?? AppColors.textPrimary(context),
               letterSpacing: -0.5,
             ),
           ),
@@ -502,7 +508,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: 0.1),
+              color: badgeColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -531,12 +537,12 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -551,10 +557,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -572,10 +578,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
               letterSpacing: -0.5,
             ),
           ),
@@ -585,19 +591,19 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 5,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF003FB1),
+              backgroundColor: AppColors.surfaceSubtle(context),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.brand(context),
               ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             progressLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF059669),
+              color: AppColors.successFg(context),
             ),
           ),
         ],
@@ -610,9 +616,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
@@ -653,15 +659,15 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
               ),
               if (isDesktop) ...[
                 const SizedBox(width: 12),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.tune, size: 15, color: Color(0xFF003FB1)),
-                    SizedBox(width: 4),
+                    Icon(Icons.tune, size: 15, color: AppColors.brand(context)),
+                    const SizedBox(width: 4),
                     Text(
                       'Kỳ tài chính: 2026',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],
@@ -670,7 +676,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           const SizedBox(height: 14),
 
           // Search and Dropdowns
@@ -687,25 +693,25 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                   style: const TextStyle(fontSize: 12),
                   decoration: InputDecoration(
                     hintText: 'Tìm mã biên lai, tên học viên, SĐT...',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 11.5,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textMuted(context),
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
                       size: 16,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textMuted(context),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: AppColors.surfaceSubtle(context),
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: BorderSide(color: AppColors.border(context)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: BorderSide(color: AppColors.border(context)),
                     ),
                   ),
                 ),
@@ -716,17 +722,18 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  border: Border.all(color: AppColors.borderStrong(context)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedBranch,
-                    style: const TextStyle(
+                    dropdownColor: AppColors.surface(context),
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF334155),
+                      color: AppColors.textBody(context),
                       fontFamily: 'Be Vietnam Pro',
                     ),
                     items: const [
@@ -751,17 +758,18 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  border: Border.all(color: AppColors.borderStrong(context)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedTime,
-                    style: const TextStyle(
+                    dropdownColor: AppColors.surface(context),
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF334155),
+                      color: AppColors.textBody(context),
                       fontFamily: 'Be Vietnam Pro',
                     ),
                     items: const [
@@ -794,17 +802,18 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  border: Border.all(color: AppColors.borderStrong(context)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedGateway,
-                    style: const TextStyle(
+                    dropdownColor: AppColors.surface(context),
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF334155),
+                      color: AppColors.textBody(context),
                       fontFamily: 'Be Vietnam Pro',
                     ),
                     items: const [
@@ -859,7 +868,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             Icon(
               icon,
               size: 15,
-              color: isActive ? Colors.white : const Color(0xFF64748B),
+              color: isActive ? Colors.white : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 6),
             Text(
@@ -867,7 +876,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isActive ? Colors.white : const Color(0xFF475569),
+                color: isActive ? Colors.white : AppColors.textBody(context),
               ),
             ),
           ],
@@ -886,12 +895,12 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -906,7 +915,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             spacing: 12,
             runSpacing: 8,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -914,13 +923,16 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Đối chiếu doanh thu thực thu từ hệ thống theo từng tháng',
-                    style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                 ],
               ),
@@ -930,9 +942,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 children: [
                   _buildLegendItem(
                     'Doanh thu thực tế',
-                    const Color(0xFF003FB1),
+                    AppColors.brand(context),
                   ),
-                  _buildLegendItem('Công nợ', const Color(0xFFDC2626)),
+                  _buildLegendItem('Công nợ', AppColors.errorFg(context)),
                 ],
               ),
             ],
@@ -974,7 +986,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           ),
 
           const SizedBox(height: 18),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           const SizedBox(height: 14),
 
           // Course Revenue / Student Share Insights Strip
@@ -984,7 +996,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 child: _buildCourseShareItem(
                   'Chương trình Luyện thi IELTS Chuyên sâu',
                   '1 học viên (Lớp IELTS-F-2026-01)',
-                  const Color(0xFF003FB1),
+                  AppColors.brand(context),
                 ),
               ),
               const SizedBox(width: 10),
@@ -992,7 +1004,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 child: _buildCourseShareItem(
                   'Tiếng Anh Giao Tiếp Phản Xạ Quốc Tế',
                   '0 học viên (Lớp COMM-A1-2026-01)',
-                  const Color(0xFF2563EB),
+                  AppColors.infoFg(context),
                 ),
               ),
             ],
@@ -1030,7 +1042,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         else
           Text(
             label,
-            style: const TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8)),
+            style: TextStyle(fontSize: 9.5, color: AppColors.textMuted(context)),
           ),
         const SizedBox(height: 6),
         Container(
@@ -1038,8 +1050,8 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           height: 160 * heightFraction,
           decoration: BoxDecoration(
             color: isHighlight
-                ? const Color(0xFF003FB1)
-                : const Color(0xFFBFDBFE),
+                ? AppColors.brand(context)
+                : AppColors.brand(context).withAlpha(70),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           ),
         ),
@@ -1050,8 +1062,8 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             fontSize: 11,
             fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
             color: isHighlight
-                ? const Color(0xFF003FB1)
-                : const Color(0xFF64748B),
+                ? AppColors.brand(context)
+                : AppColors.textSecondary(context),
           ),
         ),
       ],
@@ -1073,7 +1085,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         const SizedBox(width: 5),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
+          style: TextStyle(fontSize: 11, color: AppColors.textBody(context)),
         ),
       ],
     );
@@ -1083,7 +1095,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.surfaceElevated(context),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1091,7 +1103,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary(context),
+            ),
           ),
           const SizedBox(height: 3),
           Text(
@@ -1113,12 +1128,12 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1127,7 +1142,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -1135,7 +1150,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               Text(
@@ -1143,7 +1158,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF003FB1),
+                  color: AppColors.brand(context),
                 ),
               ),
             ],
@@ -1161,9 +1176,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                   child: CircularProgressIndicator(
                     value: monthlyRev > 0 ? 1.0 : 0.0,
                     strokeWidth: 12,
-                    backgroundColor: const Color(0xFFE2E8F0),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFF003FB1),
+                    backgroundColor: AppColors.border(context),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.brand(context),
                     ),
                   ),
                 ),
@@ -1172,15 +1187,18 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                   children: [
                     Text(
                       _currencyFormat.format(monthlyRev),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
-                    const Text(
+                    Text(
                       'Tổng thu',
-                      style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ],
                 ),
@@ -1193,20 +1211,20 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           _buildBranchShareRow(
             'Chi nhánh Quận 1 - Hồ Chí Minh (BR-Q1)',
             '100%',
-            const Color(0xFF003FB1),
+            AppColors.brand(context),
           ),
 
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           const SizedBox(height: 14),
 
           // Payment Gateway Breakdown
-          const Text(
+          Text(
             'KÊNH THANH TOÁN THỰC TẾ',
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
+              color: AppColors.textSecondary(context),
               letterSpacing: 0.5,
             ),
           ),
@@ -1235,7 +1253,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
             const SizedBox(width: 8),
             Text(
               name,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+              style: TextStyle(fontSize: 12, color: AppColors.textBody(context)),
             ),
           ],
         ),
@@ -1256,14 +1274,17 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textBody(context),
+              ),
             ),
             Text(
               desc,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+                color: AppColors.textPrimary(context),
               ),
             ),
           ],
@@ -1274,8 +1295,8 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
           child: LinearProgressIndicator(
             value: value,
             minHeight: 4,
-            backgroundColor: const Color(0xFFF1F5F9),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF003FB1)),
+            backgroundColor: AppColors.surfaceSubtle(context),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand(context)),
           ),
         ),
       ],
@@ -1285,6 +1306,11 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
   // --- 6. TRANSACTIONS TABLE CARD ---
   Widget _buildTransactionsTableCard(DashboardOverviewModel? overview) {
     final debtors = overview?.topDebtors ?? const [];
+    final headerTextStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textSecondary(context),
+    );
     final transactions = debtors
         .map(
           (d) => {
@@ -1299,19 +1325,19 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                 ? DateFormat('dd/MM/yyyy').format(d.dueDate!)
                 : '--',
             'status': 'Chưa thu',
-            'color': const Color(0xFFDC2626),
+            'color': AppColors.errorFg(context),
           },
         )
         .toList();
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1319,8 +1345,8 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
       ),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -1332,17 +1358,20 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 Text(
                   'Cập nhật tự động theo thời gian thực',
-                  style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textMuted(context),
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
@@ -1351,88 +1380,18 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
               dataRowMaxHeight: 60,
               horizontalMargin: 16,
               columnSpacing: 20,
-              headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-              columns: const [
-                DataColumn(
-                  label: Text(
-                    'MÃ BIÊN LAI',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'HỌC VIÊN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'KHÓA HỌC',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'HÌNH THỨC',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'SỐ TIỀN THU',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'THỜI GIAN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'TRẠNG THÁI',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'THAO TÁC',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
+              headingRowColor: WidgetStateProperty.all(
+                AppColors.surfaceElevated(context),
+              ),
+              columns: [
+                DataColumn(label: Text('MÃ BIÊN LAI', style: headerTextStyle)),
+                DataColumn(label: Text('HỌC VIÊN', style: headerTextStyle)),
+                DataColumn(label: Text('KHÓA HỌC', style: headerTextStyle)),
+                DataColumn(label: Text('HÌNH THỨC', style: headerTextStyle)),
+                DataColumn(label: Text('SỐ TIỀN THU', style: headerTextStyle)),
+                DataColumn(label: Text('THỜI GIAN', style: headerTextStyle)),
+                DataColumn(label: Text('TRẠNG THÁI', style: headerTextStyle)),
+                DataColumn(label: Text('THAO TÁC', style: headerTextStyle)),
               ],
               rows: transactions.map((t) {
                 return DataRow(
@@ -1440,10 +1399,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                     DataCell(
                       Text(
                         t['id'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF003FB1),
+                          color: AppColors.brand(context),
                         ),
                       ),
                     ),
@@ -1454,17 +1413,17 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                         children: [
                           Text(
                             t['student'] as String,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                           Text(
                             t['code'] as String,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted(context),
                             ),
                           ),
                         ],
@@ -1473,9 +1432,9 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                     DataCell(
                       Text(
                         t['course'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
-                          color: Color(0xFF334155),
+                          color: AppColors.textBody(context),
                         ),
                       ),
                     ),
@@ -1491,19 +1450,19 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                     DataCell(
                       Text(
                         t['amount'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                     ),
                     DataCell(
                       Text(
                         t['date'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ),
@@ -1514,7 +1473,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: (t['color'] as Color).withValues(alpha: 0.1),
+                          color: (t['color'] as Color).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
@@ -1531,10 +1490,10 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const IconButton(
+                          IconButton(
                             onPressed: null,
-                            icon: Icon(Icons.print_outlined, size: 16),
-                            color: Color(0xFF64748B),
+                            icon: const Icon(Icons.print_outlined, size: 16),
+                            color: AppColors.textSecondary(context),
                             tooltip: 'Chưa hỗ trợ in biên lai',
                           ),
                           IconButton(
@@ -1544,7 +1503,7 @@ class _ReportsOverviewScreenState extends State<ReportsOverviewScreen> {
                               Icons.visibility_outlined,
                               size: 16,
                             ),
-                            color: const Color(0xFF003FB1),
+                            color: AppColors.brand(context),
                             tooltip: 'Xem chi tiết',
                           ),
                         ],

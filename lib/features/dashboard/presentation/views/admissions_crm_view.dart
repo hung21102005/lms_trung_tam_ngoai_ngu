@@ -321,7 +321,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: AppColors.surfaceSubtle(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -336,10 +336,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           ),
                           Text(
                             '${NumberFormat.decimalPattern('vi_VN').format(classTuition)} đ',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                             ),
                           ),
                         ],
@@ -393,6 +393,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           child: DropdownButtonFormField<String>(
                             initialValue: paymentMethod,
                             isExpanded: true,
+                            dropdownColor: AppColors.surface(context),
                             decoration: const InputDecoration(
                               labelText: 'Phương thức thu',
                               border: OutlineInputBorder(),
@@ -567,11 +568,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_forever_rounded, color: AppColors.error),
-            SizedBox(width: 8),
-            Expanded(child: Text('Xóa đơn đăng ký thử nghiệm?')),
+            Icon(Icons.delete_forever_rounded, color: AppColors.errorFg(ctx)),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Xóa đơn đăng ký thử nghiệm?')),
           ],
         ),
         content: Text(
@@ -693,11 +694,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.person_add_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text(
+            Icon(Icons.person_add_rounded, color: AppColors.primaryOf(ctx)),
+            const SizedBox(width: 8),
+            const Text(
               'Tiếp Nhận Lead Mới',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
@@ -736,6 +737,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 isExpanded: true,
+                dropdownColor: AppColors.surface(ctx),
                 initialValue: source,
                 decoration: const InputDecoration(
                   labelText: 'Nguồn tiếp nhận',
@@ -767,6 +769,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
+                  dropdownColor: AppColors.surface(ctx),
                   initialValue: branchId,
                   decoration: const InputDecoration(
                     labelText: 'Chi nhánh tiếp nhận *',
@@ -966,7 +969,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         builder: (ctx) => AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.assignment_ind_rounded, color: AppColors.primary),
+              Icon(Icons.assignment_ind_rounded, color: AppColors.primaryOf(ctx)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(details['fullName']?.toString() ?? 'Chi tiết Lead'),
@@ -994,15 +997,17 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFFBEB),
+                      color: AppColors.warningBg(ctx),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
+                      border: Border.all(
+                        color: AppColors.warningFg(ctx).withAlpha(110),
+                      ),
                     ),
                     child: Text(
                       _leadDeleteBlockReason(details),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF92400E),
+                        color: AppColors.warningFg(ctx),
                       ),
                     ),
                   ),
@@ -1033,7 +1038,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             ],
             if (canDelete)
               TextButton(
-                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.errorFg(ctx),
+                ),
                 onPressed: () => Navigator.pop(ctx, 'delete'),
                 child: const Text('Xóa Lead thử nghiệm'),
               ),
@@ -1096,11 +1103,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.edit_note_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Expanded(child: Text('Chỉnh sửa thông tin Lead')),
+            Icon(Icons.edit_note_rounded, color: AppColors.primaryOf(ctx)),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Chỉnh sửa thông tin Lead')),
           ],
         ),
         content: SizedBox(
@@ -1143,6 +1150,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
+                  dropdownColor: AppColors.surface(ctx),
                   initialValue: source,
                   decoration: const InputDecoration(
                     labelText: 'Nguồn tiếp nhận',
@@ -1283,11 +1291,14 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.cancel_presentation_rounded, color: Color(0xFFD97706)),
-              SizedBox(width: 8),
-              Expanded(child: Text('Đóng Lead / Không còn nhu cầu')),
+              Icon(
+                Icons.cancel_presentation_rounded,
+                color: AppColors.warningFg(context),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('Đóng Lead / Không còn nhu cầu')),
             ],
           ),
           content: SizedBox(
@@ -1298,12 +1309,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               children: [
                 Text(
                   'Đóng hồ sơ tư vấn của "${lead['fullName'] ?? ''}" (${lead['phone'] ?? ''}). Hồ sơ sẽ rời khỏi Pipeline đang hoạt động nhưng vẫn lưu lịch sử.',
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textBody(context),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   initialValue: selectedReason,
                   isExpanded: true,
+                  dropdownColor: AppColors.surface(context),
                   decoration: const InputDecoration(
                     labelText: 'Lý do đóng Lead *',
                     border: OutlineInputBorder(),
@@ -1524,11 +1539,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.info_outline_rounded, color: Color(0xFFD97706)),
-            SizedBox(width: 8),
-            Expanded(child: Text('Không thể xóa vĩnh viễn Lead này')),
+            Icon(Icons.info_outline_rounded, color: AppColors.warningFg(ctx)),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Không thể xóa vĩnh viễn Lead này')),
           ],
         ),
         content: Text(reason),
@@ -1560,11 +1575,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_forever_rounded, color: AppColors.error),
-            SizedBox(width: 8),
-            Expanded(child: Text('Xác nhận xóa Lead thử nghiệm')),
+            Icon(Icons.delete_forever_rounded, color: AppColors.errorFg(ctx)),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Xác nhận xóa Lead thử nghiệm')),
           ],
         ),
         content: Text(
@@ -1635,10 +1650,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
 
     return PopupMenuButton<String>(
       tooltip: 'Tùy chọn quản lý Lead',
-      icon: const Icon(
+      icon: Icon(
         Icons.more_vert_rounded,
         size: 18,
-        color: Color(0xFF64748B),
+        color: AppColors.textSecondary(context),
       ),
       padding: EdgeInsets.zero,
       onSelected: (value) async {
@@ -1688,88 +1703,88 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           ),
         ),
         if (!isClosed && !isConverted && !isArchived)
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'close',
             child: Row(
               children: [
                 Icon(
                   Icons.cancel_outlined,
                   size: 16,
-                  color: Color(0xFFD97706),
+                  color: AppColors.warningFg(ctx),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'Đóng Lead (Không nhu cầu)',
-                  style: TextStyle(color: Color(0xFFD97706)),
+                  style: TextStyle(color: AppColors.warningFg(ctx)),
                 ),
               ],
             ),
           ),
         if (isArchived || isClosed)
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'restore',
             child: Row(
               children: [
                 Icon(
                   Icons.restore_rounded,
                   size: 16,
-                  color: Color(0xFF003FB1),
+                  color: AppColors.brand(ctx),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'Khôi phục Lead',
-                  style: TextStyle(color: Color(0xFF003FB1)),
+                  style: TextStyle(color: AppColors.brand(ctx)),
                 ),
               ],
             ),
           )
         else
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'archive',
             child: Row(
               children: [
                 Icon(
                   Icons.archive_outlined,
                   size: 16,
-                  color: Color(0xFF475569),
+                  color: AppColors.textBody(ctx),
                 ),
-                SizedBox(width: 8),
-                Text('Lưu trữ Lead'),
+                const SizedBox(width: 8),
+                const Text('Lưu trữ Lead'),
               ],
             ),
           ),
         if (canDelete)
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'delete',
             child: Row(
               children: [
                 Icon(
                   Icons.delete_outline_rounded,
                   size: 16,
-                  color: Color(0xFFDC2626),
+                  color: AppColors.errorFg(ctx),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'Xóa Lead thử nghiệm',
-                  style: TextStyle(color: Color(0xFFDC2626)),
+                  style: TextStyle(color: AppColors.errorFg(ctx)),
                 ),
               ],
             ),
           )
         else
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'cannot_delete',
             child: Row(
               children: [
                 Icon(
                   Icons.info_outline_rounded,
                   size: 16,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary(ctx),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'Lý do không thể xóa',
-                  style: TextStyle(color: Color(0xFF64748B)),
+                  style: TextStyle(color: AppColors.textSecondary(ctx)),
                 ),
               ],
             ),
@@ -1814,7 +1829,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(isDesktop ? 24 : 16),
         child: Column(
@@ -1823,9 +1838,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Row(
                 children: [
@@ -1845,7 +1860,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                             Icon(
                               Icons.people_alt_rounded,
                               size: 18,
-                              color: _crmTab == 0 ? Colors.white : const Color(0xFF64748B),
+                              color: _crmTab == 0
+                                  ? Colors.white
+                                  : AppColors.textSecondary(context),
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -1853,7 +1870,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: _crmTab == 0 ? Colors.white : const Color(0xFF1E293B),
+                                color: _crmTab == 0
+                                    ? Colors.white
+                                    : AppColors.textPrimary(context),
                               ),
                             ),
                           ],
@@ -1880,7 +1899,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                             Icon(
                               Icons.how_to_reg_rounded,
                               size: 18,
-                              color: _crmTab == 1 ? Colors.white : const Color(0xFF64748B),
+                              color: _crmTab == 1
+                                  ? Colors.white
+                                  : AppColors.textSecondary(context),
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -1888,7 +1909,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: _crmTab == 1 ? Colors.white : const Color(0xFF1E293B),
+                                color: _crmTab == 1
+                                    ? Colors.white
+                                    : AppColors.textPrimary(context),
                               ),
                             ),
                             if (_registrations.any((r) => r['status'] == 'PENDING')) ...[
@@ -1896,7 +1919,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: _crmTab == 1 ? Colors.amber.shade400 : Colors.amber.shade100,
+                                  color: _crmTab == 1
+                                      ? Colors.amber.shade400
+                                      : AppColors.warningBg(context),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -1904,7 +1929,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: _crmTab == 1 ? Colors.brown.shade900 : Colors.amber.shade900,
+                                    color: _crmTab == 1
+                                        ? Colors.brown.shade900
+                                        : AppColors.warningFg(context),
                                   ),
                                 ),
                               ),
@@ -1923,8 +1950,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             // 1. PAGE HEADER / HEADING LAYOUT (Stitch style)
             Container(
               padding: const EdgeInsets.only(bottom: 16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border(context)),
+                ),
               ),
               child: isDesktop
                   ? Row(
@@ -1943,7 +1972,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                     'Tuyển sinh & Quản lý Lead tiềm năng',
                                     style: AppTextStyles.h2(context).copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   Container(
@@ -1952,21 +1981,22 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F5E9),
+                                      color: AppColors.successBg(context),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         CircleAvatar(
                                           radius: 3.5,
-                                          backgroundColor: Color(0xFF2E7D32),
+                                          backgroundColor:
+                                              AppColors.successFg(context),
                                         ),
-                                        SizedBox(width: 6),
+                                        const SizedBox(width: 6),
                                         Text(
                                           'Dữ liệu CRM trực tuyến',
                                           style: TextStyle(
-                                            color: Color(0xFF2E7D32),
+                                            color: AppColors.successFg(context),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 11,
                                           ),
@@ -1979,18 +2009,18 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.today_rounded,
                                     size: 16,
-                                    color: Color(0xFF64748B),
+                                    color: AppColors.textSecondary(context),
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'Hôm nay: $todayStr • ${_leads.where((l) => (l['status'] ?? 'NEW') == 'NEW').length} lead mới cần tư vấn trong hệ thống',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: Color(0xFF64748B),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ),
@@ -2006,18 +2036,18 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: _exportLeads,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.file_download_outlined,
                                 size: 18,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                               ),
                               label: const Text('Xuất dữ liệu (.xlsx)'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF0F172A),
-                                side: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
+                                foregroundColor: AppColors.textPrimary(context),
+                                side: BorderSide(
+                                  color: AppColors.borderStrong(context),
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface(context),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 12,
@@ -2064,7 +2094,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               style: AppTextStyles.h2(context).copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
-                                color: const Color(0xFF0F172A),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             Container(
@@ -2073,21 +2103,22 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
+                                color: AppColors.successBg(context),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   CircleAvatar(
                                     radius: 3.5,
-                                    backgroundColor: Color(0xFF2E7D32),
+                                    backgroundColor:
+                                        AppColors.successFg(context),
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     'Dữ liệu CRM trực tuyến',
                                     style: TextStyle(
-                                      color: Color(0xFF2E7D32),
+                                      color: AppColors.successFg(context),
                                       fontWeight: FontWeight.w600,
                                       fontSize: 11,
                                     ),
@@ -2101,21 +2132,21 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 2),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
                               child: Icon(
                                 Icons.today_rounded,
                                 size: 15,
-                                color: Color(0xFF64748B),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Hôm nay: $todayStr • ${_leads.where((l) => (l['status'] ?? 'NEW') == 'NEW').length} lead mới cần tư vấn trong hệ thống',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12.5,
-                                  color: Color(0xFF64748B),
+                                  color: AppColors.textSecondary(context),
                                 ),
                               ),
                             ),
@@ -2128,18 +2159,18 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: _exportLeads,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.file_download_outlined,
                                 size: 16,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                               ),
                               label: const Text('Xuất dữ liệu (.xlsx)'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF0F172A),
-                                side: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
+                                foregroundColor: AppColors.textPrimary(context),
+                                side: BorderSide(
+                                  color: AppColors.borderStrong(context),
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface(context),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 10,
@@ -2223,10 +2254,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       subtext:
                           'Đang mở: $activeOpenLeads • Đóng/Lưu trữ: $closedOrArchivedLeads',
                       icon: Icons.person_add_rounded,
-                      iconBg: const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
-                      pillColor: const Color(0xFFECFDF5),
-                      pillTextColor: const Color(0xFF047857),
+                      iconBg: AppColors.brandBg(context),
+                      iconColor: AppColors.infoFg(context),
+                      pillColor: AppColors.successBg(context),
+                      pillTextColor: AppColors.successFg(context),
                       width: cardWidth,
                     ),
                     _buildMetricCard(
@@ -2234,10 +2265,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       value: '$pendingLeads lead',
                       subtext: 'Cần liên hệ tư vấn',
                       icon: Icons.phone_forwarded_rounded,
-                      iconBg: const Color(0xFFFFFBEB),
-                      iconColor: const Color(0xFFD97706),
-                      pillColor: const Color(0xFFFEF3C7),
-                      pillTextColor: const Color(0xFFB45309),
+                      iconBg: AppColors.warningBg(context),
+                      iconColor: AppColors.warningFg(context),
+                      pillColor: AppColors.warningBg(context),
+                      pillTextColor: AppColors.warningFg(context),
                       width: cardWidth,
                     ),
                     _buildMetricCard(
@@ -2245,10 +2276,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       value: '$testLeads học viên',
                       subtext: 'Đang chờ xếp lớp phù hợp',
                       icon: Icons.school_rounded,
-                      iconBg: const Color(0xFFEEF2FF),
-                      iconColor: const Color(0xFF4F46E5),
-                      pillColor: const Color(0xFFEEF2FF),
-                      pillTextColor: const Color(0xFF4338CA),
+                      iconBg: AppColors.purpleBg(context),
+                      iconColor: AppColors.purpleFg(context),
+                      pillColor: AppColors.purpleBg(context),
+                      pillTextColor: AppColors.purpleFg(context),
                       width: cardWidth,
                     ),
                     _buildMetricCard(
@@ -2256,10 +2287,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       value: '$enrolledLeads học viên',
                       subtext: 'Tỷ lệ chuyển đổi: $convRate%',
                       icon: Icons.check_circle_rounded,
-                      iconBg: const Color(0xFFF0FDF4),
-                      iconColor: const Color(0xFF16A34A),
-                      pillColor: const Color(0xFFDCFCE7),
-                      pillTextColor: const Color(0xFF15803D),
+                      iconBg: AppColors.successBg(context),
+                      iconColor: AppColors.successFg(context),
+                      pillColor: AppColors.successBg(context),
+                      pillTextColor: AppColors.successFg(context),
                       width: cardWidth,
                     ),
                   ],
@@ -2272,14 +2303,14 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
+                border: Border.all(color: AppColors.border(context)),
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x06000000),
+                    color: AppColors.shadow(context),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -2297,9 +2328,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: AppColors.surfaceSubtle(context),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(
+                              color: AppColors.border(context),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -2329,31 +2362,31 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           controller: _searchController,
                           decoration: InputDecoration(
                             hintText: 'Tìm tên, SĐT, khóa học...',
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted(context),
                             ),
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.search,
                               size: 18,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                             filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
+                            fillColor: AppColors.surfaceSubtle(context),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 8,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              borderSide: BorderSide(
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              borderSide: BorderSide(
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                           ),
@@ -2369,14 +2402,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                             width: isDesktop ? null : width - 64,
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFFCBD5E1)),
+                              border: Border.all(
+                                color: AppColors.borderStrong(context),
+                              ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 isExpanded: !isDesktop,
+                                dropdownColor: AppColors.surface(context),
                                 value: _selectedBranch,
                                 items: [
                                   const DropdownMenuItem(
@@ -2403,14 +2438,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                             width: isDesktop ? null : width - 64,
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFFCBD5E1)),
+                              border: Border.all(
+                                color: AppColors.borderStrong(context),
+                              ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 isExpanded: !isDesktop,
+                                dropdownColor: AppColors.surface(context),
                                 value: _selectedSource,
                                 items: const [
                                   DropdownMenuItem(
@@ -2586,9 +2623,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2596,8 +2633,14 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: const Color(0xFFEEF2FF),
-                        child: Text(name.isEmpty ? '?' : name[0].toUpperCase()),
+                        backgroundColor: AppColors.infoBg(context),
+                        child: Text(
+                          name.isEmpty ? '?' : name[0].toUpperCase(),
+                          style: TextStyle(
+                            color: AppColors.brand(context),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -2613,7 +2656,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                             Text(
                               lead['phone']?.toString() ??
                                   'Chưa có số điện thoại',
-                              style: const TextStyle(color: Color(0xFF64748B)),
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
+                              ),
                             ),
                           ],
                         ),
@@ -2669,14 +2714,14 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       width: width,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x05000000),
+            color: AppColors.shadow(context),
             blurRadius: 3,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -2689,9 +2734,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -2711,10 +2756,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -2750,10 +2795,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive ? AppColors.surface(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           boxShadow: isActive
-              ? const [BoxShadow(color: Color(0x10000000), blurRadius: 2)]
+              ? [BoxShadow(color: AppColors.shadow(context), blurRadius: 2)]
               : null,
         ),
         child: Row(
@@ -2763,8 +2808,8 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               icon,
               size: 16,
               color: isActive
-                  ? const Color(0xFF003FB1)
-                  : const Color(0xFF64748B),
+                  ? AppColors.brand(context)
+                  : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 6),
             Text(
@@ -2773,8 +2818,8 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                 color: isActive
-                    ? const Color(0xFF003FB1)
-                    : const Color(0xFF64748B),
+                    ? AppColors.brand(context)
+                    : AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -2815,9 +2860,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         children: [
           _buildKanbanColumn(
             title: 'Mới tiếp nhận (Lead Mới)',
-            dotColor: const Color(0xFF94A3B8),
-            badgeColor: const Color(0xFFF1F5F9),
-            textColor: const Color(0xFF475569),
+            dotColor: AppColors.textMuted(context),
+            badgeColor: AppColors.surfaceElevated(context),
+            textColor: AppColors.textBody(context),
             leads: newLeads,
             nextActionName: 'Tư vấn ngay',
             nextStatus: 'CONTACTED',
@@ -2826,9 +2871,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           const SizedBox(width: 16),
           _buildKanbanColumn(
             title: 'Đang tư vấn & Đặt hẹn test',
-            dotColor: const Color(0xFFF59E0B),
-            badgeColor: const Color(0xFFFEF3C7),
-            textColor: const Color(0xFFB45309),
+            dotColor: AppColors.warningFg(context),
+            badgeColor: AppColors.warningBg(context),
+            textColor: AppColors.warningFg(context),
             leads: contactedLeads,
             nextActionName: 'Nhận vào Test',
             nextStatus: 'TEST_SCHEDULED',
@@ -2837,9 +2882,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           const SizedBox(width: 16),
           _buildKanbanColumn(
             title: 'Đã test & Chờ xếp lớp',
-            dotColor: const Color(0xFF6366F1),
-            badgeColor: const Color(0xFFEEF2FF),
-            textColor: const Color(0xFF4338CA),
+            dotColor: AppColors.purpleFg(context),
+            badgeColor: AppColors.purpleBg(context),
+            textColor: AppColors.purpleFg(context),
             leads: testLeads,
             nextActionName: 'Chốt & Thu học phí',
             nextStatus: 'ENROLLED',
@@ -2848,9 +2893,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
           const SizedBox(width: 16),
           _buildKanbanColumn(
             title: 'Đã chốt & Đóng học phí',
-            dotColor: const Color(0xFF10B981),
-            badgeColor: const Color(0xFFD1FAE5),
-            textColor: const Color(0xFF047857),
+            dotColor: AppColors.successFg(context),
+            badgeColor: AppColors.successBg(context),
+            textColor: AppColors.successFg(context),
             leads: enrolledLeads,
             nextActionName: 'Xem học viên',
             nextStatus: 'ENROLLED',
@@ -2875,9 +2920,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       width: 310,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: AppColors.surfaceSubtle(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2894,10 +2939,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                     ),
@@ -2928,16 +2973,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: AppColors.surface(context).withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'Chưa có hồ sơ ở bước này',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textMuted(context),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -2959,14 +3004,14 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
+                border: Border.all(color: AppColors.border(context)),
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x06000000),
+                    color: AppColors.shadow(context),
                     blurRadius: 3,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -2981,13 +3026,13 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           children: [
                             CircleAvatar(
                               radius: 14,
-                              backgroundColor: const Color(0xFFEEF2FF),
+                              backgroundColor: AppColors.infoBg(context),
                               child: Text(
                                 initials.isNotEmpty ? initials : 'L',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
-                                  color: Color(0xFF003FB1),
+                                  color: AppColors.brand(context),
                                 ),
                               ),
                             ),
@@ -3000,25 +3045,26 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                     fullName,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.call_rounded,
                                         size: 11,
-                                        color: Color(0xFF64748B),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                       const SizedBox(width: 3),
                                       Text(
                                         phone,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11,
-                                          color: Color(0xFF64748B),
+                                          color:
+                                              AppColors.textSecondary(context),
                                         ),
                                       ),
                                     ],
@@ -3035,15 +3081,15 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: AppColors.brandBg(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           source,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF2563EB),
+                            color: AppColors.infoFg(context),
                           ),
                         ),
                       ),
@@ -3057,9 +3103,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: AppColors.surfaceElevated(context),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: AppColors.border(context)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3067,20 +3113,20 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Quan tâm:',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Color(0xFF64748B),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             Flexible(
                               child: Text(
                                 course,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF003FB1),
+                                  color: AppColors.brand(context),
                                 ),
                               ),
                             ),
@@ -3090,11 +3136,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Phụ trách:',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Color(0xFF64748B),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             Flexible(
@@ -3104,10 +3150,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                               ?.toString() ??
                                           'Chưa phân công')
                                     : 'Chưa phân công',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary(context),
                                 ),
                               ),
                             ),
@@ -3152,11 +3198,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
   }
 
   Widget _buildTableView(List<dynamic> leads) {
+    final headerStyle = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 11,
+      color: AppColors.textSecondary(context),
+    );
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -3174,74 +3225,35 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       horizontal: 20,
                       vertical: 12,
                     ),
-                    color: const Color(0xFFF8FAFC),
-                    child: const Row(
+                    color: AppColors.surfaceElevated(context),
+                    child: Row(
                       children: [
                         Expanded(
                           flex: 3,
-                          child: Text(
-                            'HỌ VÀ TÊN',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('HỌ VÀ TÊN', style: headerStyle),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'SỐ ĐIỆN THOẠI',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('SỐ ĐIỆN THOẠI', style: headerStyle),
                         ),
                         Expanded(
                           flex: 3,
-                          child: Text(
-                            'KHÓA HỌC QUAN TÂM',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('KHÓA HỌC QUAN TÂM', style: headerStyle),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'NGUỒN LEAD',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('NGUỒN LEAD', style: headerStyle),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'TRẠNG THÁI',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('TRẠNG THÁI', style: headerStyle),
                         ),
                         SizedBox(
                           width: 140,
                           child: Text(
                             'THAO TÁC',
                             textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
+                            style: headerStyle,
                           ),
                         ),
                       ],
@@ -3252,7 +3264,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: leads.length,
                     separatorBuilder: (_, index) =>
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        Divider(height: 1, color: AppColors.divider(context)),
                     itemBuilder: (ctx, idx) {
                       final l = Map<String, dynamic>.from(leads[idx] as Map);
                       final isArchived = _isLeadArchived(l);
@@ -3284,9 +3296,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                               flex: 3,
                               child: Text(
                                 l['targetCourse'] ?? 'Chưa ghi nhận',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF003FB1),
+                                  color: AppColors.brand(ctx),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -3306,15 +3318,15 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
+                                  color: AppColors.brandBg(ctx),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   l['status'] ?? 'NEW',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2563EB),
+                                    color: AppColors.infoFg(ctx),
                                   ),
                                 ),
                               ),
@@ -3326,11 +3338,11 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                 children: [
                                   TextButton(
                                     onPressed: () => _showLeadDetail(l),
-                                    child: const Text(
+                                    child: Text(
                                       'Chi tiết',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF003FB1),
+                                        color: AppColors.brand(ctx),
                                       ),
                                     ),
                                   ),
@@ -3400,8 +3412,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       children: [
         Container(
           padding: const EdgeInsets.only(bottom: 16),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.border(context)),
+            ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3414,13 +3428,16 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       'Hàng chờ Đăng ký Lớp học',
                       style: AppTextStyles.h2(context).copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Khách mới và học viên gửi yêu cầu đăng ký lớp đích danh từ Website hoặc Cổng học viên.',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textSecondary(context),
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -3447,35 +3464,35 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   'Tổng đơn đăng ký',
                   '$total',
                   Icons.inbox_rounded,
-                  const Color(0xFF2563EB),
+                  AppColors.infoFg(context),
                   cardWidth,
                 ),
                 _buildRegistrationMetricCard(
                   'Chờ xử lý',
                   '$pending',
                   Icons.pending_actions_rounded,
-                  const Color(0xFFD97706),
+                  AppColors.warningFg(context),
                   cardWidth,
                 ),
                 _buildRegistrationMetricCard(
                   'Đã liên hệ',
                   '$contacted',
                   Icons.phone_in_talk_rounded,
-                  const Color(0xFF0284C7),
+                  AppColors.tealFg(context),
                   cardWidth,
                 ),
                 _buildRegistrationMetricCard(
                   'Đã nhập học',
                   '$approved',
                   Icons.check_circle_rounded,
-                  const Color(0xFF16A34A),
+                  AppColors.successFg(context),
                   cardWidth,
                 ),
                 _buildRegistrationMetricCard(
                   'Đã từ chối / Đã đóng',
                   '$closedCount',
                   Icons.block_rounded,
-                  const Color(0xFFDC2626),
+                  AppColors.errorFg(context),
                   cardWidth,
                 ),
               ],
@@ -3486,9 +3503,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Wrap(
             spacing: 12,
@@ -3542,20 +3559,20 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             padding: const EdgeInsets.all(48),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.border(context)),
             ),
-            child: const Column(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.assignment_late_outlined,
                   size: 48,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textMuted(context),
                 ),
-                SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 12),
+                const Text(
                   'Không tìm thấy đơn đăng ký nào trong bộ lọc này.',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
@@ -3613,35 +3630,39 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
     final statusStyle = switch (status) {
       'APPROVED' => (
         'ĐÃ NHẬP HỌC',
-        const Color(0xFF15803D),
-        const Color(0xFFDCFCE7),
+        AppColors.successFg(context),
+        AppColors.successBg(context),
       ),
       'CONTACTED' => (
         'ĐÃ LIÊN HỆ',
-        const Color(0xFF1D4ED8),
-        const Color(0xFFDBEAFE),
+        AppColors.infoFg(context),
+        AppColors.brandBg(context),
       ),
       'REJECTED' => (
         'TỪ CHỐI',
-        const Color(0xFFB91C1C),
-        const Color(0xFFFEE2E2),
+        AppColors.errorFg(context),
+        AppColors.errorBg(context),
       ),
       'CANCELLED' => (
         'ĐÃ HỦY',
-        const Color(0xFF475569),
-        const Color(0xFFF1F5F9),
+        AppColors.textBody(context),
+        AppColors.surfaceSubtle(context),
       ),
-      _ => ('CHỜ XỬ LÝ', const Color(0xFFB45309), const Color(0xFFFEF3C7)),
+      _ => (
+        'CHỜ XỬ LÝ',
+        AppColors.warningFg(context),
+        AppColors.warningBg(context),
+      ),
     };
 
     final isBusy = _busyRegistrationId == id;
 
     return Card(
-      color: Colors.white,
+      color: AppColors.surface(context),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        side: BorderSide(color: AppColors.border(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -3675,13 +3696,15 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                             ),
                             decoration: BoxDecoration(
                               color: isGuest
-                                  ? const Color(0xFFFFF7ED)
-                                  : const Color(0xFFEFF6FF),
+                                  ? AppColors.warningBg(context)
+                                  : AppColors.brandBg(context),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: isGuest
-                                    ? const Color(0xFFFDBA74)
-                                    : const Color(0xFF93C5FD),
+                                    ? AppColors.warningFg(
+                                        context,
+                                      ).withAlpha(110)
+                                    : AppColors.infoFg(context).withAlpha(110),
                               ),
                             ),
                             child: Text(
@@ -3690,8 +3713,8 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: isGuest
-                                    ? const Color(0xFFC2410C)
-                                    : const Color(0xFF1D4ED8),
+                                    ? AppColors.warningFg(context)
+                                    : AppColors.infoFg(context),
                               ),
                             ),
                           ),
@@ -3700,9 +3723,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                       const SizedBox(height: 4),
                       Text(
                         '📞 ${item['phone']}${item['email'] != null ? " • ✉️ ${item['email']}" : ""}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -3732,19 +3755,19 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.surfaceElevated(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.school_rounded,
                         size: 16,
-                        color: Color(0xFF3B82F6),
+                        color: AppColors.infoFg(context),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -3761,9 +3784,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   const SizedBox(height: 4),
                   Text(
                     'Khóa học: ${course?['title'] ?? ""} • ${branch?['name'] ?? ""}${room != null ? " · ${room['name']}" : ""}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF475569),
+                      color: AppColors.textBody(context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -3772,9 +3795,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     children: [
                       Text(
                         'Lịch: ${classInfo?['startTime'] ?? ""} - ${classInfo?['endTime'] ?? ""}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                       Text(
@@ -3783,8 +3806,8 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: remaining <= 0
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFF16A34A),
+                              ? AppColors.errorFg(context)
+                              : AppColors.successFg(context),
                         ),
                       ),
                     ],
@@ -3800,24 +3823,24 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       Icons.history_edu_rounded,
                       size: 15,
-                      color: Color(0xFF475569),
+                      color: AppColors.textBody(context),
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Hồ sơ lịch sử • Không giữ chỗ trong lớp',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
+                          color: AppColors.textBody(context),
                         ),
                       ),
                     ),
@@ -3829,10 +3852,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               const SizedBox(height: 10),
               Text(
                 'Ghi chú: ${item['notes']}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -3844,23 +3867,23 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
+                  color: AppColors.warningBg(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       Icons.warning_amber_rounded,
                       size: 16,
-                      color: Color(0xFFD97706),
+                      color: AppColors.warningFg(context),
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Khách mới cần tạo tài khoản học viên trước khi ghi danh.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF92400E),
+                          color: AppColors.warningFg(context),
                         ),
                       ),
                     ),
@@ -3887,7 +3910,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     onPressed: () =>
                         _actOnRegistration(item, reviewStatus: 'REJECTED'),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.error,
+                      foregroundColor: AppColors.errorFg(context),
                     ),
                     child: const Text('Từ chối'),
                   ),
@@ -3920,7 +3943,7 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
                     TextButton.icon(
                       onPressed: () => _deleteTestRegistration(item),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.error,
+                        foregroundColor: AppColors.errorFg(context),
                       ),
                       icon: const Icon(Icons.delete_outline_rounded, size: 16),
                       label: const Text('Xóa đơn thử nghiệm'),
@@ -3950,9 +3973,9 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
       width: width,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         children: [
@@ -3975,7 +3998,10 @@ class _AdmissionsCrmViewState extends State<AdmissionsCrmView> {
               const SizedBox(height: 2),
               Text(
                 label,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ],
           ),

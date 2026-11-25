@@ -29,13 +29,15 @@ class RevenueLineChart extends StatelessWidget {
       spots.add(FlSpot(i.toDouble(), trend[i].revenue / 1000000)); // Đơn vị: triệu VNĐ
     }
 
+    final lineColor = AppColors.primaryOf(context);
+
     return Container(
       height: 220,
       padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,18 +49,37 @@ class RevenueLineChart extends StatelessWidget {
                 'Xu hướng doanh thu (Triệu VNĐ)',
                 style: AppTextStyles.h4(context).copyWith(fontWeight: FontWeight.bold),
               ),
-              const Icon(Icons.show_chart, color: AppColors.primary, size: 20),
+              Icon(Icons.show_chart, color: lineColor, size: 20),
             ],
           ),
           const SizedBox(height: 16),
           Expanded(
             child: LineChart(
               LineChartData(
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => AppColors.isDark(context)
+                        ? AppColors.surfaceElevatedDark
+                        : AppColors.primary,
+                    getTooltipItems: (touchedSpots) => touchedSpots
+                        .map(
+                          (spot) => LineTooltipItem(
+                            '${spot.y.toStringAsFixed(1)} tr',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => const FlLine(
-                    color: AppColors.neutral200,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border(context),
                     strokeWidth: 1,
                   ),
                 ),
@@ -72,7 +93,10 @@ class RevenueLineChart extends StatelessWidget {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           value.toInt().toString(),
-                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondaryLight),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary(context),
+                          ),
                         );
                       },
                     ),
@@ -88,7 +112,10 @@ class RevenueLineChart extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 6.0),
                             child: Text(
                               trend[idx].month,
-                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondaryLight),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary(context),
+                              ),
                             ),
                           );
                         }
@@ -106,13 +133,13 @@ class RevenueLineChart extends StatelessWidget {
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
-                    color: AppColors.primary,
+                    color: lineColor,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.primary.withValues(alpha: 0.15),
+                      color: lineColor.withValues(alpha: 0.15),
                     ),
                   ),
                 ],

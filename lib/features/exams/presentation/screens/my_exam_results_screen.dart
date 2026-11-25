@@ -72,7 +72,7 @@ class _MyExamResultsScreenState extends State<MyExamResultsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '${state.attempts.length} lượt thi',
-                  style: const TextStyle(color: AppColors.neutral600),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: MobileTokens.sectionGap),
               ],
@@ -106,7 +106,7 @@ class _MyExamResultsScreenState extends State<MyExamResultsScreen> {
             const SizedBox(height: 4),
             Text(
               attempt.className!,
-              style: const TextStyle(color: AppColors.neutral600),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
           ],
           const SizedBox(height: 9),
@@ -117,14 +117,16 @@ class _MyExamResultsScreenState extends State<MyExamResultsScreen> {
                 ? 'Đang làm bài'
                 : 'Đang chờ chấm điểm',
             style: TextStyle(
-              color: isGraded ? AppColors.success : AppColors.primary,
+              color: isGraded
+                  ? AppColors.successFg(context)
+                  : AppColors.primaryOf(context),
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Lượt ${attempt.attemptNumber}',
-            style: const TextStyle(color: AppColors.neutral600),
+            style: TextStyle(color: AppColors.textSecondary(context)),
           ),
         ],
       ),

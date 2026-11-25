@@ -40,7 +40,7 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF8FAFC),
+    backgroundColor: AppColors.background(context),
     body: FutureBuilder<List<ClassModel>>(
       future: _classes,
       builder: (context, snapshot) {
@@ -230,7 +230,7 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
           MobileSectionCard(
             child: Row(
               children: [
-                const Icon(Icons.groups_outlined, color: AppColors.primary),
+                Icon(Icons.groups_outlined, color: AppColors.primaryOf(context)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -242,7 +242,7 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
                       ),
                       Text(
                         '$activeCount lớp đang học',
-                        style: const TextStyle(color: AppColors.neutral600),
+                        style: TextStyle(color: AppColors.textSecondary(context)),
                       ),
                     ],
                   ),
@@ -299,23 +299,23 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.school_outlined,
-                          color: AppColors.primary,
+                          color: AppColors.primaryOf(context),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item.code,
-                      style: const TextStyle(color: AppColors.neutral600),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                     const SizedBox(height: 10),
                     MobileStatusPill(
                       label: _statusLabel(item.status),
                       color: item.status == 'IN_PROGRESS'
-                          ? Colors.green
-                          : AppColors.primary,
+                          ? AppColors.successFg(context)
+                          : AppColors.primaryOf(context),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -325,7 +325,7 @@ class _TeacherMyClassesScreenState extends State<TeacherMyClassesScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${item.scheduleDays.join(', ')} · ${item.startTime}–${item.endTime}',
-                        style: const TextStyle(color: AppColors.neutral600),
+                        style: TextStyle(color: AppColors.textSecondary(context)),
                       ),
                     ],
                     const SizedBox(height: 12),

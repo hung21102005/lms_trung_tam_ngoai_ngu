@@ -106,11 +106,11 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
               (subtotal - effectiveDiscount).clamp(0.0, double.infinity);
 
           return AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.receipt_long_rounded, color: AppColors.primary),
-                SizedBox(width: 8),
-                Expanded(child: Text('Tạo hóa đơn học phí / phụ phí mới')),
+                Icon(Icons.receipt_long_rounded, color: AppColors.primaryOf(context)),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Tạo hóa đơn học phí / phụ phí mới')),
               ],
             ),
             content: SizedBox(
@@ -195,8 +195,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                                   .repository
                                   .validatePromotion(code, subtotal);
                               final disc =
-                                  (res['discountAmount'] as num?)?.toDouble() ??
-                                  0;
+                                  double.tryParse('${res['discountAmount'] ?? 0}') ??
+                                  0.0;
                               setDlgState(() {
                                 promoDiscount = disc;
                                 promoFeedback =
@@ -304,7 +304,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(15),
+                        color: AppColors.brandBg(context),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -316,10 +316,10 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                           ),
                           Text(
                             _formatCurrency(totalAmount),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                             ),
                           ),
                         ],
@@ -392,11 +392,11 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.local_offer_rounded, color: AppColors.primary),
-              SizedBox(width: 8),
-              Expanded(child: Text('Quản lý Mã khuyến mãi & Học bổng')),
+              Icon(Icons.local_offer_rounded, color: AppColors.primaryOf(context)),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('Quản lý Mã khuyến mãi & Học bổng')),
             ],
           ),
           content: SizedBox(
@@ -440,6 +440,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           initialValue: promoType,
+                          isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Loại giảm giá',
                             border: OutlineInputBorder(),
@@ -514,11 +515,13 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                       final promos =
                           this.context.read<FinanceBloc>().cachedPromotions;
                       if (promos.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Text(
                             'Chưa có mã khuyến mãi nào. Hãy tạo mã mới ở trên.',
-                            style: TextStyle(color: AppColors.textSecondaryLight),
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
+                            ),
                           ),
                         );
                       }
@@ -536,8 +539,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                               ),
                               decoration: BoxDecoration(
                                 color: p.isActive
-                                    ? AppColors.primary.withAlpha(20)
-                                    : Colors.grey.withAlpha(30),
+                                    ? AppColors.brandBg(context)
+                                    : AppColors.surfaceSubtle(context),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -545,8 +548,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: p.isActive
-                                      ? AppColors.primary
-                                      : Colors.grey,
+                                      ? AppColors.primaryOf(context)
+                                      : AppColors.textMuted(context),
                                 ),
                               ),
                             ),
@@ -619,9 +622,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
               bottom: TabBar(
                 controller: _tabController,
                 isScrollable: true,
-                indicatorColor: AppColors.primary,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondaryLight,
+                indicatorColor: AppColors.primaryOf(context),
+                labelColor: AppColors.primaryOf(context),
+                unselectedLabelColor: AppColors.textSecondary(context),
                 tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
                 onTap: (_) => _loadInvoices(),
               ),
@@ -687,11 +690,11 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
+                        Text(
                           'Phát hành hóa đơn, thu tiền nhiều đợt, đối soát chuyển khoản VietQR và quản lý ưu đãi',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondaryLight,
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -729,14 +732,14 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                 ),
               ),
               Material(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(10),
                 child: TabBar(
                   controller: _tabController,
                   isScrollable: true,
-                  indicatorColor: AppColors.primary,
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondaryLight,
+                  indicatorColor: AppColors.primaryOf(context),
+                  labelColor: AppColors.primaryOf(context),
+                  unselectedLabelColor: AppColors.textSecondary(context),
                   tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
                   onTap: (_) => _loadInvoices(),
                 ),
@@ -765,7 +768,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                     horizontal: 16,
                   ),
                   filled: true,
-                  fillColor: AppColors.neutral100,
+                  fillColor: AppColors.surfaceSubtle(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -861,7 +864,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
           child: _buildMetricTile(
             title: 'Tổng hóa đơn',
             value: _formatCurrency(summary.totalRevenue),
-            color: AppColors.primary,
+            color: AppColors.primaryOf(context),
             icon: Icons.receipt_outlined,
           ),
         ),
@@ -870,7 +873,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
           child: _buildMetricTile(
             title: 'Đã thu',
             value: _formatCurrency(summary.paidRevenue),
-            color: AppColors.success,
+            color: AppColors.successFg(context),
             icon: Icons.check_circle_outline,
           ),
         ),
@@ -879,7 +882,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
           child: _buildMetricTile(
             title: 'Còn nợ',
             value: _formatCurrency(summary.outstandingRevenue),
-            color: AppColors.error,
+            color: AppColors.errorFg(context),
             icon: Icons.pending_actions_outlined,
           ),
         ),
@@ -890,7 +893,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
               title: 'Chờ duyệt CK / Quá hạn',
               value:
                   '${summary.pendingTransferCount} CK • ${summary.overdueCount} quá hạn',
-              color: const Color(0xFFD97706),
+              color: AppColors.warningFg(context),
               icon: Icons.sync_problem_rounded,
             ),
           ),
@@ -957,17 +960,17 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: pendingPayments.isNotEmpty
-              ? const Color(0xFFD97706)
-              : AppColors.borderLight,
+              ? AppColors.warningFg(context)
+              : AppColors.border(context),
           width: pendingPayments.isNotEmpty ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -987,15 +990,15 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(20),
+                    color: AppColors.brandBg(context),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     inv.code,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                     ),
                   ),
                 ),
@@ -1007,16 +1010,16 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: AppColors.warningBg(context),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFD97706)),
+                      border: Border.all(color: AppColors.warningFg(context)),
                     ),
                     child: Text(
                       'Chờ duyệt CK (${_formatCurrency(pendingPayments.first.amount)})',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFB45309),
+                        color: AppColors.warningFg(context),
                       ),
                     ),
                   ),
@@ -1053,18 +1056,18 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.person_outline,
                   size: 16,
-                  color: AppColors.textSecondaryLight,
+                  color: AppColors.textSecondary(context),
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     '$studentName ($studentCode)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondaryLight,
+                      color: AppColors.textSecondary(context),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1075,18 +1078,18 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.class_outlined,
                     size: 16,
-                    color: AppColors.textSecondaryLight,
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       className,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondaryLight,
+                        color: AppColors.textSecondary(context),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1103,11 +1106,11 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Tổng tiền',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMutedLight,
+                        color: AppColors.textMuted(context),
                       ),
                     ),
                     Text(
@@ -1122,19 +1125,19 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Đã nộp',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMutedLight,
+                        color: AppColors.textMuted(context),
                       ),
                     ),
                     Text(
                       _formatCurrency(inv.paidAmount),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.success,
+                        color: AppColors.successFg(context),
                       ),
                     ),
                   ],
@@ -1142,11 +1145,11 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       'Còn lại',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMutedLight,
+                        color: AppColors.textMuted(context),
                       ),
                     ),
                     Text(
@@ -1155,8 +1158,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: inv.balance > 0
-                            ? AppColors.error
-                            : AppColors.success,
+                            ? AppColors.errorFg(context)
+                            : AppColors.successFg(context),
                       ),
                     ),
                   ],
@@ -1242,22 +1245,34 @@ class _InvoiceListScreenState extends State<InvoiceListScreen>
   _StatusConfig _getStatusConfig(String status) {
     switch (status) {
       case 'PAID':
-        return _StatusConfig(label: 'ĐÃ THANH TOÁN', color: AppColors.success);
+        return _StatusConfig(
+          label: 'ĐÃ THANH TOÁN',
+          color: AppColors.successFg(context),
+        );
       case 'PARTIALLY_PAID':
         return _StatusConfig(
           label: 'TRẢ MỘT PHẦN',
-          color: const Color(0xFF0284C7),
+          color: AppColors.infoFg(context),
         );
       case 'OVERDUE':
-        return _StatusConfig(label: 'QUÁ HẠN', color: AppColors.error);
+        return _StatusConfig(
+          label: 'QUÁ HẠN',
+          color: AppColors.errorFg(context),
+        );
       case 'CANCELLED':
-        return _StatusConfig(label: 'ĐÃ HỦY', color: Colors.grey);
+        return _StatusConfig(
+          label: 'ĐÃ HỦY',
+          color: AppColors.textMuted(context),
+        );
       case 'REFUNDED':
-        return _StatusConfig(label: 'ĐÃ HOÀN TIỀN', color: Colors.purple);
+        return _StatusConfig(
+          label: 'ĐÃ HOÀN TIỀN',
+          color: AppColors.purpleFg(context),
+        );
       default:
         return _StatusConfig(
           label: 'CHỜ THANH TOÁN',
-          color: const Color(0xFFD97706),
+          color: AppColors.warningFg(context),
         );
     }
   }

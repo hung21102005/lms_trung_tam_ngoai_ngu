@@ -21,8 +21,8 @@ class LessonDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
 
     // Separate materials into audio and document/slides
     final audioMaterials = lesson.materials
@@ -133,7 +133,7 @@ class LessonDetailScreen extends StatelessWidget {
                 Text(
                   'Thuộc chương: $moduleTitle',
                   style: AppTextStyles.caption(context).copyWith(
-                    color: AppColors.secondary,
+                    color: AppColors.tealFg(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -230,8 +230,8 @@ class LessonDetailScreen extends StatelessWidget {
           children: [
             Text(
               'Bài ${lesson.order} · ${lesson.durationMinutes} phút',
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: AppColors.primaryOf(context),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -243,7 +243,7 @@ class LessonDetailScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               moduleTitle,
-              style: const TextStyle(color: AppColors.neutral600),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: MobileTokens.sectionGap),
             MobileSectionCard(

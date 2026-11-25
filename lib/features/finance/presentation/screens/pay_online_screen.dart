@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/adaptive/adaptive_layout.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/invoice_model.dart';
 import '../bloc/finance_bloc.dart';
@@ -233,17 +235,22 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
     const bankId = 'MB'; // MBBank
     const accountNo = '0333888999';
     const accountName = 'TRUNG TAM NGOAI NGU LMS';
-    final amount = inv.balance.toInt();
+    final amount =
+        (double.tryParse(_transferAmountCtrl.text.trim()) ?? inv.balance)
+            .toInt();
     final memo = 'HOCPHI ${inv.code}';
-    final qrUrl =
-        'https://img.vietqr.io/image/$bankId-$accountNo-compact2.png?amount=$amount&addInfo=${Uri.encodeComponent(memo)}&accountName=${Uri.encodeComponent(accountName)}';
+    final qrUrl = kIsWeb
+        ? '${ApiEndpoints.baseUrl}/finance/vietqr?bankId=$bankId&accountNo=$accountNo&amount=$amount&addInfo=${Uri.encodeComponent(memo)}&accountName=${Uri.encodeComponent(accountName)}'
+        : 'https://img.vietqr.io/image/$bankId-$accountNo-compact2.png?amount=$amount&addInfo=${Uri.encodeComponent(memo)}&accountName=${Uri.encodeComponent(accountName)}';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(
+          color: AppColors.border(context),
+        ),
       ),
       child: Column(
         children: [
@@ -252,18 +259,22 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Hệ thống tự động điền số tài khoản, số tiền và nội dung chuyển khoản',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary(context),
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
 
-          // QR Code Image
+          // QR Code Image (keep white background for QR scannability)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.borderLight),
+              color: Colors.white,
+              border: Border.all(color: AppColors.border(context)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Image.network(
@@ -306,24 +317,24 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: AppColors.warningBg(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFD97706)),
+                border: Border.all(color: AppColors.warningFg(context)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(
                     Icons.hourglass_top_rounded,
-                    color: Color(0xFFD97706),
+                    color: AppColors.warningFg(context),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Bạn đã gửi xác nhận chuyển khoản cho hóa đơn này. Thu ngân đang kiểm tra sao kê để xác nhận phiếu thu.',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFB45309),
+                        color: AppColors.warningFg(context),
                       ),
                     ),
                   ),
@@ -444,12 +455,13 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
   }
 
   Widget _buildVNPaySection(InvoiceModel inv, FinanceState state) {
+    final vnpayAccent = AppColors.adaptAccent(context, const Color(0xFF005BAA));
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,33 +471,33 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF005BAA).withAlpha(20),
+                  color: vnpayAccent.withAlpha(25),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.payment,
-                  color: Color(0xFF005BAA),
+                  color: vnpayAccent,
                   size: 28,
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Cổng thanh toán VNPay',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       'Hỗ trợ ATM nội địa, thẻ quốc tế Visa/Master, VNPAY-QR',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondaryLight,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],
@@ -547,9 +559,9 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondaryLight,
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -580,9 +592,9 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: AppColors.textSecondaryLight,
+            color: AppColors.textSecondary(context),
           ),
         ),
         Row(
@@ -596,10 +608,10 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
               const SizedBox(width: 6),
               InkWell(
                 onTap: onCopy,
-                child: const Icon(
+                child: Icon(
                   Icons.copy,
                   size: 16,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
               ),
             ],
@@ -632,7 +644,10 @@ class _PayOnlineScreenState extends State<PayOnlineScreen> {
             const SizedBox(height: 8),
             SelectableText(
               paymentUrl,
-              style: const TextStyle(fontSize: 11, color: AppColors.primary),
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.primaryOf(dialogCtx),
+              ),
             ),
           ],
         ),

@@ -25,7 +25,7 @@ class NotificationBellIcon extends StatelessWidget {
             IconButton(
               icon: Icon(
                 Icons.notifications_outlined,
-                color: color ?? AppColors.primary,
+                color: color ?? AppColors.primaryOf(context),
                 size: 26,
               ),
               tooltip: 'Thông báo',

@@ -205,23 +205,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Thao tác này không thể khôi phục. Vui lòng nhập mã khóa học để xác nhận:',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
               ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   course.code,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -1069,13 +1069,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   children: [
                     MobileStatusPill(
                       label: course.code,
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                     ),
                     MobileStatusPill(
                       label: course.isActive ? 'Đang đào tạo' : 'Tạm dừng',
                       color: course.isActive
-                          ? AppColors.success
-                          : AppColors.error,
+                          ? AppColors.successFg(context)
+                          : AppColors.errorFg(context),
                     ),
                     MobileStatusPill(
                       label: switch (course.publicationStatus) {
@@ -1085,8 +1085,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         _ => 'Bản nháp',
                       },
                       color: course.publicationStatus == 'PUBLISHED'
-                          ? AppColors.success
-                          : AppColors.primary,
+                          ? AppColors.successFg(context)
+                          : AppColors.primaryOf(context),
                     ),
                   ],
                 ),
@@ -1150,7 +1150,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MobileStatusPill(label: level.code, color: AppColors.primary),
+          MobileStatusPill(
+            label: level.code,
+            color: AppColors.primaryOf(context),
+          ),
           const SizedBox(height: 8),
           Text(
             level.name,
@@ -1294,25 +1297,25 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       'PUBLISHED' => (
         'ĐÃ CÔNG BỐ (PUBLISHED)',
         'Khóa học đang hiển thị công khai trên Website và sẵn sàng mở lớp tuyển sinh.',
-        AppColors.success,
+        AppColors.successFg(context),
         Icons.check_circle_outline,
       ),
       'IN_REVIEW' => (
         'CHỜ DUYỆT (IN_REVIEW)',
         'Khóa học đã gửi duyệt, đang chờ Trưởng bộ môn kiểm định và phê duyệt.',
-        const Color(0xFFD97706),
+        AppColors.warningFg(context),
         Icons.pending_actions_outlined,
       ),
       'ARCHIVED' => (
         'ĐÃ LƯU TRỮ (ARCHIVED)',
         'Khóa học đã lưu trữ, không còn tiếp nhận tuyển sinh hoặc đào tạo mới.',
-        const Color(0xFF64748B),
+        AppColors.textSecondary(context),
         Icons.archive_outlined,
       ),
       _ => (
         'BẢN NHÁP (DRAFT)',
         'Khóa học đang trong giai đoạn soạn thảo đề cương, chưa được gửi duyệt học thuật.',
-        const Color(0xFF64748B),
+        AppColors.textSecondary(context),
         Icons.edit_note_outlined,
       ),
     };
@@ -1333,12 +1336,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(25),
+                  color: AppColors.brandBg(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_user_outlined,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                   size: 22,
                 ),
               ),
@@ -1347,13 +1350,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'QUY TRÌNH HỌC THUẬT & CÔNG BỐ KHÓA HỌC',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         letterSpacing: .5,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                     ),
                     Text(
@@ -1401,13 +1404,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: (course.isActive ? AppColors.success : AppColors.error)
+                  color: (course.isActive
+                          ? AppColors.successFg(context)
+                          : AppColors.errorFg(context))
                       .withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color:
-                        (course.isActive ? AppColors.success : AppColors.error)
-                            .withAlpha(80),
+                    color: (course.isActive
+                            ? AppColors.successFg(context)
+                            : AppColors.errorFg(context))
+                        .withAlpha(80),
                   ),
                 ),
                 child: Row(
@@ -1418,8 +1424,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           ? Icons.power_rounded
                           : Icons.power_off_rounded,
                       size: 16,
-                      color:
-                          course.isActive ? AppColors.success : AppColors.error,
+                      color: course.isActive
+                          ? AppColors.successFg(context)
+                          : AppColors.errorFg(context),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1430,8 +1437,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: course.isActive
-                            ? AppColors.success
-                            : AppColors.error,
+                            ? AppColors.successFg(context)
+                            : AppColors.errorFg(context),
                       ),
                     ),
                   ],
@@ -1454,13 +1461,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: canOpenClass
-                  ? const Color(0xFFECFDF5)
-                  : const Color(0xFFFFFBEB),
+                  ? AppColors.successBg(context)
+                  : AppColors.warningBg(context),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: canOpenClass
-                    ? const Color(0xFFA7F3D0)
-                    : const Color(0xFFFDE68A),
+                    ? AppColors.successFg(context).withValues(alpha: 0.35)
+                    : AppColors.warningFg(context).withValues(alpha: 0.35),
               ),
             ),
             child: Row(
@@ -1470,8 +1477,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ? Icons.check_circle_rounded
                       : Icons.info_outline_rounded,
                   color: canOpenClass
-                      ? const Color(0xFF047857)
-                      : const Color(0xFFD97706),
+                      ? AppColors.successFg(context)
+                      : AppColors.warningFg(context),
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -1484,8 +1491,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: canOpenClass
-                          ? const Color(0xFF047857)
-                          : const Color(0xFFB45309),
+                          ? AppColors.successFg(context)
+                          : AppColors.warningFg(context),
                     ),
                   ),
                 ),
@@ -1498,12 +1505,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'DANH MỤC KIỂM TRA ĐIỀU KIỆN DUYỆT (ACADEMIC READINESS)',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               TextButton.icon(
@@ -1527,31 +1534,30 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color:
-                    isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                color: AppColors.surfaceElevated(context),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: blockers.isEmpty
-                      ? AppColors.success.withAlpha(120)
-                      : AppColors.error.withAlpha(120),
+                      ? AppColors.successFg(context).withAlpha(120)
+                      : AppColors.errorFg(context).withAlpha(120),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (blockers.isEmpty)
-                    const Row(
+                    Row(
                       children: [
                         Icon(Icons.check_circle,
-                            color: AppColors.success, size: 18),
-                        SizedBox(width: 8),
+                            color: AppColors.successFg(context), size: 18),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Tất cả tiêu chí học thuật, bài học, cấp độ và chương trình đã đạt chuẩn công bố!',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.success,
+                              color: AppColors.successFg(context),
                             ),
                           ),
                         ),
@@ -1560,15 +1566,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   else ...[
                     Row(
                       children: [
-                        const Icon(Icons.cancel,
-                            color: AppColors.error, size: 18),
+                        Icon(Icons.cancel,
+                            color: AppColors.errorFg(context), size: 18),
                         const SizedBox(width: 8),
                         Text(
                           'Còn ${blockers.length} tiêu chí chưa hoàn tất:',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.error,
+                            color: AppColors.errorFg(context),
                           ),
                         ),
                       ],
@@ -1623,7 +1629,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   ),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFD97706),
+                      foregroundColor: AppColors.warningFg(context),
                     ),
                     onPressed: () => _requestChanges(course),
                     icon: const Icon(Icons.undo_rounded, size: 16),
@@ -1647,7 +1653,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   ),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
+                      foregroundColor: AppColors.errorFg(context),
                     ),
                     onPressed: () => _unpublishCourse(course),
                     icon: const Icon(Icons.unpublished_outlined, size: 16),
@@ -1677,8 +1683,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Widget _buildCourseHeader(BuildContext context, CourseModel course) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
 
     return AppCard(
       padding: const EdgeInsets.all(20),
@@ -1810,8 +1816,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Widget _buildLevelCard(BuildContext context, CourseLevelModel level) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -2076,14 +2082,14 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               Icon(
                 Icons.attach_file,
                 size: 13,
-                color: Theme.of(context).primaryColor,
+                color: AppColors.primaryOf(context),
               ),
               const SizedBox(width: 2),
               Text(
                 '${lesson.materials.length} tài liệu',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(context).primaryColor,
+                  color: AppColors.primaryOf(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),

@@ -77,9 +77,9 @@ class _NotificationListScreenState extends State<NotificationListScreen>
             : TabBar(
                 controller: _tabController,
                 isScrollable: true,
-                indicatorColor: AppColors.primary,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondaryLight,
+                indicatorColor: AppColors.primaryOf(context),
+                labelColor: AppColors.primaryOf(context),
+                unselectedLabelColor: AppColors.textSecondary(context),
                 tabs: _filters.map((f) => Tab(text: f)).toList(),
                 onTap: (_) => setState(() {}),
               ),
@@ -193,7 +193,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
           const SizedBox(height: 5),
           Text(
             '${state.unreadCount} thông báo chưa đọc',
-            style: const TextStyle(color: AppColors.neutral600),
+            style: TextStyle(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: MobileTokens.sectionGap),
           SizedBox(
@@ -255,6 +255,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
 
   Widget _buildNotificationCard(NotificationModel notif) {
     final config = _getNotificationConfig(notif.type);
+    final accent = AppColors.adaptAccent(context, config.color);
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -269,17 +270,19 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: notif.isRead ? Colors.white : config.color.withAlpha(15),
+          color: notif.isRead
+              ? AppColors.surface(context)
+              : accent.withAlpha(AppColors.isDark(context) ? 28 : 15),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: notif.isRead
-                ? AppColors.borderLight
-                : config.color.withAlpha(80),
+                ? AppColors.border(context)
+                : accent.withAlpha(90),
             width: notif.isRead ? 1 : 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(6),
+              color: AppColors.shadow(context),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -291,10 +294,10 @@ class _NotificationListScreenState extends State<NotificationListScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: config.color.withAlpha(30),
+                color: accent.withAlpha(32),
                 shape: BoxShape.circle,
               ),
-              child: Icon(config.icon, color: config.color, size: 22),
+              child: Icon(config.icon, color: accent, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -313,23 +316,23 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                         Text(
                           config.label,
                           style: TextStyle(
-                            color: config.color,
+                            color: accent,
                             fontWeight: FontWeight.w700,
                             fontSize: 11,
                           ),
                         ),
                         Text(
                           _formatTime(notif.createdAt),
-                          style: const TextStyle(
-                            color: AppColors.textMutedLight,
+                          style: TextStyle(
+                            color: AppColors.textMuted(context),
                             fontSize: 11,
                           ),
                         ),
                         if (!notif.isRead)
-                          const Icon(
+                          Icon(
                             Icons.circle,
                             size: 8,
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                       ],
                     )
@@ -342,7 +345,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: config.color.withAlpha(25),
+                            color: accent.withAlpha(28),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -350,16 +353,16 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: config.color,
+                              color: accent,
                             ),
                           ),
                         ),
                         const Spacer(),
                         Text(
                           _formatTime(notif.createdAt),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.textMutedLight,
+                            color: AppColors.textMuted(context),
                           ),
                         ),
                         if (!notif.isRead) ...[
@@ -367,8 +370,8 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryOf(context),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -383,7 +386,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                       fontWeight: notif.isRead
                           ? FontWeight.w600
                           : FontWeight.bold,
-                      color: AppColors.textPrimaryLight,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -392,8 +395,8 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                     style: TextStyle(
                       fontSize: 13,
                       color: notif.isRead
-                          ? AppColors.textSecondaryLight
-                          : AppColors.textPrimaryLight,
+                          ? AppColors.textSecondary(context)
+                          : AppColors.textPrimary(context),
                       height: 1.3,
                     ),
                   ),

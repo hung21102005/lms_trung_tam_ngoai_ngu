@@ -82,14 +82,14 @@ class _EssayQuestionWidgetState extends State<EssayQuestionWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.neutral100,
+                color: AppColors.surfaceSubtle(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$_wordCount từ',
                 style: AppTextStyles.caption(context).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
               ),
             ),

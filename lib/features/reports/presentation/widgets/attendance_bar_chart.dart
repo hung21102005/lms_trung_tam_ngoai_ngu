@@ -23,9 +23,9 @@ class AttendanceBarChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +37,7 @@ class AttendanceBarChart extends StatelessWidget {
                 'Tỷ lệ chuyên cần theo lớp (%)',
                 style: AppTextStyles.h4(context).copyWith(fontWeight: FontWeight.bold),
               ),
-              const Icon(Icons.bar_chart, color: AppColors.primary, size: 20),
+              Icon(Icons.bar_chart, color: AppColors.primaryOf(context), size: 20),
             ],
           ),
           const SizedBox(height: 16),
@@ -49,7 +49,9 @@ class AttendanceBarChart extends StatelessWidget {
                 maxY: 100,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => AppColors.primary,
+                    getTooltipColor: (_) => AppColors.isDark(context)
+                        ? AppColors.surfaceElevatedDark
+                        : AppColors.primary,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final item = topClasses[groupIndex];
                       return BarTooltipItem(
@@ -69,7 +71,13 @@ class AttendanceBarChart extends StatelessWidget {
                       reservedSize: 32,
                       getTitlesWidget: (value, meta) {
                         if (value % 25 == 0) {
-                          return Text('${value.toInt()}%', style: const TextStyle(fontSize: 9, color: AppColors.textSecondaryLight));
+                          return Text(
+                            '${value.toInt()}%',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: AppColors.textSecondary(context),
+                            ),
+                          );
                         }
                         return const SizedBox.shrink();
                       },
@@ -86,7 +94,10 @@ class AttendanceBarChart extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
                               name.length > 8 ? '${name.substring(0, 8)}...' : name,
-                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondaryLight),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary(context),
+                              ),
                             ),
                           );
                         }
@@ -98,7 +109,10 @@ class AttendanceBarChart extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => const FlLine(color: AppColors.neutral200, strokeWidth: 1),
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border(context),
+                    strokeWidth: 1,
+                  ),
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: List.generate(topClasses.length, (i) {

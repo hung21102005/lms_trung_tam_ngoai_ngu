@@ -430,26 +430,26 @@ class _StudentAssignmentsViewState extends State<StudentAssignmentsView> {
                   'Cần làm',
                   pending,
                   Icons.bolt_rounded,
-                  AppColors.warning,
+                  AppColors.warningFg(context),
                 ),
                 _mobileStat(
                   'Đã nộp',
                   submitted,
                   Icons.task_alt_rounded,
-                  AppColors.secondary,
+                  AppColors.tealFg(context),
                 ),
                 _mobileStat(
                   'Đã chấm',
                   graded,
                   Icons.stars_rounded,
-                  AppColors.primary,
+                  AppColors.primaryOf(context),
                 ),
                 if (soon > 0)
                   _mobileStat(
                     'Sắp hạn',
                     soon,
                     Icons.alarm_rounded,
-                    AppColors.error,
+                    AppColors.errorFg(context),
                   ),
               ],
             ),
@@ -504,7 +504,7 @@ class _StudentAssignmentsViewState extends State<StudentAssignmentsView> {
               ),
               Text(
                 '${items.length} bài',
-                style: const TextStyle(color: AppColors.neutral600),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -627,10 +627,10 @@ class _StudentAssignmentsViewState extends State<StudentAssignmentsView> {
   Widget _mobileAssignmentCard(AssignmentModel item) {
     final status = _status(item);
     final color = switch (status) {
-      'Đã chấm' => AppColors.success,
-      'Chờ chấm' || 'Chờ công bố' => AppColors.secondary,
-      'Quá hạn' || 'Cần làm lại' => AppColors.error,
-      _ => AppColors.primary,
+      'Đã chấm' => AppColors.successFg(context),
+      'Chờ chấm' || 'Chờ công bố' => AppColors.tealFg(context),
+      'Quá hạn' || 'Cần làm lại' => AppColors.errorFg(context),
+      _ => AppColors.primaryOf(context),
     };
     final icon = switch (item.type) {
       'SPEAKING' => Icons.mic_rounded,
@@ -681,9 +681,9 @@ class _StudentAssignmentsViewState extends State<StudentAssignmentsView> {
                           item.className ?? 'Lớp học',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.neutral600,
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -700,7 +700,7 @@ class _StudentAssignmentsViewState extends State<StudentAssignmentsView> {
                   if (deadline != null)
                     MobileStatusPill(
                       label: 'Hạn ${deadline.day}/${deadline.month}',
-                      color: AppColors.neutral600,
+                      color: AppColors.textSecondary(context),
                     ),
                 ],
               ),
@@ -712,22 +712,22 @@ class _StudentAssignmentsViewState extends State<StudentAssignmentsView> {
                       'Thang ${item.maxScore.toStringAsFixed(0)} điểm',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.neutral600,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ),
                   Text(
                     status == 'Đã chấm' ? 'Xem kết quả' : 'Xem bài tập',
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: TextStyle(
+                      color: AppColors.primaryOf(context),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ],
               ),

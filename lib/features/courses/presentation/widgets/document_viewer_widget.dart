@@ -111,7 +111,7 @@ class DocumentViewerWidget extends StatelessWidget {
             },
             icon: const Icon(Icons.remove_red_eye_outlined),
             tooltip: 'Xem trước tài liệu',
-            color: Theme.of(context).primaryColor,
+            color: AppColors.primaryOf(context),
           ),
           IconButton(
             onPressed: onDownload ??

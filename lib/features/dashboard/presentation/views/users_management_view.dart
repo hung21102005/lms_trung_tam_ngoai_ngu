@@ -355,11 +355,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.person_add_rounded, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text(
+              Icon(Icons.person_add_rounded, color: AppColors.primaryOf(ctx)),
+              const SizedBox(width: 8),
+              const Text(
                 'Thêm Người Dùng Mới',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
@@ -401,6 +401,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
+                    dropdownColor: AppColors.surface(ctx),
                     initialValue: role,
                     decoration: const InputDecoration(
                       labelText: 'Vai trò tài khoản',
@@ -438,6 +439,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String?>(
                     isExpanded: true,
+                    dropdownColor: AppColors.surface(ctx),
                     initialValue: branchOptions.any(
                           (b) => b['id']?.toString() == branchId,
                         )
@@ -654,19 +656,27 @@ class _UsersManagementViewState extends State<UsersManagementView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.edit_outlined, color: Color(0xFF64748B)),
+                leading: Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.textSecondary(ctx),
+                ),
                 title: const Text('Chỉnh sửa thông tin'),
                 onTap: () => Navigator.pop(ctx, 'Chỉnh sửa'),
               ),
               ListTile(
-                leading: const Icon(Icons.key_rounded, color: Color(0xFFD97706)),
+                leading: Icon(
+                  Icons.key_rounded,
+                  color: AppColors.warningFg(ctx),
+                ),
                 title: const Text('Cấp lại mật khẩu tạm'),
                 onTap: () => Navigator.pop(ctx, 'Cấp lại mật khẩu'),
               ),
               ListTile(
                 leading: Icon(
                   isActive ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
-                  color: isActive ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                  color: isActive
+                      ? AppColors.errorFg(ctx)
+                      : AppColors.successFg(ctx),
                 ),
                 title: Text(isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'),
                 onTap: () => Navigator.pop(ctx, isActive ? 'Khóa tài khoản' : 'Mở khóa'),
@@ -674,10 +684,16 @@ class _UsersManagementViewState extends State<UsersManagementView> {
               if (isSuperAdmin && !isSelf) ...[
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
-                  title: const Text(
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.errorFg(ctx),
+                  ),
+                  title: Text(
                     'Xóa vĩnh viễn tài khoản',
-                    style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: AppColors.errorFg(ctx),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   onTap: () => Navigator.pop(ctx, 'Xóa tài khoản'),
                 ),
@@ -757,6 +773,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String?>(
                       isExpanded: true,
+                      dropdownColor: AppColors.surface(ctx),
                       initialValue: branchOptions.any(
                             (b) => b['id']?.toString() == selectedBranchId,
                           )
@@ -962,11 +979,11 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           await showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.shield_outlined, color: Color(0xFFD97706)),
-                  SizedBox(width: 8),
-                  Expanded(
+                  Icon(Icons.shield_outlined, color: AppColors.warningFg(ctx)),
+                  const SizedBox(width: 8),
+                  const Expanded(
                     child: Text(
                       'Không thể xóa do có dữ liệu',
                       style: TextStyle(
@@ -1145,7 +1162,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
     final todayStr = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(isDesktop ? 24 : 16),
         child: Column(
@@ -1154,8 +1171,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
             // 1. PAGE ACTION HEADER TOOLBAR (Stitch SaaS style)
             Container(
               padding: const EdgeInsets.only(bottom: 16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border(context)),
+                ),
               ),
               child: isDesktop
                   ? Row(
@@ -1174,7 +1193,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                     'Quản lý Người dùng & Phân quyền Tài khoản',
                                     style: AppTextStyles.h2(context).copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   Container(
@@ -1183,21 +1202,22 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F5E9),
+                                      color: AppColors.successBg(context),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         CircleAvatar(
                                           radius: 3.5,
-                                          backgroundColor: Color(0xFF2E7D32),
+                                          backgroundColor:
+                                              AppColors.successFg(context),
                                         ),
-                                        SizedBox(width: 6),
+                                        const SizedBox(width: 6),
                                         Text(
                                           'Hệ thống bảo mật trực tuyến',
                                           style: TextStyle(
-                                            color: Color(0xFF2E7D32),
+                                            color: AppColors.successFg(context),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 11,
                                           ),
@@ -1210,18 +1230,18 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.today_rounded,
                                     size: 16,
-                                    color: Color(0xFF64748B),
+                                    color: AppColors.textSecondary(context),
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'Hôm nay: $todayStr • Tổng số tài khoản vận hành: ${_users.length}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: Color(0xFF64748B),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ),
@@ -1237,18 +1257,18 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: _exportUsers,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.file_download_outlined,
                                 size: 18,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                               ),
                               label: const Text('Xuất danh sách (.xlsx)'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF0F172A),
-                                side: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
+                                foregroundColor: AppColors.textPrimary(context),
+                                side: BorderSide(
+                                  color: AppColors.borderStrong(context),
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface(context),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 12,
@@ -1295,7 +1315,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               style: AppTextStyles.h2(context).copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
-                                color: const Color(0xFF0F172A),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             Container(
@@ -1304,14 +1324,14 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
+                                color: AppColors.successBg(context),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Text(
+                              child: Text(
                                 '● Hệ thống bảo mật trực tuyến',
                                 softWrap: true,
                                 style: TextStyle(
-                                  color: Color(0xFF2E7D32),
+                                  color: AppColors.successFg(context),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 11,
                                 ),
@@ -1323,21 +1343,21 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 2),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
                               child: Icon(
                                 Icons.today_rounded,
                                 size: 15,
-                                color: Color(0xFF64748B),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Hôm nay: $todayStr • Tổng số tài khoản vận hành: ${_users.length}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12.5,
-                                  color: Color(0xFF64748B),
+                                  color: AppColors.textSecondary(context),
                                 ),
                               ),
                             ),
@@ -1350,18 +1370,18 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: _exportUsers,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.file_download_outlined,
                                 size: 16,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                               ),
                               label: const Text('Xuất danh sách (.xlsx)'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF0F172A),
-                                side: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
+                                foregroundColor: AppColors.textPrimary(context),
+                                side: BorderSide(
+                                  color: AppColors.borderStrong(context),
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface(context),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 10,
@@ -1455,8 +1475,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       subtext:
                           'HV: $studentCount • GV: $teacherCount • NV/QT: $staffCount',
                       icon: Icons.group_rounded,
-                      iconBg: const Color(0xFFEEF2FF),
-                      iconColor: const Color(0xFF003FB1),
+                      iconBg: AppColors.infoBg(context),
+                      iconColor: AppColors.brand(context),
                       width: cardWidth,
                     ),
                     _buildStatCard(
@@ -1464,10 +1484,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       value: '$teacherCount GV',
                       subtext: 'Đang phụ trách giảng dạy',
                       icon: Icons.school_rounded,
-                      iconBg: const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
-                      pillColor: const Color(0xFFECFDF5),
-                      pillTextColor: const Color(0xFF047857),
+                      iconBg: AppColors.brandBg(context),
+                      iconColor: AppColors.infoFg(context),
+                      pillColor: AppColors.successBg(context),
+                      pillTextColor: AppColors.successFg(context),
                       width: cardWidth,
                     ),
                     _buildStatCard(
@@ -1475,10 +1495,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       value: '$activeCount',
                       subtext: '$activeRate% kích hoạt',
                       icon: Icons.verified_user_rounded,
-                      iconBg: const Color(0xFFF0FDF4),
-                      iconColor: const Color(0xFF16A34A),
-                      pillColor: const Color(0xFFF0FDF4),
-                      pillTextColor: const Color(0xFF15803D),
+                      iconBg: AppColors.successBg(context),
+                      iconColor: AppColors.successFg(context),
+                      pillColor: AppColors.successBg(context),
+                      pillTextColor: AppColors.successFg(context),
                       width: cardWidth,
                     ),
                     _buildStatCard(
@@ -1486,13 +1506,13 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       value: '$firstLoginCount tài khoản',
                       subtext: 'Tài khoản mới cấp phát',
                       icon: Icons.pending_actions_rounded,
-                      iconBg: const Color(0xFFFEF3C7),
-                      iconColor: const Color(0xFFD97706),
-                      pillColor: const Color(0xFFFFFBEB),
-                      pillTextColor: const Color(0xFFB45309),
+                      iconBg: AppColors.warningBg(context),
+                      iconColor: AppColors.warningFg(context),
+                      pillColor: AppColors.warningBg(context),
+                      pillTextColor: AppColors.warningFg(context),
                       valueColor: firstLoginCount > 0
-                          ? const Color(0xFFD97706)
-                          : const Color(0xFF0F172A),
+                          ? AppColors.warningFg(context)
+                          : AppColors.textPrimary(context),
                       width: cardWidth,
                     ),
                   ],
@@ -1505,14 +1525,14 @@ class _UsersManagementViewState extends State<UsersManagementView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
+                border: Border.all(color: AppColors.border(context)),
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x08000000),
+                    color: AppColors.shadow(context),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -1536,7 +1556,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               border: Border(
                                 bottom: BorderSide(
                                   color: isSelected
-                                      ? const Color(0xFF003FB1)
+                                      ? AppColors.brand(context)
                                       : Colors.transparent,
                                   width: 2.5,
                                 ),
@@ -1548,8 +1568,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                   tab['label']!,
                                   style: TextStyle(
                                     color: isSelected
-                                        ? const Color(0xFF003FB1)
-                                        : const Color(0xFF64748B),
+                                        ? AppColors.brand(context)
+                                        : AppColors.textSecondary(context),
                                     fontWeight: isSelected
                                         ? FontWeight.bold
                                         : FontWeight.w500,
@@ -1564,8 +1584,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? const Color(0xFFE0E7FF)
-                                        : const Color(0xFFF1F5F9),
+                                        ? AppColors.brandBg(context)
+                                        : AppColors.surfaceSubtle(context),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -1574,8 +1594,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
-                                          ? const Color(0xFF003FB1)
-                                          : const Color(0xFF64748B),
+                                          ? AppColors.brand(context)
+                                          : AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ),
@@ -1586,7 +1606,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       }).toList(),
                     ),
                   ),
-                  const Divider(color: Color(0xFFE2E8F0), height: 1),
+                  Divider(color: AppColors.border(context), height: 1),
                   const SizedBox(height: 14),
 
                   // Search & Dropdown Filters
@@ -1603,31 +1623,31 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                           decoration: InputDecoration(
                             hintText:
                                 'Tìm theo Họ tên, Email, SĐT hoặc Mã ID...',
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted(context),
                             ),
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.search,
                               size: 20,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                             filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
+                            fillColor: AppColors.surfaceSubtle(context),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              borderSide: BorderSide(
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              borderSide: BorderSide(
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                           ),
@@ -1638,13 +1658,16 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppColors.surfaceSubtle(context),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                          border: Border.all(
+                            color: AppColors.borderStrong(context),
+                          ),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             isExpanded: true,
+                            dropdownColor: AppColors.surface(context),
                             value: _selectedBranch,
                             items: [
                               const DropdownMenuItem(
@@ -1670,13 +1693,16 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppColors.surfaceSubtle(context),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                          border: Border.all(
+                            color: AppColors.borderStrong(context),
+                          ),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             isExpanded: true,
+                            dropdownColor: AppColors.surface(context),
                             value: _selectedStatus,
                             items: const [
                               DropdownMenuItem(
@@ -1707,16 +1733,18 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       // Quick actions
                       OutlinedButton.icon(
                         onPressed: _isMutating ? null : _importStudents,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.upload_file_rounded,
                           size: 18,
-                          color: Color(0xFF003FB1),
+                          color: AppColors.brand(context),
                         ),
                         label: const Text('Nhập từ Excel'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF0F172A),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          backgroundColor: const Color(0xFFF8FAFC),
+                          foregroundColor: AppColors.textPrimary(context),
+                          side: BorderSide(
+                            color: AppColors.borderStrong(context),
+                          ),
+                          backgroundColor: AppColors.surfaceSubtle(context),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
                             vertical: 12,
@@ -1728,9 +1756,9 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       ),
                       IconButton(
                         onPressed: () => _fetchUsers(),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.refresh_rounded,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                         tooltip: 'Làm mới dữ liệu',
                       ),
@@ -1784,14 +1812,14 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: const [
+                          border: Border.all(color: AppColors.border(context)),
+                          boxShadow: [
                             BoxShadow(
-                              color: Color(0x06000000),
+                              color: AppColors.shadow(context),
                               blurRadius: 4,
-                              offset: Offset(0, 1),
+                              offset: const Offset(0, 1),
                             ),
                           ],
                         ),
@@ -1856,14 +1884,14 @@ class _UsersManagementViewState extends State<UsersManagementView> {
       width: width,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x05000000),
+            color: AppColors.shadow(context),
             blurRadius: 3,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -1876,9 +1904,9 @@ class _UsersManagementViewState extends State<UsersManagementView> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1901,7 +1929,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: valueColor ?? const Color(0xFF0F172A),
+              color: valueColor ?? AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -1924,7 +1952,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           else
             Text(
               subtext,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary(context),
+              ),
             ),
         ],
       ),
@@ -1970,94 +2001,55 @@ class _UsersManagementViewState extends State<UsersManagementView> {
   }
 
   Widget _buildDesktopTable(List<dynamic> usersList) {
+    final headerStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textSecondary(context),
+    );
     return Column(
       children: [
         // Table Header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-            border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            border: Border(
+              bottom: BorderSide(color: AppColors.border(context)),
+            ),
           ),
-          child: const Row(
+          child: Row(
             children: [
               SizedBox(
                 width: 120,
-                child: Text(
-                  'MÃ ID',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text('MÃ ID', style: headerStyle),
               ),
               Expanded(
                 flex: 3,
-                child: Text(
-                  'HỌ VÀ TÊN',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text('HỌ VÀ TÊN', style: headerStyle),
               ),
               Expanded(
                 flex: 2,
-                child: Text(
-                  'VAI TRÒ',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text('VAI TRÒ', style: headerStyle),
               ),
               Expanded(
                 flex: 2,
-                child: Text(
-                  'CHI NHÁNH',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text('CHI NHÁNH', style: headerStyle),
               ),
               Expanded(
                 flex: 2,
-                child: Text(
-                  'LẦN ĐĂNG NHẬP',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text('LẦN ĐĂNG NHẬP', style: headerStyle),
               ),
               SizedBox(
                 width: 110,
-                child: Text(
-                  'TRẠNG THÁI',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text('TRẠNG THÁI', style: headerStyle),
               ),
               SizedBox(
                 width: 180,
                 child: Text(
                   'THAO TÁC',
                   textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                  ),
+                  style: headerStyle,
                 ),
               ),
             ],
@@ -2069,7 +2061,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: usersList.length,
           separatorBuilder: (_, _) =>
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              Divider(height: 1, color: AppColors.divider(context)),
           itemBuilder: (context, index) {
             final u = usersList[index] as Map<String, dynamic>;
             final fullName = u['fullName']?.toString() ?? 'Người dùng';
@@ -2099,10 +2091,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                     width: 120,
                     child: Text(
                       userCode,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF003FB1),
+                        color: AppColors.brand(context),
                         fontSize: 12,
                       ),
                     ),
@@ -2114,14 +2106,14 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       children: [
                         CircleAvatar(
                           radius: 18,
-                          backgroundColor: const Color(0xFFEEF2FF),
+                          backgroundColor: AppColors.infoBg(context),
                           child: Text(
                             fullName.isNotEmpty
                                 ? fullName[0].toUpperCase()
                                 : 'U',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF003FB1),
+                              color: AppColors.brand(context),
                               fontSize: 13,
                             ),
                           ),
@@ -2136,28 +2128,28 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                   Flexible(
                                     child: Text(
                                       fullName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
-                                        color: Color(0xFF0F172A),
+                                        color: AppColors.textPrimary(context),
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Icon(
+                                  Icon(
                                     Icons.verified_rounded,
                                     size: 14,
-                                    color: Color(0xFF2563EB),
+                                    color: AppColors.infoFg(context),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '$email • $phone',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF64748B),
+                                  color: AppColors.textSecondary(context),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -2180,9 +2172,9 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                     flex: 2,
                     child: Text(
                       branchName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF334155),
+                        color: AppColors.textBody(context),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -2198,8 +2190,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                           style: TextStyle(
                             fontSize: 12,
                             color: isFirstLogin
-                                ? const Color(0xFFD97706)
-                                : const Color(0xFF0F172A),
+                                ? AppColors.warningFg(context)
+                                : AppColors.textPrimary(context),
                             fontWeight: isFirstLogin
                                 ? FontWeight.w600
                                 : FontWeight.normal,
@@ -2209,9 +2201,9 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                           isFirstLogin
                               ? 'Cần đổi MK lần đầu'
                               : 'Tài khoản hệ thống',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textMuted(context),
                           ),
                         ),
                       ],
@@ -2227,13 +2219,13 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                       ),
                       decoration: BoxDecoration(
                         color: isActive
-                            ? const Color(0xFFECFDF5)
-                            : const Color(0xFFFEF2F2),
+                            ? AppColors.successBg(context)
+                            : AppColors.errorBg(context),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isActive
-                              ? const Color(0xFFA7F3D0)
-                              : const Color(0xFFFECACA),
+                              ? AppColors.successFg(context).withAlpha(90)
+                              : AppColors.errorFg(context).withAlpha(90),
                         ),
                       ),
                       child: Text(
@@ -2242,8 +2234,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: isActive
-                              ? const Color(0xFF047857)
-                              : const Color(0xFFB91C1C),
+                              ? AppColors.successFg(context)
+                              : AppColors.errorFg(context),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2262,10 +2254,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                             minHeight: 36,
                           ),
                           padding: EdgeInsets.zero,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.edit_outlined,
                             size: 18,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                           ),
                           tooltip: 'Chỉnh sửa thông tin',
                           onPressed: () => _showUserAction(u, 'Chỉnh sửa'),
@@ -2276,10 +2268,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                             minHeight: 36,
                           ),
                           padding: EdgeInsets.zero,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.key_rounded,
                             size: 18,
-                            color: Color(0xFFD97706),
+                            color: AppColors.warningFg(context),
                           ),
                           tooltip: 'Đổi mật khẩu',
                           onPressed: () =>
@@ -2297,8 +2289,8 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                                 : Icons.lock_open_rounded,
                             size: 18,
                             color: isActive
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFF16A34A),
+                                ? AppColors.errorFg(context)
+                                : AppColors.successFg(context),
                           ),
                           tooltip: isActive
                               ? 'Khóa tài khoản'
@@ -2315,10 +2307,10 @@ class _UsersManagementViewState extends State<UsersManagementView> {
                               minHeight: 36,
                             ),
                             padding: EdgeInsets.zero,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete_outline_rounded,
                               size: 18,
-                              color: Color(0xFFDC2626),
+                              color: AppColors.errorFg(context),
                             ),
                             tooltip: 'Xóa tài khoản',
                             onPressed: () => _showUserAction(u, 'Xóa tài khoản'),
@@ -2336,27 +2328,27 @@ class _UsersManagementViewState extends State<UsersManagementView> {
   }
 
   Widget _buildRoleBadge(String roleName) {
-    Color bg = const Color(0xFFEFF6FF);
-    Color text = const Color(0xFF1D4ED8);
-    Color border = const Color(0xFFBFDBFE);
+    Color bg = AppColors.brandBg(context);
+    Color text = AppColors.infoFg(context);
+    Color border = AppColors.infoFg(context).withAlpha(90);
 
     final lower = roleName.toLowerCase();
     if (lower.contains('giáo viên') ||
         lower.contains('teacher') ||
         lower.contains('giảng viên')) {
-      bg = const Color(0xFFF3E8FF);
-      text = const Color(0xFF6B21A8);
-      border = const Color(0xFFE9D5FF);
+      bg = AppColors.purpleBg(context);
+      text = AppColors.purpleFg(context);
+      border = AppColors.purpleFg(context).withAlpha(90);
     } else if (lower.contains('admin') || lower.contains('quản trị')) {
-      bg = const Color(0xFFFFE4E6);
-      text = const Color(0xFFBE123C);
-      border = const Color(0xFFFECDD3);
+      bg = AppColors.errorBg(context);
+      text = AppColors.errorFg(context);
+      border = AppColors.errorFg(context).withAlpha(90);
     } else if (lower.contains('tư vấn') ||
         lower.contains('học vụ') ||
         lower.contains('staff')) {
-      bg = const Color(0xFFFEF3C7);
-      text = const Color(0xFFB45309);
-      border = const Color(0xFFFDE68A);
+      bg = AppColors.warningBg(context);
+      text = AppColors.warningFg(context);
+      border = AppColors.warningFg(context).withAlpha(90);
     }
 
     return Container(
@@ -2383,7 +2375,7 @@ class _UsersManagementViewState extends State<UsersManagementView> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: usersList.length,
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          Divider(height: 1, color: AppColors.border(context)),
       itemBuilder: (context, index) {
         final u = usersList[index] as Map<String, dynamic>;
         final fullName = u['fullName']?.toString() ?? 'Người dùng';
@@ -2399,12 +2391,12 @@ class _UsersManagementViewState extends State<UsersManagementView> {
             vertical: 8,
           ),
           leading: CircleAvatar(
-            backgroundColor: const Color(0xFFEEF2FF),
+            backgroundColor: AppColors.infoBg(context),
             child: Text(
               fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF003FB1),
+                color: AppColors.brand(context),
               ),
             ),
           ),
@@ -2519,12 +2511,12 @@ class _DeleteUserConfirmationDialogState
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEE2E2),
+              color: AppColors.errorBg(context),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.delete_forever_rounded,
-              color: Color(0xFFDC2626),
+              color: AppColors.errorFg(context),
             ),
           ),
           const SizedBox(width: 12),
@@ -2558,25 +2550,27 @@ class _DeleteUserConfirmationDialogState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: AppColors.errorBg(context),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFECACA)),
+                  border: Border.all(
+                    color: AppColors.errorFg(context).withAlpha(90),
+                  ),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.warning_amber_rounded,
                       size: 20,
-                      color: Color(0xFFDC2626),
+                      color: AppColors.errorFg(context),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Lưu ý an toàn: Chỉ cho phép xóa vĩnh viễn tài khoản vừa tạo nhầm, chưa phát sinh lịch sử học vụ (lớp học, điểm danh, bài thi, hóa đơn, giờ dạy). Nếu đã có dữ liệu, hãy chọn Khóa/Vô hiệu hóa để bảo toàn dữ liệu.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF991B1B),
+                          color: AppColors.errorFg(context),
                           height: 1.4,
                         ),
                       ),
@@ -2616,24 +2610,26 @@ class _DeleteUserConfirmationDialogState
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
+                    color: AppColors.errorBg(context),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFFECACA)),
+                    border: Border.all(
+                      color: AppColors.errorFg(context).withAlpha(90),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 18,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.errorFg(context),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF991B1B),
+                            color: AppColors.errorFg(context),
                           ),
                         ),
                       ),

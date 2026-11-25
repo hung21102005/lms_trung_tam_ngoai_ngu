@@ -58,16 +58,17 @@ class AppDropdown<T> extends StatelessWidget {
           isExpanded: isExpanded,
           validator: validator,
           onChanged: enabled ? onChanged : null,
+          dropdownColor: AppColors.surface(context),
           style: AppTextStyles.bodyLarge(context),
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: prefixIcon,
             filled: true,
-            fillColor: enabled ? null : AppColors.surfaceLight.withAlpha(120),
+            fillColor: enabled ? null : AppColors.surfaceSubtle(context),
           ),
-          icon: const Icon(
+          icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textSecondaryLight,
+            color: AppColors.textSecondary(context),
           ),
           items: items.map((item) {
             return DropdownMenuItem<T>(

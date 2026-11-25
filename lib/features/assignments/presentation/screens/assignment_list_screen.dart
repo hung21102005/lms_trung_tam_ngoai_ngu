@@ -183,7 +183,7 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
 
   Widget _buildAssignmentCard(BuildContext context, AssignmentModel item) {
     final iconData = _getTypeIcon(item.type);
-    final iconColor = _getTypeColor(item.type);
+    final iconColor = _getTypeColor(context, item.type);
 
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -223,7 +223,7 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
                     Text(
                       'Thang điểm: ${item.maxScore.toStringAsFixed(0)} điểm',
                       style: AppTextStyles.caption(context)
-                          .copyWith(color: AppColors.neutral500),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -241,7 +241,7 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
             Text(
               item.description!,
               style: AppTextStyles.bodyMedium(context)
-                  .copyWith(color: AppColors.neutral600),
+                  .copyWith(color: AppColors.textSecondary(context)),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -253,17 +253,20 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               DeadlineCountdownWidget(deadline: item.deadline),
-              const Row(
+              Row(
                 children: [
                   Text(
                     'Chi tiết',
-                    style: TextStyle(color: AppColors.primary, fontSize: 13),
+                    style: TextStyle(
+                      color: AppColors.primaryOf(context),
+                      fontSize: 13,
+                    ),
                   ),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 12,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ],
               ),
@@ -279,15 +282,15 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.success.withAlpha(25),
+          color: AppColors.successBg(context),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           'Đã chấm: ${sub.score?.toStringAsFixed(1) ?? "0"}/10',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: AppColors.success,
+            color: AppColors.successFg(context),
           ),
         ),
       );
@@ -297,15 +300,15 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.warning.withAlpha(25),
+          color: AppColors.warningBg(context),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: const Text(
+        child: Text(
           'Nộp muộn',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: AppColors.warning,
+            color: AppColors.warningFg(context),
           ),
         ),
       );
@@ -314,15 +317,15 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primary.withAlpha(25),
+        color: AppColors.brandBg(context),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Text(
+      child: Text(
         'Đã nộp bài',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: AppColors.primaryOf(context),
         ),
       ),
     );
@@ -332,15 +335,15 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.neutral300,
+        color: AppColors.surfaceSubtle(context),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Text(
+      child: Text(
         'Chưa nộp',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: AppColors.neutral700,
+          color: AppColors.textBody(context),
         ),
       ),
     );
@@ -350,15 +353,15 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primary.withAlpha(25),
+        color: AppColors.brandBg(context),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         '${item.totalSubmissions} bài nộp',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: AppColors.primaryOf(context),
         ),
       ),
     );
@@ -377,16 +380,16 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
     }
   }
 
-  Color _getTypeColor(String type) {
+  Color _getTypeColor(BuildContext context, String type) {
     switch (type) {
       case 'SPEAKING':
-        return Colors.purple;
+        return AppColors.purpleFg(context);
       case 'WRITING':
-        return Colors.teal;
+        return AppColors.tealFg(context);
       case 'PROJECT':
-        return Colors.indigo;
+        return AppColors.infoFg(context);
       default:
-        return AppColors.primary;
+        return AppColors.primaryOf(context);
     }
   }
 }

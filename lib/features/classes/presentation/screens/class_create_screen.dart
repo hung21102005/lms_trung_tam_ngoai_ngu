@@ -625,9 +625,9 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+            color: AppColors.surfaceElevated(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            border: Border.all(color: AppColors.borderStrong(context)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -667,8 +667,8 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
     final isMobile = MediaQuery.sizeOf(context).width < 600;
 
     final parsedSessions = int.tryParse(_totalSessionsController.text.trim());
@@ -727,15 +727,15 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               if (isMobile) ...[
-                const MobileSectionCard(
+                MobileSectionCard(
                   child: Row(
                     children: [
                       Icon(
                         Icons.auto_awesome_rounded,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const SizedBox(width: 12),
+                      const Expanded(
                         child: Text(
                           'Chọn chương trình, xếp lịch và quy mô lớp. Hệ thống sẽ tạo các buổi học sau khi lưu.',
                           style: TextStyle(fontWeight: FontWeight.w500),
@@ -800,16 +800,18 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
+                          color: AppColors.errorBg(context),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFECACA)),
+                          border: Border.all(
+                            color: AppColors.errorFg(context).withValues(alpha: 0.35),
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.warning_amber_rounded,
-                              color: AppColors.error,
+                              color: AppColors.errorFg(context),
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -817,20 +819,20 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Khóa học chưa được duyệt và kích hoạt để mở lớp!',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.error,
+                                      color: AppColors.errorFg(context),
                                       fontSize: 13,
                                     ),
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
                                     'Trạng thái: ${_selectedCourseData!['publicationStatus'] ?? 'DRAFT'} · Vận hành: ${_selectedCourseData!['isActive'] == true ? 'Đang hoạt động' : 'Tạm ngưng'}.\nBackend bắt buộc khóa học phải đạt trạng thái ĐÃ CÔNG BỐ (PUBLISHED) và ĐANG HOẠT ĐỘNG trước khi mở lớp.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF991B1B),
+                                      color: AppColors.errorFg(context),
                                       height: 1.3,
                                     ),
                                   ),
@@ -847,12 +849,12 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                                         }
                                       }
                                     },
-                                    child: const Text(
+                                    child: Text(
                                       '👉 Bấm vào đây để mở màn hình Duyệt & Kích hoạt khóa học',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
+                                        color: AppColors.primaryOf(context),
                                         decoration: TextDecoration.underline,
                                       ),
                                     ),
@@ -902,11 +904,11 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                         _teachers.isEmpty &&
                         !_loadingLookups) ...[
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Chưa có giảng viên hoạt động thuộc chi nhánh này (hoặc liên cơ sở). Hãy kiểm tra chi nhánh của giảng viên tại Quản lý Người dùng.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -957,11 +959,11 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1E293B)
-                              : const Color(0xFFF8FAFC),
+                          color: AppColors.surfaceElevated(context),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                          border: Border.all(
+                            color: AppColors.borderStrong(context),
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1108,9 +1110,9 @@ class _ClassCreateScreenState extends State<ClassCreateScreen> {
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 '⚠️ Cấp độ thiết kế $levelSessions buổi. Lớp đang đặt $parsedSessions buổi.',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11.5,
-                                  color: Color(0xFFD97706),
+                                  color: AppColors.warningFg(context),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

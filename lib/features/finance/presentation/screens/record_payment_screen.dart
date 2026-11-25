@@ -88,10 +88,10 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.receipt_long_outlined,
                           size: 36,
-                          color: AppColors.primary,
+                          color: AppColors.primaryOf(context),
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -105,7 +105,9 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                           Text(
                             state.message,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.neutral600),
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
+                            ),
                           ),
                         ],
                         const SizedBox(height: 12),
@@ -151,17 +153,17 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(15),
+                      color: AppColors.brandBg(context),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: AppColors.primary.withAlpha(50),
+                        color: AppColors.primaryOf(context).withAlpha(60),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.receipt_long,
-                          color: AppColors.primary,
+                          color: AppColors.primaryOf(context),
                           size: 32,
                         ),
                         const SizedBox(width: 12),
@@ -179,10 +181,10 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 'Số dư còn nợ: ${_formatCurrency(inv.balance)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.error,
+                                  color: AppColors.errorFg(context),
                                 ),
                               ),
                             ],
@@ -370,9 +372,9 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                   style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 5),
-                const Text(
+                Text(
                   'Kiểm tra hóa đơn và ghi nhận khoản thanh toán.',
-                  style: TextStyle(color: AppColors.neutral600),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: MobileTokens.sectionGap),
                 MobileSectionCard(
@@ -381,8 +383,8 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                     children: [
                       Text(
                         invoice.code,
-                        style: const TextStyle(
-                          color: AppColors.primary,
+                        style: TextStyle(
+                          color: AppColors.primaryOf(context),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -397,15 +399,17 @@ class _RecordPaymentScreenState extends State<RecordPaymentScreen> {
                       const SizedBox(height: 13),
                       const Divider(height: 1),
                       const SizedBox(height: 13),
-                      const Text(
+                      Text(
                         'Số dư còn nợ',
-                        style: TextStyle(color: AppColors.neutral600),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _formatCurrency(invoice.balance),
-                        style: const TextStyle(
-                          color: AppColors.error,
+                        style: TextStyle(
+                          color: AppColors.errorFg(context),
                           fontSize: 23,
                           fontWeight: FontWeight.w800,
                         ),

@@ -63,9 +63,9 @@ class _StudentDistributionPieChartState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,9 +78,9 @@ class _StudentDistributionPieChartState
                 style: AppTextStyles.h4(context)
                     .copyWith(fontWeight: FontWeight.bold),
               ),
-              const Icon(
+              Icon(
                 Icons.pie_chart_outline,
-                color: AppColors.primary,
+                color: AppColors.primaryOf(context),
                 size: 20,
               ),
             ],

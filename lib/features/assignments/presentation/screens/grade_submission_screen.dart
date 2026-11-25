@@ -101,16 +101,19 @@ class _GradeSubmissionScreenState extends State<GradeSubmissionScreen> {
                 children: [
                   _statBadge(
                     'Tổng sĩ số: ${data.totalEnrolled}',
-                    AppColors.neutral700,
+                    AppColors.textBody(context),
                   ),
                   _statBadge(
                     'Đã nộp: ${data.submittedCount}',
-                    AppColors.primary,
+                    AppColors.primaryOf(context),
                   ),
-                  _statBadge('Đã chấm: ${data.gradedCount}', AppColors.success),
+                  _statBadge(
+                    'Đã chấm: ${data.gradedCount}',
+                    AppColors.successFg(context),
+                  ),
                   _statBadge(
                     'Chưa nộp: ${data.notSubmittedCount}',
-                    AppColors.error,
+                    AppColors.errorFg(context),
                   ),
                 ],
               ),
@@ -169,10 +172,10 @@ class _GradeSubmissionScreenState extends State<GradeSubmissionScreen> {
         ? 'Chưa chấm bài'
         : '${score.toStringAsFixed(1)} / ${data.maxScore.toStringAsFixed(1)} điểm';
     final statusColor = !hasSubmitted
-        ? AppColors.neutral600
+        ? AppColors.textSecondary(context)
         : score == null
-        ? AppColors.warning
-        : AppColors.success;
+        ? AppColors.warningFg(context)
+        : AppColors.successFg(context);
 
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -183,14 +186,14 @@ class _GradeSubmissionScreenState extends State<GradeSubmissionScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.primary.withAlpha(30),
+                backgroundColor: AppColors.brandBg(context),
                 child: Text(
                   item.fullName.isNotEmpty
                       ? item.fullName.substring(0, 1).toUpperCase()
                       : 'H',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
               ),
@@ -207,7 +210,7 @@ class _GradeSubmissionScreenState extends State<GradeSubmissionScreen> {
                     Text(
                       item.userCode,
                       style: AppTextStyles.caption(context)
-                          .copyWith(color: AppColors.neutral500),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),

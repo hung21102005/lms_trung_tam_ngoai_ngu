@@ -80,17 +80,17 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.school_outlined, size: 56, color: Color(0xFF94A3B8)),
+                  Icon(Icons.school_outlined, size: 56, color: AppColors.textMuted(context)),
                   const SizedBox(height: 16),
                   const Text(
                     'Bạn chưa được ghi danh vào lớp học nào.',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Khám phá danh mục khóa học chuẩn quốc tế và đăng ký lớp phù hợp với bạn.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSecondaryLight),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
@@ -141,33 +141,46 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: AppColors.brandBg(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                border: Border.all(
+                  color: AppColors.primaryOf(context).withValues(alpha: 0.25),
+                ),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      color: AppColors.primaryOf(context).withValues(alpha: 0.14),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF2563EB), size: 24),
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.primaryOf(context),
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Bạn muốn học tiếp cấp độ nâng cao?',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E3A8A)),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.textPrimary(context),
+                          ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Khám phá lộ trình tiếp theo, các lớp mở và đăng ký 1-chạm.',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF)),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textBody(context),
+                          ),
                         ),
                       ],
                     ),
@@ -294,35 +307,48 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
           const SizedBox(height: 4),
           Text(
             '${classes.length} lớp bạn đang hoặc đã tham gia',
-            style: const TextStyle(color: AppColors.neutral600),
+            style: TextStyle(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: AppColors.brandBg(context),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              border: Border.all(
+                color: AppColors.primaryOf(context).withValues(alpha: 0.25),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.auto_awesome_rounded, color: Color(0xFF2563EB), size: 20),
-                    SizedBox(width: 8),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.primaryOf(context),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Đăng ký khóa học / ca học tiếp theo',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A)),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.textPrimary(context),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Khám phá lộ trình phát triển và các lớp sắp mở.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textBody(context),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
@@ -363,12 +389,12 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(20),
+                              color: AppColors.brandBg(context),
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.school_rounded,
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -390,9 +416,9 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                                   classItem.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.neutral600,
+                                    color: AppColors.textSecondary(context),
                                   ),
                                 ),
                               ],
@@ -408,34 +434,34 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                           if (classItem.levelName != null)
                             MobileStatusPill(
                               label: classItem.levelName!,
-                              color: AppColors.secondary,
+                              color: AppColors.tealFg(context),
                             ),
                           MobileStatusPill(
                             label: classItem.code,
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                         ],
                       ),
                       const SizedBox(height: 14),
                       Text(
                         'Giảng viên: ${classItem.mainTeacherName ?? 'Chưa phân công'}',
-                        style: const TextStyle(color: AppColors.neutral600),
+                        style: TextStyle(color: AppColors.textSecondary(context)),
                       ),
                       const SizedBox(height: 12),
-                      const Row(
+                      Row(
                         children: [
                           Expanded(
                             child: Text(
                               'Xem giáo trình và bài học',
                               style: TextStyle(
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                           Icon(
                             Icons.arrow_forward_rounded,
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                         ],
                       ),
@@ -474,7 +500,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
         const SizedBox(height: 4),
         Text(
           classItem.name,
-          style: const TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 14),
         MobileSectionCard(
@@ -552,7 +578,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
               const SizedBox(height: 6),
               Text(
                 '$completedCount/${lessons.length} bài học đã hoàn thành',
-                style: const TextStyle(color: AppColors.neutral600),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: 12),
               LinearProgressIndicator(
@@ -593,8 +619,8 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                           ? Icons.check_circle_rounded
                           : Icons.menu_book_outlined,
                       color: completed.contains(lesson['id']?.toString())
-                          ? AppColors.success
-                          : AppColors.primary,
+                          ? AppColors.successFg(context)
+                          : AppColors.primaryOf(context),
                     ),
                     title: Text('${lesson['title'] ?? 'Bài học'}'),
                     subtitle: Text(
@@ -667,7 +693,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(
                           done ? Icons.check_circle : Icons.menu_book_outlined,
-                          color: done ? Colors.green : null,
+                          color: done ? AppColors.successFg(context) : null,
                         ),
                         title: Text('${lesson['title'] ?? 'Bài học'}'),
                         subtitle: Text(done ? 'Đã học' : 'Chưa hoàn thành'),

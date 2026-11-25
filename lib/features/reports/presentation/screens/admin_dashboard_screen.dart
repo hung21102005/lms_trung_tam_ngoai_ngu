@@ -235,7 +235,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const SizedBox(height: 4),
                   Text(
                     item.teacherName,
-                    style: const TextStyle(color: AppColors.neutral600),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                 ],
               ),
@@ -267,15 +267,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                         Text(
                           item.className,
-                          style: const TextStyle(color: AppColors.neutral600),
+                          style: TextStyle(
+                            color: AppColors.textSecondary(context),
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     _currencyFormat.format(item.balance),
-                    style: const TextStyle(
-                      color: AppColors.error,
+                    style: TextStyle(
+                      color: AppColors.errorFg(context),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -295,7 +297,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.primary, size: 18),
+            Icon(icon, color: AppColors.primaryOf(context), size: 18),
             Text(
               value,
               maxLines: 1,
@@ -325,7 +327,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 value: data.totalStudents.toString(),
                 subText: '+${data.newStudentsThisMonth} học viên mới tháng này',
                 icon: Icons.people_alt_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryOf(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -335,7 +337,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 value: data.totalActiveClasses.toString(),
                 subText: 'Đang vận hành',
                 icon: Icons.meeting_room_outlined,
-                color: const Color(0xFF0EA5E9),
+                color: AppColors.infoFg(context),
               ),
             ),
           ],
@@ -351,10 +353,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ? '▲ +${data.monthlyRevenueGrowth}% so với tháng trước'
                     : '▼ ${data.monthlyRevenueGrowth}% so với tháng trước',
                 subTextColor: data.monthlyRevenueGrowth >= 0
-                    ? AppColors.success
-                    : AppColors.error,
+                    ? AppColors.successFg(context)
+                    : AppColors.errorFg(context),
                 icon: Icons.monetization_on_outlined,
-                color: AppColors.success,
+                color: AppColors.successFg(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -363,9 +365,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 title: 'Công nợ tồn đọng',
                 value: _currencyFormat.format(data.totalDebts),
                 subText: 'Học phí chưa thu',
-                subTextColor: AppColors.error,
+                subTextColor: AppColors.errorFg(context),
                 icon: Icons.pending_actions_outlined,
-                color: AppColors.error,
+                color: AppColors.errorFg(context),
                 onTap: () => context.push(RouteNames.debtsReport),
               ),
             ),
@@ -390,9 +392,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.neutral200),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,9 +404,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondaryLight,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
                 Icon(icon, color: color, size: 20),
@@ -425,7 +427,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
-                color: subTextColor ?? AppColors.textSecondaryLight,
+                color: subTextColor ?? AppColors.textSecondary(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -439,9 +441,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,16 +456,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 style: AppTextStyles.h4(context)
                     .copyWith(fontWeight: FontWeight.bold),
               ),
-              const Icon(Icons.schedule, color: AppColors.primary, size: 20),
+              Icon(Icons.schedule, color: AppColors.primaryOf(context), size: 20),
             ],
           ),
           const SizedBox(height: 12),
           if (classes.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Text(
                 'Không có lớp nào sắp khai giảng',
-                style: TextStyle(color: AppColors.textSecondaryLight),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
             )
           else
@@ -476,12 +478,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: AppColors.brandBg(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.school_outlined,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                         size: 18,
                       ),
                     ),
@@ -499,9 +501,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           Text(
                             '${c.courseName} • GV: ${c.teacherName}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.textSecondaryLight,
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -512,17 +514,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       children: [
                         Text(
                           DateFormat('dd/MM/yyyy').format(c.startDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                         ),
                         Text(
                           '${c.enrolledCount}/${c.maxStudents} HV',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.textSecondaryLight,
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -540,9 +542,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,11 +559,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
               InkWell(
                 onTap: () => context.push(RouteNames.debtsReport),
-                child: const Text(
+                child: Text(
                   'Xem tất cả',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -570,11 +572,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           const SizedBox(height: 12),
           if (debtors.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Text(
                 'Không có công nợ tồn đọng',
-                style: TextStyle(color: AppColors.success),
+                style: TextStyle(color: AppColors.successFg(context)),
               ),
             )
           else
@@ -587,12 +589,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
+                        color: AppColors.errorBg(context),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.warning_amber_rounded,
-                        color: AppColors.error,
+                        color: AppColors.errorFg(context),
                         size: 20,
                       ),
                     ),
@@ -610,9 +612,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           Text(
                             '${d.invoiceCode} • ${d.className}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.textSecondaryLight,
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -620,10 +622,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                     Text(
                       _currencyFormat.format(d.balance),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: AppColors.error,
+                        color: AppColors.errorFg(context),
                       ),
                     ),
                   ],

@@ -309,7 +309,7 @@ class _TeacherClassWorkflowViewState extends State<TeacherClassWorkflowView> {
                 const SizedBox(height: 6),
                 Text(
                   '${session.date?.day ?? ''}/${session.date?.month ?? ''} · ${session.startTime}–${session.endTime}',
-                  style: const TextStyle(color: AppColors.neutral600),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: 8),
                 Align(
@@ -354,7 +354,7 @@ class _TeacherClassWorkflowViewState extends State<TeacherClassWorkflowView> {
                 MobileStatusPill(
                   label:
                       '${submission.score!.toStringAsFixed(1)}/${result.assignment.maxScore.toStringAsFixed(0)}',
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
                 if (submission.feedback?.isNotEmpty == true) ...[
                   const SizedBox(height: 8),
@@ -383,7 +383,7 @@ class _TeacherClassWorkflowViewState extends State<TeacherClassWorkflowView> {
               const SizedBox(height: 8),
               Text(
                 '${assignment.gradedCount}/${assignment.totalSubmissions} bài đã chấm · Thang ${assignment.maxScore.toStringAsFixed(0)} điểm',
-                style: const TextStyle(color: AppColors.neutral600),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: 8),
               Align(

@@ -198,7 +198,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     Text(
                       'Lớp: ${assignment.className ?? ""} (${assignment.classCode ?? ""})',
                       style: AppTextStyles.bodyMedium(context)
-                          .copyWith(color: AppColors.neutral600),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -209,14 +209,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(25),
+                  color: AppColors.brandBg(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'Thang ${assignment.maxScore.toStringAsFixed(0)} điểm',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
               ),
@@ -232,10 +232,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.category_outlined,
                       size: 18,
-                      color: AppColors.neutral500,
+                      color: AppColors.textSecondary(context),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -260,7 +260,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.neutral300),
+              border: Border.all(color: AppColors.borderStrong(context)),
             ),
             child: LinkifiedText(
               text: assignment.description ?? 'Không có mô tả chi tiết.',
@@ -298,13 +298,13 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         Text(
                           'Đã nộp: ${assignment.totalSubmissions} bài',
                           style: AppTextStyles.h4(context)
-                              .copyWith(color: AppColors.primary),
+                              .copyWith(color: AppColors.primaryOf(context)),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Đã chấm: ${assignment.gradedCount} bài · Chưa chấm: ${assignment.totalSubmissions - assignment.gradedCount} bài',
                           style: AppTextStyles.caption(context)
-                              .copyWith(color: AppColors.neutral600),
+                              .copyWith(color: AppColors.textSecondary(context)),
                         ),
                       ],
                     ),
@@ -358,17 +358,17 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             _ => 'Chờ giảng viên chấm',
           };
     final statusColor = sub?.status == 'GRADED'
-        ? AppColors.success
+        ? AppColors.successFg(context)
         : sub?.status == 'RETURNED'
-        ? AppColors.error
-        : AppColors.primary;
+        ? AppColors.errorFg(context)
+        : AppColors.primaryOf(context);
     return ListView(
       key: const ValueKey('student-assignment-mobile-detail'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
         Text(
           assignment.className ?? 'Lớp học',
-          style: const TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 5),
         Text(
@@ -383,7 +383,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             MobileStatusPill(label: status, color: statusColor),
             MobileStatusPill(
               label: _getTypeName(assignment.type),
-              color: AppColors.secondary,
+              color: AppColors.tealFg(context),
             ),
           ],
         ),
@@ -391,16 +391,16 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         MobileSectionCard(
           child: Row(
             children: [
-              const Icon(Icons.event_outlined, color: AppColors.primary),
+              Icon(Icons.event_outlined, color: AppColors.primaryOf(context)),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Hạn nộp',
                       style: TextStyle(
-                        color: AppColors.neutral600,
+                        color: AppColors.textSecondary(context),
                         fontSize: 12,
                       ),
                     ),
@@ -415,8 +415,8 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               ),
               Text(
                 '${assignment.maxScore.toStringAsFixed(0)} điểm',
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: AppColors.primaryOf(context),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -560,11 +560,11 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.neutral300),
+        border: Border.all(color: AppColors.borderStrong(context)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.picture_as_pdf, color: AppColors.error, size: 24),
+          Icon(Icons.picture_as_pdf, color: AppColors.errorFg(context), size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -576,9 +576,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.open_in_new,
-              color: AppColors.primary,
+              color: AppColors.primaryOf(context),
               size: 20,
             ),
             tooltip: 'Mở tài liệu',
@@ -633,10 +633,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: sub.status == 'GRADED'
-                      ? AppColors.success.withAlpha(25)
+                      ? AppColors.successBg(context)
                       : sub.status == 'LATE'
-                      ? AppColors.warning.withAlpha(25)
-                      : AppColors.primary.withAlpha(25),
+                      ? AppColors.warningBg(context)
+                      : AppColors.brandBg(context),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -655,10 +655,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: sub.status == 'GRADED'
-                        ? AppColors.success
+                        ? AppColors.successFg(context)
                         : sub.status == 'LATE'
-                        ? AppColors.warning
-                        : AppColors.primary,
+                        ? AppColors.warningFg(context)
+                        : AppColors.primaryOf(context),
                   ),
                 ),
               ),
@@ -666,7 +666,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 Text(
                   'Nộp lúc: ${sub.submittedAt.split("T")[0]}',
                   style: AppTextStyles.caption(context)
-                      .copyWith(color: AppColors.neutral500),
+                      .copyWith(color: AppColors.textSecondary(context)),
                 ),
             ],
           ),
@@ -675,12 +675,12 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.success.withAlpha(20),
+                color: AppColors.successBg(context),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.star, color: AppColors.success, size: 28),
+                  Icon(Icons.star, color: AppColors.successFg(context), size: 28),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -688,17 +688,17 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       children: [
                         Text(
                           'Điểm số: ${sub.score!.toStringAsFixed(1)} / ${assignment.maxScore.toStringAsFixed(1)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.success,
+                            color: AppColors.successFg(context),
                           ),
                         ),
                         if (sub.gradedByName != null)
                           Text(
                             'Chấm bởi: ${sub.gradedByName}',
                             style: AppTextStyles.caption(context)
-                                .copyWith(color: AppColors.neutral600),
+                                .copyWith(color: AppColors.textSecondary(context)),
                           ),
                         if (sub.gradedAt != null)
                           Text(
@@ -723,7 +723,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             Text(
               sub.feedback!,
               style: AppTextStyles.bodyMedium(context).copyWith(
-                color: AppColors.neutral700,
+                color: AppColors.textBody(context),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -789,7 +789,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          const Icon(Icons.upload_file, size: 48, color: AppColors.neutral400),
+          Icon(Icons.upload_file, size: 48, color: AppColors.textMuted(context)),
           const SizedBox(height: 10),
           Text(
             'Bạn chưa nộp bài tập này',
@@ -800,7 +800,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           Text(
             'Hãy hoàn thành bài nộp trước hạn để không bị tính trễ hạn.',
             style: AppTextStyles.caption(context)
-                .copyWith(color: AppColors.neutral500),
+                .copyWith(color: AppColors.textSecondary(context)),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),

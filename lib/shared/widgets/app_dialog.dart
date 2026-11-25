@@ -24,13 +24,19 @@ class AppDialog {
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(
               cancelText,
-              style: AppTextStyles.label(context).copyWith(color: AppColors.textSecondaryLight),
+              style: AppTextStyles.label(context).copyWith(
+                color: AppColors.textSecondary(context),
+              ),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: confirmColor ?? AppColors.primary,
+              backgroundColor:
+                  confirmColor ??
+                  (AppColors.isDark(context)
+                      ? AppColors.primaryLight
+                      : AppColors.primary),
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

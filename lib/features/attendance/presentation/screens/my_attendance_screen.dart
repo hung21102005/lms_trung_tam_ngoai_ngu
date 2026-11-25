@@ -99,7 +99,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
         const SizedBox(height: 5),
         Text(
           '${summary.totalSessions} buổi học đã được điểm danh',
-          style: const TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 18),
         MobileSectionCard(
@@ -113,8 +113,8 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
               const SizedBox(height: 8),
               Text(
                 '${rate.toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: AppColors.primaryOf(context),
                   fontSize: 35,
                   fontWeight: FontWeight.w800,
                 ),
@@ -133,11 +133,31 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _buildMobileStat('Có mặt', summary.present, AppColors.success),
-            _buildMobileStat('Đi muộn', summary.late, AppColors.warning),
-            _buildMobileStat('Vắng', summary.absent, AppColors.error),
-            _buildMobileStat('Có phép', summary.excused, AppColors.primary),
-            _buildMobileStat('Học bù', summary.makeup, Colors.purple),
+            _buildMobileStat(
+              'Có mặt',
+              summary.present,
+              AppColors.successFg(context),
+            ),
+            _buildMobileStat(
+              'Đi muộn',
+              summary.late,
+              AppColors.warningFg(context),
+            ),
+            _buildMobileStat(
+              'Vắng',
+              summary.absent,
+              AppColors.errorFg(context),
+            ),
+            _buildMobileStat(
+              'Có phép',
+              summary.excused,
+              AppColors.primaryOf(context),
+            ),
+            _buildMobileStat(
+              'Học bù',
+              summary.makeup,
+              AppColors.purpleFg(context),
+            ),
           ],
         ),
         const SizedBox(height: 24),
@@ -165,7 +185,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                       Text(
                         _getStatusText(record.status),
                         style: TextStyle(
-                          color: _getStatusColor(record.status),
+                          color: _getStatusColor(context, record.status),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -174,12 +194,12 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                   const SizedBox(height: 6),
                   Text(
                     '${record.className} · Buổi ${record.sessionNumber}',
-                    style: const TextStyle(color: AppColors.neutral600),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${record.sessionDate.split('T')[0]} · ${record.startTime}–${record.endTime}',
-                    style: const TextStyle(color: AppColors.neutral600),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                   if (record.notes?.isNotEmpty == true) ...[
                     const SizedBox(height: 8),
@@ -232,13 +252,13 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                       child: CircularProgressIndicator(
                         value: summary.attendanceRate / 100.0,
                         strokeWidth: 8,
-                        backgroundColor: AppColors.neutral200,
+                        backgroundColor: AppColors.surfaceSubtle(context),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           summary.attendanceRate >= 80
-                              ? AppColors.success
+                              ? AppColors.successFg(context)
                               : summary.attendanceRate >= 65
-                              ? AppColors.warning
-                              : AppColors.error,
+                              ? AppColors.warningFg(context)
+                              : AppColors.errorFg(context),
                         ),
                       ),
                     ),
@@ -257,7 +277,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                       Text(
                         'Tỷ lệ chuyên cần',
                         style: AppTextStyles.bodyMedium(context)
-                            .copyWith(color: AppColors.neutral500),
+                            .copyWith(color: AppColors.textSecondary(context)),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -268,10 +288,10 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                             : 'Nguy cơ cấm thi do vắng quá số buổi quy định.',
                         style: AppTextStyles.caption(context).copyWith(
                           color: summary.attendanceRate >= 80
-                              ? AppColors.success
+                              ? AppColors.successFg(context)
                               : summary.attendanceRate >= 65
-                              ? AppColors.warning
-                              : AppColors.error,
+                              ? AppColors.warningFg(context)
+                              : AppColors.errorFg(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -290,7 +310,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                 child: _buildMiniStatCard(
                   'Có mặt',
                   summary.present,
-                  AppColors.success,
+                  AppColors.successFg(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -298,7 +318,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                 child: _buildMiniStatCard(
                   'Đi muộn',
                   summary.late,
-                  AppColors.warning,
+                  AppColors.warningFg(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -306,7 +326,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                 child: _buildMiniStatCard(
                   'Vắng',
                   summary.absent,
-                  AppColors.error,
+                  AppColors.errorFg(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -314,7 +334,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                 child: _buildMiniStatCard(
                   'Học bù',
                   summary.makeup,
-                  AppColors.primary,
+                  AppColors.primaryOf(context),
                 ),
               ),
             ],
@@ -399,7 +419,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
     BuildContext context,
     StudentAttendanceRecordModel record,
   ) {
-    final statusColor = _getStatusColor(record.status);
+    final statusColor = _getStatusColor(context, record.status);
     final statusText = _getStatusText(record.status);
 
     return AppCard(
@@ -436,21 +456,21 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                 Text(
                   '${record.className} - Buổi ${record.sessionNumber}',
                   style: AppTextStyles.caption(context)
-                      .copyWith(color: AppColors.neutral500),
+                      .copyWith(color: AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.access_time,
                       size: 12,
-                      color: AppColors.neutral400,
+                      color: AppColors.textMuted(context),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${record.sessionDate.split('T')[0]} (${record.startTime} - ${record.endTime})',
                       style: AppTextStyles.caption(context)
-                          .copyWith(color: AppColors.neutral600),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -459,7 +479,7 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
                   Text(
                     'Ghi chú: ${record.notes}',
                     style: AppTextStyles.caption(context).copyWith(
-                      color: AppColors.neutral700,
+                      color: AppColors.textBody(context),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -472,20 +492,20 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
     );
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(BuildContext context, String status) {
     switch (status) {
       case 'PRESENT':
-        return AppColors.success;
+        return AppColors.successFg(context);
       case 'LATE':
-        return AppColors.warning;
+        return AppColors.warningFg(context);
       case 'ABSENT':
-        return AppColors.error;
+        return AppColors.errorFg(context);
       case 'EXCUSED':
-        return AppColors.primary;
+        return AppColors.primaryOf(context);
       case 'MAKEUP':
-        return Colors.purple;
+        return AppColors.purpleFg(context);
       default:
-        return AppColors.neutral500;
+        return AppColors.textSecondary(context);
     }
   }
 
@@ -517,9 +537,12 @@ class _MyAttendanceScreenState extends State<MyAttendanceScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Gửi yêu cầu học bù cho nhân viên học vụ xếp lịch bù phù hợp.',
-              style: TextStyle(fontSize: 13, color: AppColors.neutral600),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary(dialogContext),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(

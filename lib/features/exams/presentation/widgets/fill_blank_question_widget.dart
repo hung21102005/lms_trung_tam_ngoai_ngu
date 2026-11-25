@@ -64,7 +64,7 @@ class _FillBlankQuestionWidgetState extends State<FillBlankQuestionWidget> {
         Text(
           'Nhập câu trả lời của bạn vào ô bên dưới:',
           style: AppTextStyles.bodyMedium(context).copyWith(
-            color: AppColors.neutral600,
+            color: AppColors.textSecondary(context),
             fontWeight: FontWeight.w500,
           ),
         ),

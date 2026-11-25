@@ -392,11 +392,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.qr_code_2_rounded, color: Color(0xFF003FB1)),
-            SizedBox(width: 8),
-            Text('Mã Định Danh Điện Tử EduLMS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            Icon(Icons.qr_code_2_rounded, color: AppColors.brand(ctx)),
+            const SizedBox(width: 8),
+            const Text('Mã Định Danh Điện Tử EduLMS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
           ],
         ),
         content: SizedBox(
@@ -407,21 +407,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: AppColors.border(ctx)),
                 ),
                 child: const Icon(Icons.qr_code_2_rounded, size: 160, color: Color(0xFF0F172A)),
               ),
               const SizedBox(height: 14),
               Text(
                 user.fullName,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary(ctx)),
               ),
               const SizedBox(height: 4),
               Text(
                 '${_getRoleCodeLabel(user)} • ${user.email ?? ""}',
-                style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary(ctx)),
               ),
             ],
           ),
@@ -469,15 +469,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
       builder: (context, state) {
         if (state is ProfileLoading) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFF8F9FF),
-            body: LoadingWidget(message: 'Đang tải thông tin hồ sơ từ cơ sở dữ liệu...'),
+          return Scaffold(
+            backgroundColor: AppColors.background(context),
+            body: const LoadingWidget(message: 'Đang tải thông tin hồ sơ từ cơ sở dữ liệu...'),
           );
         }
 
         if (state is ProfileError && state.user == null) {
           return Scaffold(
-            backgroundColor: const Color(0xFFF8F9FF),
+            backgroundColor: AppColors.background(context),
             appBar: AppBar(title: const Text('Tài khoản & Cá nhân')),
             body: app_err.AppErrorWidget(
               message: state.message,
@@ -494,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (user == null) {
           return Scaffold(
-            backgroundColor: const Color(0xFFF8F9FF),
+            backgroundColor: AppColors.background(context),
             appBar: AppBar(title: const Text('Tài khoản & Cá nhân')),
             body: Center(
               child: ElevatedButton.icon(
@@ -525,16 +525,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final todayStr = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           // Top Navigation Bar matching Admin/Teacher/Student Portal Header
           Container(
             height: 68,
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
+              border: Border(bottom: BorderSide(color: AppColors.border(context))),
             ),
             child: Row(
               children: [
@@ -546,43 +546,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context.go(user.dashboardRoute ?? RouteNames.login);
                     }
                   },
-                  icon: const Icon(Icons.arrow_back_rounded, size: 17, color: Color(0xFF0F172A)),
+                  icon: Icon(Icons.arrow_back_rounded, size: 17, color: AppColors.textPrimary(context)),
                   label: const Text('Quay lại Bảng điều khiển'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0F172A),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    foregroundColor: AppColors.textPrimary(context),
+                    side: BorderSide(color: AppColors.borderStrong(context)),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
                 const SizedBox(width: 20),
-                Container(width: 1, height: 28, color: const Color(0xFFE2E8F0)),
+                Container(width: 1, height: 28, color: AppColors.border(context)),
                 const SizedBox(width: 20),
-                const Icon(Icons.manage_accounts_rounded, color: Color(0xFF003FB1), size: 22),
+                Icon(Icons.manage_accounts_rounded, color: AppColors.brand(context), size: 22),
                 const SizedBox(width: 10),
-                const Flexible(
+                Flexible(
                   child: Text(
                     'Hồ sơ Cá nhân & Bảo mật Tài khoản',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF0F172A)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.textPrimary(context)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: AppColors.successBg(context),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF2E7D32)),
+                      CircleAvatar(radius: 3.5, backgroundColor: AppColors.successFg(context)),
                       const SizedBox(width: 6),
                       Text(
                         _getRoleStatusBadge(user),
-                        style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600, fontSize: 11),
+                        style: TextStyle(color: AppColors.successFg(context), fontWeight: FontWeight.w600, fontSize: 11),
                       ),
                     ],
                   ),
@@ -593,18 +593,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context.read<ProfileBloc>().add(const LoadProfileEvent());
                     _fetchRoleScopedStats(user, force: true);
                   },
-                  icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B)),
+                  icon: Icon(Icons.refresh_rounded, color: AppColors.textSecondary(context)),
                   tooltip: 'Làm mới dữ liệu hồ sơ',
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () => _confirmLogout(context),
-                  icon: const Icon(Icons.logout_rounded, size: 17, color: Color(0xFFDC2626)),
+                  icon: Icon(Icons.logout_rounded, size: 17, color: AppColors.errorFg(context)),
                   label: const Text('Đăng xuất'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(color: Color(0xFFFECACA)),
-                    backgroundColor: const Color(0xFFFEF2F2),
+                    foregroundColor: AppColors.errorFg(context),
+                    side: BorderSide(color: AppColors.errorFg(context).withAlpha(110)),
+                    backgroundColor: AppColors.errorBg(context),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
@@ -626,8 +626,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Page Heading Banner
                       Container(
                         padding: const EdgeInsets.only(bottom: 18),
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: AppColors.border(context))),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -641,7 +641,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyles.h2(context).copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF0F172A),
+                                    color: AppColors.textPrimary(context),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -649,7 +649,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   'Hôm nay: $todayStr • Quản lý thông tin định danh, mật khẩu bảo mật và quyền hạn truy cập trên hệ thống Web Portal',
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary(context)),
                                 ),
                               ],
                             )),
@@ -670,7 +670,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 _activeWebTab == 1 ? 'Cập nhật mật khẩu' : '+ Lưu thông tin hồ sơ',
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF003FB1),
+                                backgroundColor: AppColors.isDark(context)
+                                    ? AppColors.primaryLight
+                                    : const Color(0xFF003FB1),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -772,11 +774,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // 1. Proportional Digital Identity Card
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
-              BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: [
+              BoxShadow(color: AppColors.shadow(context), blurRadius: 8, offset: const Offset(0, 2)),
             ],
           ),
           child: Column(
@@ -876,18 +878,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   children: [
                     _buildInfoRow(Icons.badge_outlined, 'Mã định danh', user.userCode),
-                    const Divider(height: 22, color: Color(0xFFF1F5F9)),
+                    Divider(height: 22, color: AppColors.divider(context)),
                     _buildInfoRow(Icons.email_outlined, 'Email đăng nhập', user.email ?? 'Chưa cập nhật'),
-                    const Divider(height: 22, color: Color(0xFFF1F5F9)),
+                    Divider(height: 22, color: AppColors.divider(context)),
                     _buildInfoRow(Icons.phone_outlined, 'Số điện thoại', user.phone ?? 'Chưa cập nhật'),
-                    const Divider(height: 22, color: Color(0xFFF1F5F9)),
+                    Divider(height: 22, color: AppColors.divider(context)),
                     _buildInfoRow(Icons.apartment_rounded, 'Cơ sở trực thuộc', branchTitle),
-                    const Divider(height: 22, color: Color(0xFFF1F5F9)),
+                    Divider(height: 22, color: AppColors.divider(context)),
                     _buildInfoRow(
                       Icons.verified_rounded,
                       'Trạng thái tài khoản',
                       user.status == 'ACTIVE' ? 'Đang hoạt động (ACTIVE)' : user.status,
-                      valueColor: const Color(0xFF047857),
+                      valueColor: AppColors.successFg(context),
                     ),
                   ],
                 ),
@@ -901,20 +903,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.analytics_outlined, color: Color(0xFF003FB1), size: 19),
-                  SizedBox(width: 8),
+                  Icon(Icons.analytics_outlined, color: AppColors.brand(context), size: 19),
+                  const SizedBox(width: 8),
                   Flexible(child: Text(
                     'Thông Số Liên Kết Thực Tế',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Color(0xFF0F172A)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppColors.textPrimary(context)),
                   )),
                 ],
               ),
@@ -926,7 +928,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: stat1Label,
                       value: stat1Value,
                       icon: stat1Icon,
-                      color: const Color(0xFF003FB1),
+                      color: AppColors.brand(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -935,7 +937,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: stat2Label,
                       value: stat2Value,
                       icon: stat2Icon,
-                      color: const Color(0xFF047857),
+                      color: AppColors.successFg(context),
                     ),
                   ),
                 ],
@@ -948,7 +950,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: stat3Label,
                       value: stat3Value,
                       icon: stat3Icon,
-                      color: const Color(0xFF7C3AED),
+                      color: AppColors.purpleFg(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -957,7 +959,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Vai trò đảm nhiệm',
                       value: '$rolesCount vai trò',
                       icon: Icons.shield_outlined,
-                      color: const Color(0xFFD97706),
+                      color: AppColors.warningFg(context),
                     ),
                   ),
                 ],
@@ -971,29 +973,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppColors.border(context)),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.laptop_chromebook_rounded, color: Color(0xFF003FB1), size: 19),
-                  SizedBox(width: 8),
+                  Icon(Icons.laptop_chromebook_rounded, color: AppColors.brand(context), size: 19),
+                  const SizedBox(width: 8),
                   Flexible(child: Text(
                     'Phiên Làm Việc Website Hiện Tại',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary(context)),
                   )),
                 ],
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
                 '• Nền tảng: EduLMS Web Portal (Desktop Browser)\n'
                 '• Phương thức xác thực: JWT Bearer Token (HTTPS/REST)\n'
                 '• Xác thực sinh trắc học: Đã ẩn tự động (Chỉ áp dụng trên ứng dụng di động iOS/Android)',
-                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.5),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context), height: 1.5),
               ),
             ],
           ),
@@ -1005,12 +1007,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: const Color(0xFF64748B)),
+        Icon(icon, size: 18, color: AppColors.textSecondary(context)),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary(context)),
           ),
         ),
         Flexible(
@@ -1020,7 +1022,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: valueColor ?? const Color(0xFF0F172A),
+              color: valueColor ?? AppColors.textPrimary(context),
             ),
           ),
         ),
@@ -1037,9 +1039,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.surfaceElevated(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1048,12 +1050,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary(context)),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary(context)),
           ),
         ],
       ),
@@ -1063,11 +1065,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildWebRightColumn(BuildContext context, UserEntity user, bool isUpdating) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
+          BoxShadow(color: AppColors.shadow(context), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -1076,8 +1078,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Horizontal Tabs Header
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.border(context))),
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -1107,6 +1109,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildWebTabButton(int index, String label, IconData icon) {
     final isSelected = _activeWebTab == index;
+    final activeColor = AppColors.brand(context);
+    final inactiveColor = AppColors.textSecondary(context);
     return InkWell(
       onTap: () => setState(() => _activeWebTab = index),
       child: Container(
@@ -1115,21 +1119,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? const Color(0xFF003FB1) : Colors.transparent,
+              color: isSelected ? activeColor : Colors.transparent,
               width: 2.5,
             ),
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: isSelected ? const Color(0xFF003FB1) : const Color(0xFF64748B)),
+            Icon(icon, size: 18, color: isSelected ? activeColor : inactiveColor),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? const Color(0xFF003FB1) : const Color(0xFF64748B),
+                color: isSelected ? activeColor : inactiveColor,
               ),
             ),
           ],
@@ -1150,36 +1154,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(child: Column(
+              Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Thông Tin Cá Nhân & Hồ Sơ Định Danh',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary(context)),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Cập nhật họ tên, số điện thoại liên hệ và địa chỉ thường trú trực tiếp trên hệ thống',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary(context)),
                   ),
                 ],
               )),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
+                  color: AppColors.successBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.verified_rounded, size: 15, color: Color(0xFF047857)),
-                    SizedBox(width: 4),
+                    Icon(Icons.verified_rounded, size: 15, color: AppColors.successFg(context)),
+                    const SizedBox(width: 4),
                     Text(
                       'Đã đồng bộ CSDL',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.successFg(context)),
                     ),
                   ],
                 ),
@@ -1313,18 +1317,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppColors.surfaceElevated(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: Color(0xFF003FB1), size: 20),
+                Icon(Icons.info_outline_rounded, color: AppColors.brand(context), size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _getRoleSubtitle(user),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF334155)),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textBody(context)),
                   ),
                 ),
               ],
@@ -1354,7 +1358,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
                 label: Text(isUpdating ? 'Đang lưu...' : 'Lưu thông tin cá nhân'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF003FB1),
+                  backgroundColor: AppColors.isDark(context)
+                      ? AppColors.primaryLight
+                      : const Color(0xFF003FB1),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1376,14 +1382,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Đổi Mật Khẩu Đăng Nhập Tài Khoản',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary(context)),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Mật khẩu mới cần có tối thiểu 6 ký tự và không trùng với mật khẩu đang sử dụng.',
-            style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: 20),
 
@@ -1459,7 +1465,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.key_rounded, size: 18),
               label: Text(isUpdating ? 'Đang cập nhật...' : 'Xác nhận đổi mật khẩu'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF003FB1),
+                backgroundColor: AppColors.isDark(context)
+                    ? AppColors.primaryLight
+                    : const Color(0xFF003FB1),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1467,25 +1475,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
-          const Divider(height: 36, color: Color(0xFFE2E8F0)),
+          Divider(height: 36, color: AppColors.border(context)),
 
-          const Text(
+          Text(
             'Tùy Chọn Bảo Mật Phiên Đăng Nhập Trình Duyệt (Web Security)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary(context)),
           ),
           const SizedBox(height: 12),
 
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _notifyEmailLoginAlert,
-            activeThumbColor: const Color(0xFF003FB1),
+            activeThumbColor: AppColors.primaryOf(context),
             title: const Text(
               'Gửi cảnh báo qua Email khi tài khoản đăng nhập trên trình duyệt hoặc máy tính mới',
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Giúp phát hiện sớm truy cập trái phép vào cổng quản trị Web Portal.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
             ),
             onChanged: (v) => setState(() => _notifyEmailLoginAlert = v),
           ),
@@ -1493,14 +1501,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _autoLockIdleWebSession,
-            activeThumbColor: const Color(0xFF003FB1),
+            activeThumbColor: AppColors.primaryOf(context),
             title: const Text(
               'Tự động khóa phiên làm việc trên trình duyệt khi không thao tác sau 30 phút',
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Đảm bảo an toàn dữ liệu khi bạn rời khỏi bàn làm việc.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
             ),
             onChanged: (v) => setState(() => _autoLockIdleWebSession = v),
           ),
@@ -1518,14 +1526,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Vai Trò & Phạm Vi Quyền Hạn Trên Hệ Thống (RBAC)',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary(context)),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Danh sách các vai trò và quyền hạn được cấp cho tài khoản của bạn:',
-          style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 16),
 
@@ -1536,18 +1544,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFEEF2FF),
+                color: AppColors.infoBg(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFC7D2FE)),
+                border: Border.all(color: AppColors.brand(context).withAlpha(90)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.verified_user_rounded, size: 16, color: Color(0xFF003FB1)),
+                  Icon(Icons.verified_user_rounded, size: 16, color: AppColors.brand(context)),
                   const SizedBox(width: 8),
                   Text(
                     'Vai trò: ${role.toUpperCase()}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF003FB1)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.brand(context)),
                   ),
                 ],
               ),
@@ -1556,26 +1564,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 24),
 
-        const Divider(color: Color(0xFFE2E8F0)),
+        Divider(color: AppColors.border(context)),
         const SizedBox(height: 16),
 
-        const Text(
+        Text(
           'Cấu Hình Nhận Thông Báo Trên Website',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary(context)),
         ),
         const SizedBox(height: 8),
 
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           value: _notifyScheduleAndAssignments,
-          activeThumbColor: const Color(0xFF003FB1),
+          activeThumbColor: AppColors.primaryOf(context),
           title: const Text(
             'Hiển thị thông báo thời gian thực (Lịch học, Điểm danh, Bài tập & Hóa đơn)',
             style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
           ),
-          subtitle: const Text(
+          subtitle: Text(
             'Cập nhật trực tiếp tại biểu tượng chuông thông báo trên thanh công cụ.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
           ),
           onChanged: (v) => setState(() => _notifyScheduleAndAssignments = v),
         ),
@@ -1588,7 +1596,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ===========================================================================
   Widget _buildMobileScaffold(BuildContext context, UserEntity user) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: const Text('Tài khoản & Cá nhân'),
         actions: [
@@ -1696,13 +1704,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 5. LOGOUT BUTTON
             OutlinedButton.icon(
               onPressed: () => _confirmLogout(context),
-              icon: const Icon(Icons.logout_rounded, color: AppColors.error),
-              label: const Text(
+              icon: Icon(Icons.logout_rounded, color: AppColors.errorFg(context)),
+              label: Text(
                 'Đăng xuất tài khoản',
-                style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                style: TextStyle(color: AppColors.errorFg(context), fontWeight: FontWeight.w600),
               ),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.error, width: 1.2),
+                side: BorderSide(color: AppColors.errorFg(context), width: 1.2),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -1713,7 +1721,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 kIsWeb
                     ? 'EduLMS Web Portal v2.4 • Bản quyền thuộc EduLMS Vietnam'
                     : 'EduLMS Mobile v2.4.0 • Bản quyền thuộc EduLMS Vietnam',
-                style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondaryLight),
+                style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondary(context)),
               ),
             ),
             const SizedBox(height: 24),
@@ -1952,27 +1960,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               col1Val,
               col1Label,
               col1Icon,
-              AppColors.primary,
+              AppColors.primaryOf(context),
             ),
           ),
-          Container(height: 36, width: 1, color: AppColors.borderLight),
+          Container(height: 36, width: 1, color: AppColors.border(context)),
           Expanded(
             child: _buildStatColumn(
               context,
               col2Val,
               col2Label,
               col2Icon,
-              AppColors.success,
+              AppColors.successFg(context),
             ),
           ),
-          Container(height: 36, width: 1, color: AppColors.borderLight),
+          Container(height: 36, width: 1, color: AppColors.border(context)),
           Expanded(
             child: _buildStatColumn(
               context,
               col3Val,
               col3Label,
               col3Icon,
-              AppColors.warning,
+              AppColors.warningFg(context),
             ),
           ),
         ],
@@ -1999,7 +2007,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           label,
           textAlign: TextAlign.center,
           maxLines: 2,
-          style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondaryLight),
+          style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondary(context)),
         ),
       ],
     );
@@ -2010,7 +2018,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title,
       style: AppTextStyles.h4(context).copyWith(
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimaryLight,
+        color: AppColors.textPrimary(context),
       ),
     );
   }
@@ -2024,28 +2032,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
+    final adaptedIconColor = AppColors.adaptAccent(context, iconColor);
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: iconColor.withAlpha(25),
+          color: adaptedIconColor.withAlpha(32),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: iconColor, size: 22),
+        child: Icon(icon, color: adaptedIconColor, size: 22),
       ),
       title: Text(
         title,
-        style: AppTextStyles.bodyMedium(context).copyWith(fontWeight: FontWeight.w600),
+        style: AppTextStyles.bodyMedium(context).copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary(context),
+        ),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle,
-              style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondaryLight),
+              style: AppTextStyles.caption(context).copyWith(color: AppColors.textSecondary(context)),
             )
           : null,
       trailing: trailing ??
           (onTap != null
-              ? const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondaryLight)
+              ? Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary(context))
               : null),
       onTap: onTap,
     );

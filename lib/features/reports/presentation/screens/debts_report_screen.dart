@@ -106,7 +106,7 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                   horizontal: 16,
                 ),
                 filled: true,
-                fillColor: AppColors.neutral100,
+                fillColor: AppColors.surfaceSubtle(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
@@ -202,26 +202,31 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.1),
+              color: AppColors.errorBg(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.errorFg(context).withValues(alpha: 0.35),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tổng công nợ',
-                  style: TextStyle(fontSize: 11, color: AppColors.error),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.errorFg(context),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _currencyFormat.format(summary.totalOutstanding),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.error,
+                    color: AppColors.errorFg(context),
                   ),
                 ),
               ],
@@ -233,26 +238,29 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.1),
+              color: AppColors.warningBg(context),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.warning.withValues(alpha: 0.3),
+                color: AppColors.warningFg(context).withValues(alpha: 0.35),
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Quá hạn',
-                  style: TextStyle(fontSize: 11, color: AppColors.warning),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.warningFg(context),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${summary.overdueCount} hóa đơn',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.warning,
+                    color: AppColors.warningFg(context),
                   ),
                 ),
               ],
@@ -289,8 +297,8 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: item.isOverdue
-                        ? AppColors.error.withValues(alpha: 0.1)
-                        : AppColors.warning.withValues(alpha: 0.1),
+                        ? AppColors.errorBg(context)
+                        : AppColors.warningBg(context),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -299,8 +307,8 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: item.isOverdue
-                          ? AppColors.error
-                          : AppColors.warning,
+                          ? AppColors.errorFg(context)
+                          : AppColors.warningFg(context),
                     ),
                   ),
                 ),
@@ -309,9 +317,9 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             const SizedBox(height: 4),
             Text(
               '${item.studentCode} • ${item.className} • Mã HĐ: ${item.code}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: AppColors.textSecondaryLight,
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: 10),
@@ -321,11 +329,11 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Tổng học phí',
                       style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textSecondaryLight,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     Text(
@@ -340,18 +348,18 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Đã nộp',
                       style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textSecondaryLight,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     Text(
                       _currencyFormat.format(item.paidAmount),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.success,
+                        color: AppColors.successFg(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -360,19 +368,19 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       'Còn nợ',
                       style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.error,
+                        color: AppColors.errorFg(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       _currencyFormat.format(item.balance),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.error,
+                        color: AppColors.errorFg(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -390,8 +398,8 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       color: item.isOverdue
-                          ? AppColors.error
-                          : AppColors.textSecondaryLight,
+                          ? AppColors.errorFg(context)
+                          : AppColors.textSecondary(context),
                       fontWeight: item.isOverdue
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -400,9 +408,9 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
                   if (item.phone != null)
                     Text(
                       'SĐT: ${item.phone}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                     ),
                 ],
@@ -446,20 +454,20 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
             ),
             Text(
               '${item.studentCode} • ${item.className}',
-              style: const TextStyle(color: AppColors.textSecondaryLight),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             Text(
               'Mã HĐ: ${item.code}',
-              style: const TextStyle(color: AppColors.textSecondaryLight),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: 14),
-            const Text('Còn nợ', style: TextStyle(color: AppColors.error)),
+            Text('Còn nợ', style: TextStyle(color: AppColors.errorFg(context))),
             Text(
               _currencyFormat.format(item.balance),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 23,
                 fontWeight: FontWeight.bold,
-                color: AppColors.error,
+                color: AppColors.errorFg(context),
               ),
             ),
             const SizedBox(height: 12),
@@ -487,7 +495,7 @@ class _DebtsReportScreenState extends State<DebtsReportScreen> {
   Widget _mobileAmount(String label, double amount) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(label, style: const TextStyle(color: AppColors.textSecondaryLight)),
+      Text(label, style: TextStyle(color: AppColors.textSecondary(context))),
       Text(
         _currencyFormat.format(amount),
         style: const TextStyle(fontWeight: FontWeight.w600),

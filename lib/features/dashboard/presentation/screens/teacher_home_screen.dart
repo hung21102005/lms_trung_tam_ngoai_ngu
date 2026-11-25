@@ -137,7 +137,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
 
         if (isDesktop) {
           return Scaffold(
-            backgroundColor: AppColors.backgroundLight,
+            backgroundColor: AppColors.background(context),
             body: Row(
               children: [
                 _buildDesktopSidebar(context, user),
@@ -147,7 +147,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                       _buildDesktopHeader(context, user),
                       Expanded(
                         child: Container(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppColors.background(context),
                           child: SizedBox.expand(child: _buildActiveBody()),
                         ),
                       ),
@@ -219,11 +219,14 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   }
 
   Widget _buildDesktopSidebar(BuildContext context, dynamic user) {
+    final primaryBtn = AppColors.isDark(context)
+        ? AppColors.primaryLight
+        : AppColors.primary;
     return Container(
       width: 260,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.neutral200)),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(right: BorderSide(color: AppColors.border(context))),
       ),
       child: Column(
         children: [
@@ -236,7 +239,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: primaryBtn,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -264,25 +267,25 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: AppColors.brandBg(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               'v2.4',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const Text(
+                      Text(
                         'Cổng Giảng Viên',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.neutral500,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -291,7 +294,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.neutral200),
+          Divider(height: 1, color: AppColors.border(context)),
           // Action Button: + Giao bài tập mới
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -313,7 +316,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: primaryBtn,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -353,7 +356,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary
+                            ? primaryBtn
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -364,7 +367,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                             size: 20,
                             color: isSelected
                                 ? Colors.white
-                                : AppColors.neutral600,
+                                : AppColors.textSecondary(context),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -377,7 +380,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                                     : FontWeight.w500,
                                 color: isSelected
                                     ? Colors.white
-                                    : AppColors.neutral800,
+                                    : AppColors.textPrimary(context),
                               ),
                             ),
                           ),
@@ -390,7 +393,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? Colors.white.withValues(alpha: 0.25)
-                                    : Colors.amber.shade100,
+                                    : AppColors.warningBg(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -400,7 +403,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.amber.shade900,
+                                      : AppColors.warningFg(context),
                                 ),
                               ),
                             ),
@@ -412,7 +415,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               },
             ),
           ),
-          const Divider(height: 1, color: AppColors.neutral200),
+          Divider(height: 1, color: AppColors.border(context)),
           // User Card & Logout
           Container(
             padding: const EdgeInsets.all(16),
@@ -420,14 +423,14 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.brandBg(context),
                   child: Text(
                     user != null && (user.fullName as String).isNotEmpty
                         ? (user.fullName as String)[0].toUpperCase()
                         : 'G',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                     ),
                   ),
                 ),
@@ -446,19 +449,19 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                       ),
                       Text(
                         user?.userCode ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.neutral500,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.logout_rounded,
                     size: 20,
-                    color: AppColors.error,
+                    color: AppColors.errorFg(context),
                   ),
                   tooltip: 'Đăng xuất',
                   onPressed: () {
@@ -478,9 +481,9 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.neutral200)),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(bottom: BorderSide(color: AppColors.border(context))),
       ),
       child: Row(
         children: [
@@ -488,9 +491,9 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.language_rounded,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                   size: 22,
                 ),
                 const SizedBox(width: 8),
@@ -522,18 +525,18 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   hintText: isCompactDesktop
                       ? 'Tìm kiếm...'
                       : 'Tìm lớp, lịch dạy, bài tập...',
-                  hintStyle: const TextStyle(
+                  hintStyle: TextStyle(
                     fontSize: 13,
-                    color: AppColors.neutral400,
+                    color: AppColors.textMuted(context),
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search,
                     size: 18,
-                    color: AppColors.neutral500,
+                    color: AppColors.textSecondary(context),
                   ),
                   contentPadding: EdgeInsets.zero,
                   filled: true,
-                  fillColor: const Color(0xFFF1F5F9),
+                  fillColor: AppColors.surfaceSubtle(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -548,28 +551,28 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: AppColors.brandBg(context),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: AppColors.primaryOf(context).withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                     size: 16,
                   ),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       user?.branchName ?? 'Chưa gán chi nhánh',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -586,10 +589,10 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
             borderRadius: BorderRadius.circular(20),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: const Icon(
+              backgroundColor: AppColors.brandBg(context),
+              child: Icon(
                 Icons.person,
-                color: AppColors.primary,
+                color: AppColors.primaryOf(context),
                 size: 20,
               ),
             ),
@@ -637,8 +640,8 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   leading: Icon(
                     item['icon'] as IconData,
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.neutral700,
+                        ? AppColors.primaryOf(context)
+                        : AppColors.textSecondary(context),
                   ),
                   title: Text(
                     item['title'] as String,
@@ -647,8 +650,8 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                           ? FontWeight.bold
                           : FontWeight.normal,
                       color: isSelected
-                          ? AppColors.primary
-                          : AppColors.neutral900,
+                          ? AppColors.primaryOf(context)
+                          : AppColors.textPrimary(context),
                     ),
                   ),
                   trailing: item['badge'] != null
@@ -658,13 +661,13 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
+                            color: AppColors.warningBg(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             item['badge'] as String,
                             style: TextStyle(
-                              color: Colors.amber.shade900,
+                              color: AppColors.warningFg(context),
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),
@@ -690,11 +693,11 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text(
+            leading: Icon(Icons.logout, color: AppColors.errorFg(context)),
+            title: Text(
               'Đăng xuất',
               style: TextStyle(
-                color: AppColors.error,
+                color: AppColors.errorFg(context),
                 fontWeight: FontWeight.bold,
               ),
             ),

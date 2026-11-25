@@ -146,8 +146,8 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               children: [
                 Text(
                   inv.code,
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: AppColors.primaryOf(context),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -264,10 +264,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: payment.status == 'PENDING'
-                                      ? const Color(0xFFD97706)
+                                      ? AppColors.warningFg(context)
                                       : payment.status == 'FAILED'
-                                      ? AppColors.error
-                                      : AppColors.success,
+                                      ? AppColors.errorFg(context)
+                                      : AppColors.successFg(context),
                                 ),
                               ),
                             ],
@@ -275,14 +275,14 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                           const SizedBox(height: 4),
                           Text(
                             _formatCurrency(payment.amount),
-                            style: const TextStyle(
-                              color: AppColors.success,
+                            style: TextStyle(
+                              color: AppColors.successFg(context),
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           Text(
                             '${_formatDate(payment.payDate)} · ${payment.method}',
-                            style: const TextStyle(color: AppColors.neutral600),
+                            style: TextStyle(color: AppColors.textSecondary(context)),
                           ),
                           if (_canManageInvoice &&
                               payment.status == 'PENDING') ...[
@@ -380,9 +380,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,10 +392,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   children: [
                     Text(
                       inv.code,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                     ),
                     Container(
@@ -432,9 +432,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Ngày phát hành: ${_formatDate(inv.issuedDate)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondaryLight,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
                 if (inv.dueDate != null) ...[
@@ -445,8 +445,8 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: inv.status == 'OVERDUE'
-                          ? AppColors.error
-                          : AppColors.textSecondaryLight,
+                          ? AppColors.errorFg(context)
+                          : AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -461,9 +461,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               children: [
@@ -485,9 +485,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               children: [
@@ -497,7 +497,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   _buildAmountRow(
                     'Giảm trừ / Khuyến mãi',
                     -inv.discount,
-                    color: AppColors.success,
+                    color: AppColors.successFg(context),
                   ),
                   if (inv.promotion != null) ...[
                     const SizedBox(height: 4),
@@ -505,9 +505,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Mã KM: ${inv.promotion!.code} (${inv.promotion!.name})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.success,
+                          color: AppColors.successFg(context),
                         ),
                       ),
                     ),
@@ -523,14 +523,16 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                 _buildAmountRow(
                   'Đã thanh toán',
                   inv.paidAmount,
-                  color: AppColors.success,
+                  color: AppColors.successFg(context),
                 ),
                 const Divider(height: 20),
                 _buildAmountRow(
                   'Số dư còn lại',
                   inv.balance,
                   isBold: true,
-                  color: inv.balance > 0 ? AppColors.error : AppColors.success,
+                  color: inv.balance > 0
+                      ? AppColors.errorFg(context)
+                      : AppColors.successFg(context),
                   fontSize: 16,
                 ),
               ],
@@ -548,9 +550,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               padding: const EdgeInsets.all(20),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.borderLight),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: const Text('Chưa có khoản thanh toán nào được ghi nhận.'),
             )
@@ -608,11 +610,14 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
             Center(
               child: TextButton.icon(
                 onPressed: () => _showRefundDialog(context, inv),
-                icon: const Icon(Icons.replay_rounded, color: Colors.purple),
-                label: const Text(
+                icon: Icon(
+                  Icons.replay_rounded,
+                  color: AppColors.purpleFg(context),
+                ),
+                label: Text(
                   'Hoàn tiền học phí (Refund)',
                   style: TextStyle(
-                    color: Colors.purple,
+                    color: AppColors.purpleFg(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -627,10 +632,13 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
             Center(
               child: TextButton.icon(
                 onPressed: () => _confirmCancel(context, inv.id),
-                icon: const Icon(Icons.cancel_outlined, color: AppColors.error),
-                label: const Text(
+                icon: Icon(
+                  Icons.cancel_outlined,
+                  color: AppColors.errorFg(context),
+                ),
+                label: Text(
                   'Hủy hóa đơn này',
-                  style: TextStyle(color: AppColors.error),
+                  style: TextStyle(color: AppColors.errorFg(context)),
                 ),
               ),
             ),
@@ -643,10 +651,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: AppColors.textSecondaryLight,
+        color: AppColors.textSecondary(context),
       ),
     );
   }
@@ -657,9 +665,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: AppColors.textSecondaryLight,
+            color: AppColors.textSecondary(context),
           ),
         ),
         Text(
@@ -685,7 +693,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           style: TextStyle(
             fontSize: fontSize,
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            color: color ?? AppColors.textPrimaryLight,
+            color: color ?? AppColors.textPrimary(context),
           ),
         ),
         Text(
@@ -693,7 +701,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           style: TextStyle(
             fontSize: fontSize,
             fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-            color: color ?? AppColors.textPrimaryLight,
+            color: color ?? AppColors.textPrimary(context),
           ),
         ),
       ],
@@ -705,12 +713,12 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     final isFailed = payment.status == 'FAILED';
     final isRefunded = payment.status == 'REFUNDED';
     final accentColor = isPending
-        ? const Color(0xFFD97706)
+        ? AppColors.warningFg(context)
         : isFailed
-        ? AppColors.error
+        ? AppColors.errorFg(context)
         : isRefunded
-        ? Colors.purple
-        : AppColors.success;
+        ? AppColors.purpleFg(context)
+        : AppColors.successFg(context);
     final badgeText = isPending
         ? 'Chờ thu ngân đối soát'
         : isFailed
@@ -723,10 +731,14 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isPending ? const Color(0xFFFFFBEB) : Colors.white,
+        color: isPending
+            ? AppColors.warningBg(context)
+            : AppColors.surface(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isPending ? const Color(0xFFD97706) : AppColors.borderLight,
+          color: isPending
+              ? AppColors.warningFg(context)
+              : AppColors.border(context),
         ),
       ),
       child: Column(
@@ -803,9 +815,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                     const SizedBox(height: 2),
                     Text(
                       '${_formatDate(payment.payDate)} • Phương thức: ${payment.method}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondaryLight,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     if (payment.transactionId != null &&
@@ -813,9 +825,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       const SizedBox(height: 2),
                       Text(
                         'Mã GD: ${payment.transactionId}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textMutedLight,
+                          color: AppColors.textMuted(context),
                         ),
                       ),
                     ],
@@ -823,9 +835,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       const SizedBox(height: 2),
                       Text(
                         payment.notes!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondaryLight,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -847,14 +859,14 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                         : widget.invoiceId,
                     payment.id,
                   ),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
                     size: 16,
-                    color: AppColors.error,
+                    color: AppColors.errorFg(context),
                   ),
-                  label: const Text(
+                  label: Text(
                     'Từ chối',
-                    style: TextStyle(color: AppColors.error),
+                    style: TextStyle(color: AppColors.errorFg(context)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1019,22 +1031,34 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   _StatusConfig _getStatusConfig(String status) {
     switch (status) {
       case 'PAID':
-        return _StatusConfig(label: 'ĐÃ THANH TOÁN', color: AppColors.success);
+        return _StatusConfig(
+          label: 'ĐÃ THANH TOÁN',
+          color: AppColors.successFg(context),
+        );
       case 'PARTIALLY_PAID':
         return _StatusConfig(
           label: 'TRẢ MỘT PHẦN',
-          color: const Color(0xFF0284C7),
+          color: AppColors.infoFg(context),
         );
       case 'OVERDUE':
-        return _StatusConfig(label: 'QUÁ HẠN', color: AppColors.error);
+        return _StatusConfig(
+          label: 'QUÁ HẠN',
+          color: AppColors.errorFg(context),
+        );
       case 'CANCELLED':
-        return _StatusConfig(label: 'ĐÃ HỦY', color: Colors.grey);
+        return _StatusConfig(
+          label: 'ĐÃ HỦY',
+          color: AppColors.textMuted(context),
+        );
       case 'REFUNDED':
-        return _StatusConfig(label: 'ĐÃ HOÀN TIỀN', color: Colors.purple);
+        return _StatusConfig(
+          label: 'ĐÃ HOÀN TIỀN',
+          color: AppColors.purpleFg(context),
+        );
       default:
         return _StatusConfig(
           label: 'CHỜ THANH TOÁN',
-          color: const Color(0xFFD97706),
+          color: AppColors.warningFg(context),
         );
     }
   }

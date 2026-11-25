@@ -127,9 +127,9 @@ class _StudentGradebookViewState extends State<StudentGradebookView> {
               ),
             ),
             const SizedBox(height: 5),
-            const Text(
+            Text(
               'Kết quả bài tập và bài kiểm tra đã công bố',
-              style: TextStyle(color: AppColors.neutral600),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: MobileTokens.sectionGap),
             _summary(items),
@@ -217,8 +217,8 @@ class _StudentGradebookViewState extends State<StudentGradebookView> {
                   const SizedBox(height: 3),
                   Text(
                     item.className,
-                    style: const TextStyle(
-                      color: AppColors.neutral600,
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 12,
                     ),
                   ),
@@ -228,15 +228,15 @@ class _StudentGradebookViewState extends State<StudentGradebookView> {
             const SizedBox(width: 8),
             Text(
               '${item.score.toStringAsFixed(1)}/${item.maxScore.toStringAsFixed(1)}',
-              style: const TextStyle(
-                color: AppColors.success,
+              style: TextStyle(
+                color: AppColors.successFg(context),
                 fontWeight: FontWeight.w800,
               ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        MobileStatusPill(label: item.kind, color: AppColors.primary),
+        MobileStatusPill(label: item.kind, color: AppColors.primaryOf(context)),
         if (item.feedback?.isNotEmpty == true) ...[
           const SizedBox(height: 10),
           Text('Nhận xét: ${item.feedback}'),

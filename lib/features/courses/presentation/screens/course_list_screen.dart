@@ -72,23 +72,23 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Thao tác này KHÔNG thể hoàn tác. Để xác nhận, vui lòng nhập chính xác mã khóa học:',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
               ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   course.code,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -307,13 +307,13 @@ class _CourseListScreenState extends State<CourseListScreen> {
     final todayStr = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text('Chương trình Đào tạo & Cấp độ'),
               elevation: 0,
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF0F172A),
+              backgroundColor: AppColors.surface(context),
+              foregroundColor: AppColors.textPrimary(context),
               actions: [
                 IconButton(
                   onPressed: () => context.read<CoursesBloc>().add(
@@ -367,9 +367,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 // 1. PAGE HEADER TOOLBAR (Stitch Layout)
                 Container(
                   padding: const EdgeInsets.only(bottom: 16),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                      bottom: BorderSide(color: AppColors.border(context)),
                     ),
                   ),
                   child: isDesktop
@@ -391,7 +391,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                         style: AppTextStyles.h2(context)
                                             .copyWith(
                                               fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF0F172A),
+                                              color: AppColors.textPrimary(context),
                                             ),
                                       ),
                                       Container(
@@ -400,25 +400,23 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFE8F5E9),
+                                          color: AppColors.successBg(context),
                                           borderRadius: BorderRadius.circular(
                                             20,
                                           ),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             CircleAvatar(
                                               radius: 3.5,
-                                              backgroundColor: Color(
-                                                0xFF2E7D32,
-                                              ),
+                                              backgroundColor: AppColors.successFg(context),
                                             ),
-                                            SizedBox(width: 6),
+                                            const SizedBox(width: 6),
                                             Text(
                                               'Chuẩn hóa CEFR & Cambridge',
                                               style: TextStyle(
-                                                color: Color(0xFF2E7D32),
+                                                color: AppColors.successFg(context),
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 11,
                                               ),
@@ -431,18 +429,18 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.today_rounded,
                                         size: 16,
-                                        color: Color(0xFF64748B),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           'Hôm nay: $todayStr • Tổng số ${liveCourses.length} khóa học & ${liveCourses.fold<int>(0, (s, c) => s + c.levelsCount)} cấp độ',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: Color(0xFF64748B),
+                                            color: AppColors.textSecondary(context),
                                           ),
                                         ),
                                       ),
@@ -468,20 +466,20 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                             ),
                                           );
                                     },
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.file_download_outlined,
                                       size: 18,
-                                      color: Color(0xFF003FB1),
+                                      color: AppColors.brand(context),
                                     ),
                                     label: const Text(
                                       'Xuất khung CTĐT (.xlsx)',
                                     ),
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF0F172A),
-                                      side: const BorderSide(
-                                        color: Color(0xFFCBD5E1),
+                                      foregroundColor: AppColors.textPrimary(context),
+                                      side: BorderSide(
+                                        color: AppColors.borderStrong(context),
                                       ),
-                                      backgroundColor: Colors.white,
+                                      backgroundColor: AppColors.surface(context),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 14,
                                         vertical: 12,
@@ -540,7 +538,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                   style: AppTextStyles.h2(context).copyWith(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
-                                    color: const Color(0xFF0F172A),
+                                    color: AppColors.textPrimary(context),
                                   ),
                                 ),
                                 Container(
@@ -549,21 +547,21 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE8F5E9),
+                                    color: AppColors.successBg(context),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       CircleAvatar(
                                         radius: 3.5,
-                                        backgroundColor: Color(0xFF2E7D32),
+                                        backgroundColor: AppColors.successFg(context),
                                       ),
-                                      SizedBox(width: 6),
+                                      const SizedBox(width: 6),
                                       Text(
                                         'Chuẩn hóa CEFR & Cambridge',
                                         style: TextStyle(
-                                          color: Color(0xFF2E7D32),
+                                          color: AppColors.successFg(context),
                                           fontWeight: FontWeight.w600,
                                           fontSize: 11,
                                         ),
@@ -577,21 +575,21 @@ class _CourseListScreenState extends State<CourseListScreen> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 2),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
                                   child: Icon(
                                     Icons.today_rounded,
                                     size: 15,
-                                    color: Color(0xFF64748B),
+                                    color: AppColors.textSecondary(context),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     'Hôm nay: $todayStr • Tổng số ${liveCourses.length} khóa học & ${liveCourses.fold<int>(0, (s, c) => s + c.levelsCount)} cấp độ',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12.5,
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ),
@@ -612,18 +610,18 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                       ),
                                     );
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.file_download_outlined,
                                     size: 16,
-                                    color: Color(0xFF003FB1),
+                                    color: AppColors.brand(context),
                                   ),
                                   label: const Text('Xuất khung CTĐT (.xlsx)'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF0F172A),
-                                    side: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
+                                    foregroundColor: AppColors.textPrimary(context),
+                                    side: BorderSide(
+                                      color: AppColors.borderStrong(context),
                                     ),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: AppColors.surface(context),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
                                       vertical: 10,
@@ -697,8 +695,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               ? 'Danh mục khóa học hiện có'
                               : 'Chưa có khóa học',
                           icon: Icons.school_rounded,
-                          iconBg: const Color(0xFFEEF2FF),
-                          iconColor: const Color(0xFF003FB1),
+                          iconBg: AppColors.infoBg(context),
+                          iconColor: AppColors.brand(context),
                           width: cardWidth,
                         ),
                         _buildStatCard(
@@ -706,10 +704,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           value: '$publishedCourses khóa',
                           subtext: 'Hiển thị theo quyền công bố',
                           icon: Icons.class_rounded,
-                          iconBg: const Color(0xFFEFF6FF),
-                          iconColor: const Color(0xFF2563EB),
-                          pillColor: const Color(0xFFEFF6FF),
-                          pillTextColor: const Color(0xFF1D4ED8),
+                          iconBg: AppColors.brandBg(context),
+                          iconColor: AppColors.infoFg(context),
+                          pillColor: AppColors.brandBg(context),
+                          pillTextColor: AppColors.primaryOf(context),
                           width: cardWidth,
                         ),
                         _buildStatCard(
@@ -717,10 +715,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           value: '$totalLevels cấp độ',
                           subtext: 'Cấp độ đã thiết lập',
                           icon: Icons.layers_rounded,
-                          iconBg: const Color(0xFFF0FDF4),
-                          iconColor: const Color(0xFF16A34A),
-                          pillColor: const Color(0xFFDCFCE7),
-                          pillTextColor: const Color(0xFF15803D),
+                          iconBg: AppColors.successBg(context),
+                          iconColor: AppColors.successFg(context),
+                          pillColor: AppColors.successBg(context),
+                          pillTextColor: AppColors.successFg(context),
                           width: cardWidth,
                         ),
                         _buildStatCard(
@@ -728,10 +726,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           value: '$reviewCourses khóa',
                           subtext: 'Đang trong quy trình công bố',
                           icon: Icons.verified_user_rounded,
-                          iconBg: const Color(0xFFECFDF5),
-                          iconColor: const Color(0xFF059669),
-                          pillColor: const Color(0xFFECFDF5),
-                          pillTextColor: const Color(0xFF047857),
+                          iconBg: AppColors.successBg(context),
+                          iconColor: AppColors.successFg(context),
+                          pillColor: AppColors.successBg(context),
+                          pillTextColor: AppColors.successFg(context),
                           width: cardWidth,
                         ),
                       ],
@@ -744,14 +742,14 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: const [
+                    border: Border.all(color: AppColors.border(context)),
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x06000000),
+                        color: AppColors.shadow(context),
                         blurRadius: 4,
-                        offset: Offset(0, 1),
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
@@ -781,7 +779,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                       border: Border(
                                         bottom: BorderSide(
                                           color: isSelected
-                                              ? const Color(0xFF003FB1)
+                                              ? AppColors.brand(context)
                                               : Colors.transparent,
                                           width: 2.5,
                                         ),
@@ -793,16 +791,16 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                           cat['icon'] as IconData,
                                           size: 18,
                                           color: isSelected
-                                              ? const Color(0xFF003FB1)
-                                              : const Color(0xFF64748B),
+                                              ? AppColors.brand(context)
+                                              : AppColors.textSecondary(context),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           '${cat["title"]} (${cat["count"]})',
                                           style: TextStyle(
                                             color: isSelected
-                                                ? const Color(0xFF003FB1)
-                                                : const Color(0xFF64748B),
+                                                ? AppColors.brand(context)
+                                                : AppColors.textSecondary(context),
                                             fontWeight: isSelected
                                                 ? FontWeight.bold
                                                 : FontWeight.w500,
@@ -817,7 +815,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               .toList(),
                         ),
                       ),
-                      const Divider(color: Color(0xFFE2E8F0), height: 1),
+                      Divider(color: AppColors.border(context), height: 1),
                       const SizedBox(height: 14),
 
                       // Filter controls
@@ -832,31 +830,31 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               controller: _searchController,
                               decoration: InputDecoration(
                                 hintText: 'Tìm theo tên khóa học, mã môn...',
-                                hintStyle: const TextStyle(
+                                hintStyle: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textMuted(context),
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.search,
                                   size: 20,
-                                  color: Color(0xFF64748B),
+                                  color: AppColors.textSecondary(context),
                                 ),
                                 filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
+                                fillColor: AppColors.surfaceElevated(context),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 10,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
+                                  borderSide: BorderSide(
+                                    color: AppColors.borderStrong(context),
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
+                                  borderSide: BorderSide(
+                                    color: AppColors.borderStrong(context),
                                   ),
                                 ),
                               ),
@@ -866,10 +864,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceElevated(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -905,10 +903,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceElevated(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -944,10 +942,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceElevated(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -1046,7 +1044,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
           Text(
             'Quản lý khóa học và cấp độ',
             style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: AppColors.textSecondaryLight),
+                ?.copyWith(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: 16),
           MobileSectionCard(
@@ -1062,7 +1060,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   '${courses.length}',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1175,7 +1173,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppColors.primary,
+                          color: AppColors.primaryOf(context),
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -1189,17 +1187,17 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               ? 'Đã lưu trữ'
                               : 'Bản nháp',
                   color: isPublished
-                      ? AppColors.success
+                      ? AppColors.successFg(context)
                       : isInReview
-                          ? const Color(0xFFD97706)
-                          : const Color(0xFF64748B),
+                          ? AppColors.warningFg(context)
+                          : AppColors.textSecondary(context),
                 ),
                 const SizedBox(width: 6),
                 MobileStatusPill(
                   label: course.isActive ? 'Hoạt động' : 'Tạm ngưng',
                   color: course.isActive
-                      ? AppColors.success
-                      : AppColors.error,
+                      ? AppColors.successFg(context)
+                      : AppColors.errorFg(context),
                 ),
               ],
             ),
@@ -1254,8 +1252,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
                     icon: const Icon(Icons.rate_review_outlined, size: 14),
                     label: const Text('Duyệt', style: TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFD97706),
-                      side: const BorderSide(color: Color(0xFFD97706)),
+                      foregroundColor: AppColors.warningFg(context),
+                      side: BorderSide(color: AppColors.warningFg(context)),
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -1300,9 +1298,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                       ),
                     IconButton(
                       onPressed: () => _openCourseDetail(course.id),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.chevron_right_rounded,
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                       tooltip: 'Xem chi tiết',
                       visualDensity: VisualDensity.compact,
@@ -1333,14 +1331,14 @@ class _CourseListScreenState extends State<CourseListScreen> {
       width: width,
       padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x05000000),
+            color: AppColors.shadow(context),
             blurRadius: 3,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -1355,7 +1353,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   title,
                   style: TextStyle(
                     fontSize: isCompact ? 12 : 13,
-                    color: const Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1378,7 +1376,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
             style: TextStyle(
               fontSize: isCompact ? 18 : 22,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -1401,7 +1399,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
           else
             Text(
               subtext,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary(context),
+              ),
             ),
         ],
       ),
@@ -1473,14 +1474,14 @@ class _CourseListScreenState extends State<CourseListScreen> {
       width: width,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x04000000),
+            color: AppColors.shadow(context),
             blurRadius: 4,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -1496,17 +1497,17 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   children: [
                     Text(
                       course.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       course.code,
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: AppColors.primaryOf(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1525,17 +1526,17 @@ class _CourseListScreenState extends State<CourseListScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isPublished
-                          ? const Color(0xFFECFDF5)
+                          ? AppColors.successBg(context)
                           : isInReview
-                              ? const Color(0xFFFFFBEB)
-                              : const Color(0xFFF1F5F9),
+                              ? AppColors.warningBg(context)
+                              : AppColors.surfaceSubtle(context),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: isPublished
-                            ? const Color(0xFFA7F3D0)
+                            ? AppColors.successFg(context).withValues(alpha: 0.3)
                             : isInReview
-                                ? const Color(0xFFFDE68A)
-                                : const Color(0xFFCBD5E1),
+                                ? AppColors.warningFg(context).withValues(alpha: 0.35)
+                                : AppColors.borderStrong(context),
                       ),
                     ),
                     child: Text(
@@ -1550,10 +1551,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: isPublished
-                            ? const Color(0xFF047857)
+                            ? AppColors.successFg(context)
                             : isInReview
-                                ? const Color(0xFFB45309)
-                                : const Color(0xFF64748B),
+                                ? AppColors.warningFg(context)
+                                : AppColors.textSecondary(context),
                       ),
                     ),
                   ),
@@ -1564,13 +1565,13 @@ class _CourseListScreenState extends State<CourseListScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: course.isActive
-                          ? const Color(0xFFECFDF5)
-                          : const Color(0xFFFEF2F2),
+                          ? AppColors.successBg(context)
+                          : AppColors.errorBg(context),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: course.isActive
-                            ? const Color(0xFFA7F3D0)
-                            : const Color(0xFFFECACA),
+                            ? AppColors.successFg(context).withValues(alpha: 0.3)
+                            : AppColors.errorFg(context).withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
@@ -1579,8 +1580,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: course.isActive
-                            ? const Color(0xFF047857)
-                            : AppColors.error,
+                            ? AppColors.successFg(context)
+                            : AppColors.errorFg(context),
                       ),
                     ),
                   ),
@@ -1634,14 +1635,14 @@ class _CourseListScreenState extends State<CourseListScreen> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: AppColors.surfaceSubtle(context),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '${level.code}: ${level.name}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF334155),
+                        color: AppColors.textBody(context),
                       ),
                     ),
                   ),
@@ -1649,16 +1650,19 @@ class _CourseListScreenState extends State<CourseListScreen> {
             ),
           ] else ...[
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Chưa thiết lập lộ trình cho khóa học này.',
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
           ],
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (canOpenClass)
                 FilledButton.icon(
@@ -1676,8 +1680,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   icon: const Icon(Icons.rate_review_outlined, size: 16),
                   label: const Text('Duyệt & Rà soát'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFD97706),
-                    side: const BorderSide(color: Color(0xFFD97706)),
+                    foregroundColor: AppColors.warningFg(context),
+                    side: BorderSide(color: AppColors.warningFg(context)),
                     visualDensity: VisualDensity.compact,
                   ),
                 )
@@ -1687,7 +1691,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   icon: const Icon(Icons.send_rounded, size: 16),
                   label: const Text('Gửi duyệt'),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
+                    foregroundColor: AppColors.primaryOf(context),
                     visualDensity: VisualDensity.compact,
                   ),
                 )
@@ -1695,7 +1699,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 const SizedBox.shrink(),
 
               Wrap(
-                spacing: 8,
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (widget.canManage)
                     TextButton.icon(
@@ -1711,14 +1717,14 @@ class _CourseListScreenState extends State<CourseListScreen> {
                   if (course.publicationStatus == 'DRAFT' && course.classesCount == 0)
                     IconButton(
                       onPressed: () => _confirmDeleteCourse(course),
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                      icon: Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.errorFg(context)),
                       tooltip: 'Xóa vĩnh viễn khóa học',
                       visualDensity: VisualDensity.compact,
                     ),
                   if (course.publicationStatus != 'ARCHIVED')
                     IconButton(
                       onPressed: () => _confirmArchiveCourse(course),
-                      icon: const Icon(Icons.archive_outlined, size: 18, color: Color(0xFF64748B)),
+                      icon: Icon(Icons.archive_outlined, size: 18, color: AppColors.textSecondary(context)),
                       tooltip: 'Lưu trữ khóa học',
                       visualDensity: VisualDensity.compact,
                     ),

@@ -183,7 +183,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
             const SizedBox(height: 5),
             Text(
               '${exams.length} bài kiểm tra',
-              style: const TextStyle(color: AppColors.neutral600),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: MobileTokens.sectionGap),
             SizedBox(
@@ -240,20 +240,20 @@ class _ExamListScreenState extends State<ExamListScreen> {
             const SizedBox(height: 4),
             Text(
               exam.className!,
-              style: const TextStyle(color: AppColors.neutral600),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
           ],
           const SizedBox(height: 9),
           Text(
             '${exam.durationMinutes} phút · ${exam.questionsCount} câu · ${exam.totalPoints.toStringAsFixed(0)} điểm',
-            style: const TextStyle(color: AppColors.neutral600),
+            style: TextStyle(color: AppColors.textSecondary(context)),
           ),
           if (latest?.score != null) ...[
             const SizedBox(height: 7),
             Text(
               'Điểm gần nhất: ${latest!.score}/${latest.maxScore}',
-              style: const TextStyle(
-                color: AppColors.success,
+              style: TextStyle(
+                color: AppColors.successFg(context),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -301,9 +301,11 @@ class _ExamListScreenState extends State<ExamListScreen> {
       onSelected: (selected) {
         if (selected) setState(() => _selectedFilter = value);
       },
-      selectedColor: AppColors.primary.withValues(alpha: 0.15),
+      selectedColor: AppColors.brandBg(context),
       labelStyle: TextStyle(
-        color: isSelected ? AppColors.primary : AppColors.neutral700,
+        color: isSelected
+            ? AppColors.primaryOf(context)
+            : AppColors.textBody(context),
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
       ),
     );
@@ -314,15 +316,15 @@ class _ExamListScreenState extends State<ExamListScreen> {
     String statusText;
     switch (exam.status) {
       case 'PUBLISHED':
-        statusColor = AppColors.success;
+        statusColor = AppColors.successFg(context);
         statusText = 'Đang mở thi';
         break;
       case 'CLOSED':
-        statusColor = AppColors.neutral500;
+        statusColor = AppColors.textMuted(context);
         statusText = 'Đã đóng';
         break;
       default:
-        statusColor = AppColors.warning;
+        statusColor = AppColors.warningFg(context);
         statusText = 'Bản nháp';
     }
 
@@ -348,7 +350,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                       Text(
                         'Lớp: ${exam.className} (${exam.classCode})',
                         style: AppTextStyles.caption(context)
-                            .copyWith(color: AppColors.neutral600),
+                            .copyWith(color: AppColors.textSecondary(context)),
                       ),
                     ],
                   ],
@@ -360,7 +362,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
+                  color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
@@ -378,7 +380,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
             Text(
               exam.description!,
               style: AppTextStyles.bodyMedium(context)
-                  .copyWith(color: AppColors.neutral600),
+                  .copyWith(color: AppColors.textSecondary(context)),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -416,8 +418,9 @@ class _ExamListScreenState extends State<ExamListScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: (isPassed == true ? AppColors.success : AppColors.error)
-                    .withValues(alpha: 0.08),
+                color: isPassed == true
+                    ? AppColors.successBg(context)
+                    : AppColors.errorBg(context),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -425,8 +428,8 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   Icon(
                     isPassed == true ? Icons.check_circle : Icons.cancel,
                     color: isPassed == true
-                        ? AppColors.success
-                        : AppColors.error,
+                        ? AppColors.successFg(context)
+                        : AppColors.errorFg(context),
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -438,8 +441,8 @@ class _ExamListScreenState extends State<ExamListScreen> {
                       style: AppTextStyles.bodyMedium(context).copyWith(
                         fontWeight: FontWeight.w600,
                         color: isPassed == true
-                            ? AppColors.success
-                            : AppColors.error,
+                            ? AppColors.successFg(context)
+                            : AppColors.errorFg(context),
                       ),
                     ),
                   ),
@@ -500,12 +503,12 @@ class _ExamListScreenState extends State<ExamListScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppColors.neutral500),
+        Icon(icon, size: 16, color: AppColors.textSecondary(context)),
         const SizedBox(width: 4),
         Text(
           text,
           style: AppTextStyles.caption(context)
-              .copyWith(color: AppColors.neutral700),
+              .copyWith(color: AppColors.textBody(context)),
         ),
       ],
     );

@@ -152,8 +152,8 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                     final isFlagged = _flaggedQuestionIds.contains(eq.id);
                     final isCurrent = idx == _currentIndex;
 
-                    Color bg = AppColors.neutral100;
-                    Color textCol = AppColors.neutral700;
+                    Color bg = AppColors.surfaceSubtle(context);
+                    Color textCol = AppColors.textBody(context);
                     if (isAnswered) {
                       bg = AppColors.primary;
                       textCol = Colors.white;
@@ -174,7 +174,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                           borderRadius: BorderRadius.circular(8),
                           border: isCurrent
                               ? Border.all(
-                                  color: AppColors.neutral900,
+                                  color: AppColors.textPrimary(context),
                                   width: 2,
                                 )
                               : null,
@@ -315,9 +315,9 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                   // Progress line
                   LinearProgressIndicator(
                     value: (_currentIndex + 1) / questions.length,
-                    backgroundColor: AppColors.neutral200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                    backgroundColor: AppColors.border(context),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryOf(context),
                     ),
                   ),
 
@@ -327,14 +327,14 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                       horizontal: 16,
                       vertical: 12,
                     ),
-                    color: Theme.of(context).cardColor,
+                    color: AppColors.surface(context),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'Câu ${_currentIndex + 1} / ${questions.length}',
                           style: AppTextStyles.h4(context)
-                              .copyWith(color: AppColors.primary),
+                              .copyWith(color: AppColors.primaryOf(context)),
                         ),
                         Row(
                           children: [
@@ -344,7 +344,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.neutral100,
+                                color: AppColors.surfaceSubtle(context),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -360,8 +360,8 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                                     ? Icons.bookmark
                                     : Icons.bookmark_border,
                                 color: isFlagged
-                                    ? AppColors.warning
-                                    : AppColors.neutral500,
+                                    ? AppColors.warningFg(context)
+                                    : AppColors.textSecondary(context),
                               ),
                               tooltip: isFlagged
                                   ? 'Bỏ đánh dấu'
@@ -432,21 +432,21 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                           label: const Text('Câu trước'),
                         ),
                         if (state.isSaving)
-                          const Row(
+                          Row(
                             children: [
-                              SizedBox(
+                              const SizedBox(
                                 width: 12,
                                 height: 12,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
                                 'Đang lưu...',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.neutral500,
+                                  color: AppColors.textSecondary(context),
                                 ),
                               ),
                             ],
@@ -526,8 +526,8 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                   Expanded(
                     child: Text(
                       'Câu ${_currentIndex + 1}/${questions.length}',
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: AppColors.primaryOf(context),
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -553,8 +553,8 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
                           children: [
                             Text(
                               '${currentQuestion.points.toStringAsFixed(1)} điểm',
-                              style: const TextStyle(
-                                color: AppColors.neutral600,
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             const Spacer(),
@@ -600,11 +600,11 @@ class _TakeExamScreenState extends State<TakeExamScreen> {
               ),
             ),
             if (state.isSaving)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   'Đang lưu câu trả lời...',
-                  style: TextStyle(color: AppColors.neutral600),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
               ),
             Padding(

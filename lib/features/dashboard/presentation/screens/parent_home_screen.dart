@@ -353,7 +353,7 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
         ),
       ],
     ),
-    backgroundColor: const Color(0xFFF8FAFC),
+    backgroundColor: AppColors.background(context),
     body: FutureBuilder<List<ClassModel>>(
       future: _classes,
       builder: (context, snapshot) {
@@ -403,17 +403,17 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Theo dõi việc học của con tại EduLMS.',
-                style: TextStyle(color: AppColors.neutral600),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: 18),
               MobileSectionCard(
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.family_restroom_outlined,
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                       size: 30,
                     ),
                     const SizedBox(width: 12),
@@ -427,7 +427,7 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
                           ),
                           Text(
                             '${snapshot.data!.length} lớp đang theo dõi',
-                            style: const TextStyle(color: AppColors.neutral600),
+                            style: TextStyle(color: AppColors.textSecondary(context)),
                           ),
                         ],
                       ),
@@ -499,8 +499,8 @@ class _ParentMobileHomeState extends State<_ParentMobileHome> {
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
                               '• ${studyClass.name}',
-                              style: const TextStyle(
-                                color: AppColors.neutral600,
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ),

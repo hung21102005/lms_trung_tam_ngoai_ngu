@@ -353,23 +353,23 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Thao tác này KHÔNG thể hoàn tác. Để xác nhận, vui lòng nhập chính xác mã lớp học:',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
               ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   classObj.code,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -533,7 +533,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                             done
                                 ? Icons.check_circle
                                 : Icons.radio_button_unchecked,
-                            color: done ? Colors.green : null,
+                            color: done ? AppColors.successFg(context) : null,
                           ),
                           title: Text('${lesson['title'] ?? 'Bài học'}'),
                           subtitle: Text(done ? 'Đã dạy' : 'Chưa hoàn thành'),
@@ -941,8 +941,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
     final isMobile =
         AdaptiveBreakpoints.fromWidth(MediaQuery.sizeOf(context).width) ==
         AdaptiveSize.mobile;
@@ -1172,8 +1172,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                 children: [
                   Text(
                     classObj.code,
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: TextStyle(
+                      color: AppColors.primaryOf(context),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1189,7 +1189,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                     const SizedBox(height: 4),
                     Text(
                       classObj.courseTitle!,
-                      style: const TextStyle(color: AppColors.neutral600),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                   ],
                   const SizedBox(height: 14),
@@ -1209,8 +1209,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                   const SizedBox(height: 8),
                   Text(
                     '${classObj.studentsCount} học viên · ${classObj.sessions.length} buổi đã lên lịch',
-                    style: const TextStyle(
-                      color: AppColors.neutral600,
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 12,
                     ),
                   ),
@@ -1251,7 +1251,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
       padding: const EdgeInsets.only(bottom: 7),
       child: Row(
         children: [
-          Icon(icon, size: 17, color: AppColors.primary),
+          Icon(icon, size: 17, color: AppColors.primaryOf(context)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -1279,8 +1279,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
             children: [
               Text(
                 'Buổi ${session.sessionNumber}',
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: AppColors.primaryOf(context),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1292,13 +1292,13 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
               const SizedBox(height: 8),
               Text(
                 '${session.date == null ? 'Chưa xếp ngày' : DateFormat('dd/MM/yyyy').format(session.date!)} · ${session.startTime}–${session.endTime}',
-                style: const TextStyle(color: AppColors.neutral600),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               if (session.roomName?.isNotEmpty == true) ...[
                 const SizedBox(height: 4),
                 Text(
                   session.roomName!,
-                  style: const TextStyle(color: AppColors.neutral600),
+                  style: TextStyle(color: AppColors.textSecondary(context)),
                 ),
               ],
               if (_canMarkAttendance || _canEditSession) ...[
@@ -1330,8 +1330,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
   }
 
   Widget _buildHeaderCard(BuildContext context, ClassModel classObj) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final isDark = AppColors.isDark(context);
+    final primaryColor = AppColors.primaryOf(context);
 
     return AppCard(
       padding: const EdgeInsets.all(20),
@@ -1483,7 +1483,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withAlpha(20),
+                  color: AppColors.brandBg(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1491,7 +1491,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
               ),
@@ -1510,33 +1510,33 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.calendar_today,
                           size: 13,
-                          color: Colors.grey,
+                          color: AppColors.textSecondary(context),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           session.date != null
                               ? DateFormat('dd/MM/yyyy').format(session.date!)
                               : '--',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           size: 13,
-                          color: Colors.grey,
+                          color: AppColors.textSecondary(context),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${session.startTime} - ${session.endTime}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -1551,14 +1551,14 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                   },
                   icon: const Icon(Icons.how_to_reg_outlined, size: 20),
                   tooltip: 'Điểm danh buổi học',
-                  color: AppColors.success,
+                  color: AppColors.successFg(context),
                 ),
               if (_canEditSession)
                 IconButton(
                   onPressed: () => _showEditSessionDialog(session),
                   icon: const Icon(Icons.edit_calendar_outlined, size: 20),
                   tooltip: 'Điều chỉnh buổi học',
-                  color: Theme.of(context).primaryColor,
+                  color: AppColors.primaryOf(context),
                 ),
             ],
           ),
@@ -1598,8 +1598,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundColor: Theme.of(context).primaryColor
-                            .withAlpha(30),
+                        backgroundColor: AppColors.brandBg(context),
                         child: Text(
                           (student.studentName != null &&
                                   student.studentName!.isNotEmpty)
@@ -1607,7 +1606,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                               : 'HV',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
+                            color: AppColors.primaryOf(context),
                           ),
                         ),
                       ),
@@ -1652,12 +1651,12 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                                           ? 'PARTIALLY_PAID'
                                           : 'PENDING');
                                   final badgeColor = invStatus == 'PAID'
-                                      ? AppColors.success
+                                      ? AppColors.successFg(context)
                                       : invStatus == 'PARTIALLY_PAID'
-                                      ? const Color(0xFF0284C7)
+                                      ? AppColors.infoFg(context)
                                       : invStatus == 'OVERDUE'
-                                      ? AppColors.error
-                                      : const Color(0xFFD97706);
+                                      ? AppColors.errorFg(context)
+                                      : AppColors.warningFg(context);
                                   final badgeLabel = total <= 0
                                       ? 'Miễn học phí'
                                       : invStatus == 'PAID'
@@ -1699,19 +1698,19 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                                       ),
                                       Text(
                                         'Đã nộp: ${_currencyFormat.format(paid)}${total > 0 ? ' / ${_currencyFormat.format(total)}' : ''}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.success,
+                                          color: AppColors.successFg(context),
                                         ),
                                       ),
                                       if (balance > 0)
                                         Text(
                                           '(Còn nợ: ${_currencyFormat.format(balance)})',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.error,
+                                            color: AppColors.errorFg(context),
                                           ),
                                         ),
                                     ],
@@ -1737,9 +1736,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                                 );
                               }
                             },
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.point_of_sale_rounded,
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                               size: 20,
                             ),
                             tooltip: 'Thu học phí',
@@ -1755,9 +1754,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen>
                               );
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.receipt_long_outlined,
-                            color: AppColors.secondary,
+                            color: AppColors.tealFg(context),
                             size: 20,
                           ),
                           tooltip: 'Xem hóa đơn học phí',

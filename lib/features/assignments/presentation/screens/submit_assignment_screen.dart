@@ -446,7 +446,7 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
       children: [
         Text(
           assignment.className ?? 'Lớp học',
-          style: const TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 4),
         Text(
@@ -458,7 +458,7 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
           label: deadline == null
               ? 'Không giới hạn hạn nộp'
               : 'Hạn ${deadline.day}/${deadline.month}/${deadline.year}',
-          color: AppColors.primary,
+          color: AppColors.primaryOf(context),
         ),
         const SizedBox(height: MobileTokens.sectionGap),
         MobileSectionCard(
@@ -529,7 +529,7 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
         const SizedBox(height: 4),
         Text(
           _typeInstruction(type),
-          style: const TextStyle(color: AppColors.neutral600),
+          style: TextStyle(color: AppColors.textSecondary(context)),
         ),
         if (showAudio) ...[
           const SizedBox(height: 16),
@@ -537,11 +537,11 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.mic_rounded, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text(
+                    Icon(Icons.mic_rounded, color: AppColors.primaryOf(context)),
+                    const SizedBox(width: 8),
+                    const Text(
                       'Ghi âm',
                       style: TextStyle(
                         fontSize: 16,
@@ -574,11 +574,11 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.edit_note_rounded, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text(
+                    Icon(Icons.edit_note_rounded, color: AppColors.primaryOf(context)),
+                    const SizedBox(width: 8),
+                    const Text(
                       'Nội dung bài viết',
                       style: TextStyle(
                         fontSize: 16,
@@ -603,20 +603,23 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.attach_file_rounded, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text(
+                  Icon(Icons.attach_file_rounded, color: AppColors.primaryOf(context)),
+                  const SizedBox(width: 8),
+                  const Text(
                     'Tệp đính kèm',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'PDF, tài liệu, ảnh, TXT, ZIP, RAR hoặc âm thanh · tối đa 50 MB/tệp',
-                style: TextStyle(fontSize: 12, color: AppColors.neutral600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -695,9 +698,9 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
     bool isEditing,
   ) => Container(
     padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      border: Border(top: BorderSide(color: AppColors.borderLight)),
+    decoration: BoxDecoration(
+      color: AppColors.surface(context),
+      border: Border(top: BorderSide(color: AppColors.border(context))),
     ),
     child: SafeArea(
       top: false,
@@ -833,7 +836,7 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
         Text(
           _typeInstruction(type),
           style: AppTextStyles.bodyMedium(context)
-              .copyWith(color: AppColors.neutral600),
+              .copyWith(color: AppColors.textSecondary(context)),
         ),
         if (!canEdit) ...[
           const SizedBox(height: 16),
@@ -898,7 +901,7 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
               ? 'Tệp âm thanh, PDF, Word, TXT, ZIP, RAR hoặc ảnh · tối đa 50 MB/tệp'
               : 'PDF, Word, Excel, PowerPoint, ảnh, TXT, ZIP, RAR hoặc âm thanh · tối đa 50 MB/tệp',
           style: AppTextStyles.caption(context)
-              .copyWith(color: AppColors.neutral600),
+              .copyWith(color: AppColors.textSecondary(context)),
         ),
         for (final file in _existingFiles)
           ListTile(

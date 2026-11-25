@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../classes/data/models/class_model.dart';
 import '../../../classes/domain/repositories/classes_repository.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -39,23 +40,26 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     final isDesktop = size.width > 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background(context),
       appBar: widget.showAppBar
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: AppColors.surface(context),
               surfaceTintColor: Colors.transparent,
               elevation: 0,
-              title: const Text(
+              title: Text(
                 'Tổng Quan Giảng Dạy',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Color(0xFF64748B)),
+                  icon: Icon(
+                    Icons.refresh,
+                    color: AppColors.textSecondary(context),
+                  ),
                   onPressed: () =>
                       context.read<ReportsBloc>().add(FetchTeacherWorkloadEvent()),
                 ),
@@ -153,12 +157,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -174,10 +178,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   children: [
                     Text(
                       'Chào buổi sáng, $teacherName! 👋',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -186,43 +190,45 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_outlined,
                       size: 15,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textMuted(context),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: RichText(
-                        text: const TextSpan(
+                        text: TextSpan(
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF475569),
+                            color: AppColors.textBody(context),
                             fontFamily: 'Be Vietnam Pro',
                           ),
                           children: [
-                            TextSpan(text: 'Hôm nay '),
-                            TextSpan(
+                            const TextSpan(text: 'Hôm nay '),
+                            const TextSpan(
                               text: '24/10/2026',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            TextSpan(text: ' • Bạn đang phụ trách '),
+                            const TextSpan(text: ' • Bạn đang phụ trách '),
                             TextSpan(
                               text: '2 lớp học',
                               style: TextStyle(
-                                color: Color(0xFF003FB1),
+                                color: AppColors.brand(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            TextSpan(text: ' (1 lớp đang học, 1 lớp tuyển sinh) và '),
+                            const TextSpan(
+                              text: ' (1 lớp đang học, 1 lớp tuyển sinh) và ',
+                            ),
                             TextSpan(
                               text: '1 bài tập cần chấm điểm',
                               style: TextStyle(
-                                color: Color(0xFFD97706),
+                                color: AppColors.warningFg(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            TextSpan(text: '.'),
+                            const TextSpan(text: '.'),
                           ],
                         ),
                       ),
@@ -239,8 +245,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               icon: const Icon(Icons.date_range_outlined, size: 16),
               label: const Text('Xem TKB tuần'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF334155),
-                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                foregroundColor: AppColors.textBody(context),
+                side: BorderSide(color: AppColors.borderStrong(context)),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -290,10 +296,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         value: '$activeClasses lớp',
         subtitle: 'Tổng 1 học viên active',
         badgeText: '100% đúng tiến độ',
-        badgeColor: const Color(0xFF10B981),
+        badgeColor: AppColors.successFg(context),
         icon: Icons.groups_rounded,
-        iconBgColor: const Color(0xFFEFF6FF),
-        iconColor: const Color(0xFF003FB1),
+        iconBgColor: AppColors.brandBg(context),
+        iconColor: AppColors.brand(context),
       ),
       _buildProgressKpiCard(
         title: 'Giờ dạy tích lũy tháng 10',
@@ -301,28 +307,28 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         progress: (teachingHours / 60).clamp(0.0, 1.0),
         progressLabel: 'Tiến độ hợp đồng: ${(teachingHours / 60 * 100).toStringAsFixed(1)}%',
         icon: Icons.schedule_rounded,
-        iconBgColor: const Color(0xFFEEF2FF),
-        iconColor: const Color(0xFF4F46E5),
+        iconBgColor: AppColors.infoBg(context),
+        iconColor: AppColors.infoFg(context),
       ),
       _buildKpiCard(
         title: 'Bài tập chờ chấm',
         value: '1 bài nộp',
         subtitle: '1 bài Writing (Em Lê Minh Khang)',
         badgeText: 'Cần duyệt ngay',
-        badgeColor: const Color(0xFFF59E0B),
+        badgeColor: AppColors.warningFg(context),
         icon: Icons.edit_note_rounded,
-        iconBgColor: const Color(0xFFFEF3C7),
-        iconColor: const Color(0xFFD97706),
+        iconBgColor: AppColors.warningBg(context),
+        iconColor: AppColors.warningFg(context),
       ),
       _buildKpiCard(
         title: 'Tỷ lệ chuyên cần trung bình',
         value: '100%',
         subtitle: 'Tính trên $activeClasses lớp hệ thống',
         badgeText: 'Sĩ số đầy đủ',
-        badgeColor: const Color(0xFF10B981),
+        badgeColor: AppColors.successFg(context),
         icon: Icons.verified_user_rounded,
-        iconBgColor: const Color(0xFFECFDF5),
-        iconColor: const Color(0xFF059669),
+        iconBgColor: AppColors.successBg(context),
+        iconColor: AppColors.successFg(context),
       ),
     ];
 
@@ -377,12 +383,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -397,10 +403,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -419,10 +425,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
               letterSpacing: -0.5,
             ),
           ),
@@ -432,7 +438,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
+                  color: badgeColor.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -448,9 +454,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               Expanded(
                 child: Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -474,12 +480,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -494,10 +500,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -516,10 +522,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
               letterSpacing: -0.5,
             ),
           ),
@@ -529,17 +535,17 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 5,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4F46E5)),
+              backgroundColor: AppColors.surfaceSubtle(context),
+              valueColor: AlwaysStoppedAnimation<Color>(iconColor),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             progressLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF4F46E5),
+              color: iconColor,
             ),
           ),
         ],
@@ -551,12 +557,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget _buildTodayScheduleWidget(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -575,17 +581,17 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: AppColors.brandBg(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.calendar_today,
-                        color: Color(0xFF003FB1),
+                        color: AppColors.brand(context),
                         size: 16,
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -593,14 +599,14 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         Text(
                           'Các buổi dạy trong 7 ngày tới',
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -609,19 +615,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 ),
                 TextButton(
                   onPressed: () => context.push(RouteNames.schedule),
-                  child: const Text(
+                  child: Text(
                     'Toàn bộ lịch tuần →',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF003FB1),
+                      color: AppColors.brand(context),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           Padding(
             padding: const EdgeInsets.all(12),
             child: FutureBuilder<List<ClassSessionModel>>(
@@ -669,12 +675,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget _buildPendingGradingWidget(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -693,17 +699,17 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
+                        color: AppColors.warningBg(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.assignment_outlined,
-                        color: Color(0xFFD97706),
+                        color: AppColors.warningFg(context),
                         size: 16,
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -713,24 +719,28 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             DecoratedBox(
                               decoration: BoxDecoration(
-                                color: Color(0xFFFEF3C7),
-                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                                color: AppColors.warningBg(context),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1.5,
+                                ),
                                 child: Text(
                                   '1 bài chờ',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF92400E),
+                                    color: AppColors.warningFg(context),
                                   ),
                                 ),
                               ),
@@ -741,7 +751,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           'Học viên nộp bài Writing và Speaking cần phản hồi trong vòng 48h',
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -750,19 +760,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 ),
                 TextButton(
                   onPressed: () {},
-                  child: const Text(
+                  child: Text(
                     'Xem tất cả (1) →',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF003FB1),
+                      color: AppColors.brand(context),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           ListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -777,7 +787,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 taskTitle: 'Writing Task 2: Opinion Essay',
                 fileType: 'PDF',
                 fileName: 'MinhKhang_IELTS_Task2.pdf (1.2 MB)',
-                fileColor: const Color(0xFFEF4444),
+                fileColor: AppColors.errorFg(context),
                 actionLabel: 'Chấm bài ngay',
                 actionColor: const Color(0xFF003FB1),
               ),
@@ -827,10 +837,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   children: [
                     Text(
                       studentName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -840,25 +850,27 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                         vertical: 1.5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: AppColors.brandBg(context),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0xFFDBEAFE)),
+                        border: Border.all(
+                          color: AppColors.primaryOf(context).withAlpha(80),
+                        ),
                       ),
                       child: Text(
                         classTag,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1D4ED8),
+                          color: AppColors.primaryOf(context),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '• $submittedTime',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted(context),
                       ),
                     ),
                   ],
@@ -868,10 +880,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   children: [
                     Text(
                       taskTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF334155),
+                        color: AppColors.textBody(context),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -919,8 +931,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             OutlinedButton(
               onPressed: () {},
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF334155),
-                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                foregroundColor: AppColors.textBody(context),
+                side: BorderSide(color: AppColors.borderStrong(context)),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -961,12 +973,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget _buildAcademicAlertsWidget(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -985,22 +997,22 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFE4E6),
+                        color: AppColors.errorBg(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.notifications_active_outlined,
-                        color: Color(0xFFE11D48),
+                        color: AppColors.errorFg(context),
                         size: 15,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Nhắc nhở học vụ',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                   ],
@@ -1011,32 +1023,32 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFE4E6),
+                    color: AppColors.errorBg(context),
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  child: const Text(
+                  child: Text(
                     '3 tin mới',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFBE123C),
+                      color: AppColors.errorFg(context),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
               children: [
                 // Alert 1: Absent warning (Red)
                 _buildAlertItem(
-                  borderColor: const Color(0xFFEF4444),
-                  bgColor: const Color(0xFFFEF2F2),
+                  borderColor: AppColors.errorFg(context),
+                  bgColor: AppColors.errorBg(context),
                   title: 'Cảnh báo vắng học liên tiếp',
-                  titleColor: const Color(0xFF991B1B),
+                  titleColor: AppColors.errorFg(context),
                   icon: Icons.warning_amber_rounded,
                   description:
                       'Học viên Nguyễn Tuấn Kiệt (Lớp IELTS Fighter) đã vắng 2 buổi liên tiếp không phép.',
@@ -1045,10 +1057,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 const SizedBox(height: 10),
                 // Alert 2: Midterm grade deadline (Blue)
                 _buildAlertItem(
-                  borderColor: const Color(0xFF003FB1),
-                  bgColor: const Color(0xFFEFF6FF),
+                  borderColor: AppColors.brand(context),
+                  bgColor: AppColors.brandBg(context),
                   title: 'Hạn nộp điểm giữa kỳ',
-                  titleColor: const Color(0xFF1E3A8A),
+                  titleColor: AppColors.brand(context),
                   icon: Icons.event_note,
                   description:
                       'Hạn nộp bảng điểm giữa kỳ lớp TOEIC 650+ Intensive là ngày 28/10/2026.',
@@ -1057,10 +1069,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 const SizedBox(height: 10),
                 // Alert 3: Lab room maintenance (Gray)
                 _buildAlertItem(
-                  borderColor: const Color(0xFF94A3B8),
-                  bgColor: const Color(0xFFF8FAFC),
+                  borderColor: AppColors.textMuted(context),
+                  bgColor: AppColors.surfaceElevated(context),
                   title: 'Cơ sở vật chất hoàn tất',
-                  titleColor: const Color(0xFF334155),
+                  titleColor: AppColors.textPrimary(context),
                   icon: Icons.build_circle_outlined,
                   description:
                       'Phòng Lab C02 đã được bảo trì dàn máy tính & tai nghe hoàn tất cho ca chiều.',
@@ -1110,9 +1122,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           const SizedBox(height: 4),
           Text(
             description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11.5,
-              color: Color(0xFF475569),
+              color: AppColors.textBody(context),
               height: 1.4,
             ),
           ),
@@ -1139,12 +1151,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget _buildCurriculumTrackerWidget() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1152,8 +1164,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       ),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1161,16 +1173,16 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   children: [
                     Icon(
                       Icons.timeline_rounded,
-                      color: Color(0xFF059669),
+                      color: AppColors.successFg(context),
                       size: 18,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       'Tiến độ giáo trình',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                   ],
@@ -1180,13 +1192,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF003FB1),
+                    color: AppColors.brand(context),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1197,7 +1209,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   percent: 0.25,
                   sub1: 'Chương trình Luyện thi IELTS Chuyên sâu',
                   sub2: '24 buổi (Đang học)',
-                  barColor: const Color(0xFF003FB1),
+                  barColor: AppColors.brand(context),
                 ),
                 const SizedBox(height: 14),
                 _buildCurriculumItem(
@@ -1206,7 +1218,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   percent: 0.0,
                   sub1: 'Tiếng Anh Giao Tiếp Phản Xạ Quốc Tế',
                   sub2: '20 buổi (Đang tuyển sinh)',
-                  barColor: const Color(0xFF059669),
+                  barColor: AppColors.successFg(context),
                 ),
               ],
             ),
@@ -1234,10 +1246,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -1247,15 +1259,15 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: AppColors.brandBg(context),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     tag,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF003FB1),
+                      color: AppColors.brand(context),
                     ),
                   ),
                 ),
@@ -1263,10 +1275,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
             Text(
               '${(percent * 100).toInt()}%',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+                color: AppColors.textPrimary(context),
               ),
             ),
           ],
@@ -1277,7 +1289,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           child: LinearProgressIndicator(
             value: percent,
             minHeight: 5,
-            backgroundColor: const Color(0xFFF1F5F9),
+            backgroundColor: AppColors.surfaceSubtle(context),
             valueColor: AlwaysStoppedAnimation<Color>(barColor),
           ),
         ),
@@ -1287,17 +1299,17 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           children: [
             Text(
               sub1,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
-                color: Color(0xFF64748B),
+                color: AppColors.textSecondary(context),
               ),
             ),
             Text(
               sub2,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF475569),
+                color: AppColors.textBody(context),
               ),
             ),
           ],

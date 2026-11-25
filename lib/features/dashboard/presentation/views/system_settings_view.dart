@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class SystemSettingsView extends StatefulWidget {
@@ -382,7 +383,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final isDesktop = width > 1024;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(isDesktop ? 24 : 16),
         child: Column(
@@ -391,8 +392,8 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
             // 1. PAGE HEADER TOOLBAR
             Container(
               padding: const EdgeInsets.only(bottom: 16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.border(context))),
               ),
               child: isDesktop
                   ? Row(
@@ -416,8 +417,8 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
 
             // 2. HORIZONTAL NAVIGATION TABS (5 Functional Tabs)
             Container(
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.border(context))),
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -496,24 +497,27 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               'Cài đặt & Cấu hình Hệ thống',
               style: AppTextStyles.h2(context).copyWith(
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
+                color: AppColors.textPrimary(context),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppColors.successBg(context),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF2E7D32)),
-                  SizedBox(width: 6),
+                  CircleAvatar(
+                    radius: 3.5,
+                    backgroundColor: AppColors.successFg(context),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     'Hệ thống bảo mật trực tuyến',
                     style: TextStyle(
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.successFg(context),
                       fontWeight: FontWeight.w600,
                       fontSize: 11,
                     ),
@@ -524,9 +528,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Quản lý thông tin trung tâm, phân quyền vai trò (RBAC), quy tắc tự động hóa, tích hợp thanh toán và an toàn dữ liệu',
-          style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary(context)),
         ),
       ],
     );
@@ -539,16 +543,16 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
       children: [
         OutlinedButton.icon(
           onPressed: _restoreDefaults,
-          icon: const Icon(
+          icon: Icon(
             Icons.restart_alt_rounded,
             size: 18,
-            color: Color(0xFF64748B),
+            color: AppColors.textSecondary(context),
           ),
           label: const Text('Khôi phục mặc định'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF0F172A),
-            side: const BorderSide(color: Color(0xFFCBD5E1)),
-            backgroundColor: Colors.white,
+            foregroundColor: AppColors.textPrimary(context),
+            side: BorderSide(color: AppColors.borderStrong(context)),
+            backgroundColor: AppColors.surface(context),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -583,7 +587,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? const Color(0xFF003FB1) : Colors.transparent,
+              color: isSelected ? AppColors.brand(context) : Colors.transparent,
               width: 2.5,
             ),
           ),
@@ -594,16 +598,16 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               icon,
               size: 18,
               color: isSelected
-                  ? const Color(0xFF003FB1)
-                  : const Color(0xFF64748B),
+                  ? AppColors.brand(context)
+                  : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 8),
             Text(
               title,
               style: TextStyle(
                 color: isSelected
-                    ? const Color(0xFF003FB1)
-                    : const Color(0xFF64748B),
+                    ? AppColors.brand(context)
+                    : AppColors.textSecondary(context),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -613,15 +617,15 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: AppColors.infoBg(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   badge,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF003FB1),
+                    color: AppColors.brand(context),
                   ),
                 ),
               ),
@@ -723,14 +727,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x06000000),
+                color: AppColors.shadow(context),
                 blurRadius: 4,
-                offset: Offset(0, 1),
+                offset: const Offset(0, 1),
               ),
             ],
           ),
@@ -740,22 +744,22 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Row(
                       children: [
                         Icon(
                           Icons.badge_rounded,
-                          color: Color(0xFF003FB1),
+                          color: AppColors.brand(context),
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             'Thông Tin Pháp Lý & Nhận Diện Thương Hiệu',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
-                              color: Color(0xFF0F172A),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                         ),
@@ -768,15 +772,15 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: AppColors.surfaceSubtle(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Đồng bộ CSDL',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF475569),
+                        color: AppColors.textBody(context),
                       ),
                     ),
                   ),
@@ -788,9 +792,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppColors.surfaceElevated(context),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: Row(
                   children: [
@@ -812,20 +816,20 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Biểu trưng & Logo chính thức của Hệ thống',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
-                              color: Color(0xFF0F172A),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'Định dạng PNG/SVG nền trong suốt, tối đa 2MB',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -941,14 +945,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x06000000),
+                color: AppColors.shadow(context),
                 blurRadius: 4,
-                offset: Offset(0, 1),
+                offset: const Offset(0, 1),
               ),
             ],
           ),
@@ -958,22 +962,22 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Row(
                       children: [
                         Icon(
                           Icons.rule_folder_rounded,
-                          color: Color(0xFF003FB1),
+                          color: AppColors.brand(context),
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             'Quy Tắc Học Vụ & Điểm Danh Tự Động',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
-                              color: Color(0xFF0F172A),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                         ),
@@ -986,15 +990,15 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
+                      color: AppColors.successBg(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Tự động hóa',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF047857),
+                        color: AppColors.successFg(context),
                       ),
                     ),
                   ),
@@ -1009,11 +1013,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                   'Tự động gửi tin nhắn Zalo ZNS / SMS nhắc lịch học trước 2 giờ',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Hệ thống kích hoạt webhook gửi mẫu Zalo Template tới phụ huynh và học viên.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary(context),
+                  ),
                 ),
-                activeThumbColor: const Color(0xFF003FB1),
+                activeThumbColor: AppColors.brand(context),
                 contentPadding: EdgeInsets.zero,
               ),
               const Divider(height: 16),
@@ -1025,11 +1032,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                   'Cảnh báo phụ huynh khi học viên vắng mặt quá 2 buổi liên tiếp',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Tự động tạo ticket gửi phòng Quản lý Học vụ gọi điện chăm sóc.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary(context),
+                  ),
                 ),
-                activeThumbColor: const Color(0xFF003FB1),
+                activeThumbColor: AppColors.brand(context),
                 contentPadding: EdgeInsets.zero,
               ),
               const Divider(height: 16),
@@ -1041,11 +1051,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                   'Khóa quyền chỉnh sửa điểm danh giảng viên sau 24h kết thúc ca học',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Mọi điều chỉnh sau 24 giờ phải được Trưởng phòng Học vụ phê duyệt.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary(context),
+                  ),
                 ),
-                activeThumbColor: const Color(0xFF003FB1),
+                activeThumbColor: AppColors.brand(context),
                 contentPadding: EdgeInsets.zero,
               ),
               const Divider(height: 16),
@@ -1067,10 +1080,10 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       ),
                       Text(
                         '${_minAttendanceThreshold.toInt()}%',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF003FB1),
+                          color: AppColors.brand(context),
                         ),
                       ),
                     ],
@@ -1081,7 +1094,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                     max: 100,
                     divisions: 10,
                     label: '${_minAttendanceThreshold.toInt()}%',
-                    activeColor: const Color(0xFF003FB1),
+                    activeColor: AppColors.brand(context),
                     onChanged: (v) =>
                         setState(() => _minAttendanceThreshold = v),
                   ),
@@ -1101,14 +1114,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x06000000),
+                color: AppColors.shadow(context),
                 blurRadius: 4,
-                offset: Offset(0, 1),
+                offset: const Offset(0, 1),
               ),
             ],
           ),
@@ -1118,29 +1131,32 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(
                         Icons.payments_rounded,
-                        color: Color(0xFF003FB1),
+                        color: AppColors.brand(context),
                         size: 20,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
                         'Cổng Thanh Toán & Hóa Đơn',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                     ],
                   ),
                   TextButton(
                     onPressed: () => setState(() => _activeTab = 3),
-                    child: const Text(
+                    child: Text(
                       'Quản lý chi tiết →',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF003FB1)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.brand(context),
+                      ),
                     ),
                   ),
                 ],
@@ -1166,14 +1182,14 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x06000000),
+                color: AppColors.shadow(context),
                 blurRadius: 4,
-                offset: Offset(0, 1),
+                offset: const Offset(0, 1),
               ),
             ],
           ),
@@ -1183,29 +1199,32 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(
                         Icons.admin_panel_settings_rounded,
-                        color: Color(0xFF003FB1),
+                        color: AppColors.brand(context),
                         size: 20,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
                         'Ma Trận Phân Quyền Vai Trò (RBAC)',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                     ],
                   ),
                   TextButton(
                     onPressed: () => setState(() => _activeTab = 1),
-                    child: const Text(
+                    child: Text(
                       'Cấu hình quyền →',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF003FB1)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.brand(context),
+                      ),
                     ),
                   ),
                 ],
@@ -1333,23 +1352,27 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final roleListWidget = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.shield_outlined, color: Color(0xFF003FB1), size: 20),
-              SizedBox(width: 8),
+              Icon(
+                Icons.shield_outlined,
+                color: AppColors.brand(context),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Danh Sách Vai Trò Hệ Thống (5)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
             ],
@@ -1357,13 +1380,16 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           const SizedBox(height: 6),
           Text(
             'Tổng cộng ${_users.length} tài khoản đang được phân quyền trong CSDL:',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary(context),
+            ),
           ),
           const SizedBox(height: 14),
           ...rolesMeta.map((r) {
             final key = r['key'] as String;
             final isSelected = _selectedRoleKey == key;
-            final color = r['color'] as Color;
+            final color = AppColors.adaptAccent(context, r['color'] as Color);
             final userCount = _countUsersByRole(key);
             final enabledCount = (_rolePermissions[key] ?? {}).values
                 .where((v) => v)
@@ -1377,13 +1403,13 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFFEEF2FF)
-                      : const Color(0xFFF8FAFC),
+                      ? AppColors.infoBg(context)
+                      : AppColors.surfaceElevated(context),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF003FB1)
-                        : const Color(0xFFE2E8F0),
+                        ? AppColors.brand(context)
+                        : AppColors.border(context),
                     width: isSelected ? 1.5 : 1,
                   ),
                 ),
@@ -1400,8 +1426,8 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                               color: isSelected
-                                  ? const Color(0xFF003FB1)
-                                  : const Color(0xFF0F172A),
+                                  ? AppColors.brand(context)
+                                  : AppColors.textPrimary(context),
                             ),
                           ),
                         ),
@@ -1411,7 +1437,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
+                            color: color.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -1428,18 +1454,18 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                     const SizedBox(height: 4),
                     Text(
                       r['desc'] as String,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Đang bật: $enabledCount / ${permissionLabels.length} nhóm quyền',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF475569),
+                        color: AppColors.textBody(context),
                       ),
                     ),
                   ],
@@ -1457,9 +1483,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final matrixWidget = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1475,16 +1501,19 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                 children: [
                   Text(
                     'Chi tiết quyền hạn: ${selectedRoleMeta['title']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Bật hoặc tắt các quyền truy cập module bên dưới cho vai trò đang chọn:',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                 ],
               ),
@@ -1530,7 +1559,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
             return SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: enabled,
-              activeThumbColor: const Color(0xFF003FB1),
+              activeThumbColor: AppColors.brand(context),
               title: Text(
                 label,
                 style: const TextStyle(
@@ -1540,9 +1569,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               ),
               subtitle: Text(
                 sub,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               onChanged: (val) {
@@ -1594,7 +1623,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.mark_chat_read_rounded, color: Color(0xFF003FB1)),
+            Icon(Icons.mark_chat_read_rounded, color: AppColors.brand(ctx)),
             const SizedBox(width: 8),
             Text(
               isEdit
@@ -1701,9 +1730,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1714,7 +1743,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -1722,13 +1751,16 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Cấu hình nội dung tin nhắn tự động gửi tới Học viên & Phụ huynh theo sự kiện thời gian thực',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                 ],
               ),
@@ -1750,9 +1782,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.surfaceElevated(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1772,24 +1804,24 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
+                                color: AppColors.infoBg(context),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 tpl['id'].toString(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
-                                  color: Color(0xFF003FB1),
+                                  color: AppColors.brand(context),
                                 ),
                               ),
                             ),
                             Text(
                               tpl['title'].toString(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14.5,
-                                color: Color(0xFF0F172A),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             Container(
@@ -1798,15 +1830,15 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFECFDF5),
+                                color: AppColors.successBg(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 tpl['channel'].toString(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF047857),
+                                  color: AppColors.successFg(context),
                                 ),
                               ),
                             ),
@@ -1815,7 +1847,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       ),
                       Switch(
                         value: isActive,
-                        activeThumbColor: const Color(0xFF003FB1),
+                        activeThumbColor: AppColors.brand(context),
                         onChanged: (v) => setState(() => tpl['isActive'] = v),
                       ),
                     ],
@@ -1823,9 +1855,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                   const SizedBox(height: 6),
                   Text(
                     'Sự kiện kích hoạt: ${tpl['trigger']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: AppColors.textSecondary(context),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -1834,15 +1866,15 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface(context),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                      border: Border.all(color: AppColors.borderStrong(context)),
                     ),
                     child: Text(
                       tpl['content'].toString(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF1E293B),
+                        color: AppColors.textBody(context),
                         height: 1.4,
                       ),
                     ),
@@ -1918,9 +1950,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.account_balance_wallet_rounded,
-              color: Color(0xFF003FB1),
+              color: AppColors.brand(ctx),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -2036,9 +2068,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2052,20 +2084,20 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Tích Hợp Cổng Thanh Toán Trực Tuyến & Hóa Đơn Điện Tử',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Dữ liệu thực tế trong hệ thống: $totalInvoices hóa đơn ($paidInvoices đã thanh toán • $pendingInvoices chờ thu)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
-                      color: Color(0xFF64748B),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -2095,15 +2127,18 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           const SizedBox(height: 20),
           ..._paymentGateways.map((gw) {
             final isActive = gw['isActive'] == true;
-            final color = gw['color'] as Color? ?? const Color(0xFF003FB1);
+            final color = AppColors.adaptAccent(
+              context,
+              gw['color'] as Color? ?? const Color(0xFF003FB1),
+            );
 
             return Container(
               margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.surfaceElevated(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2120,7 +2155,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.12),
+                                color: color.withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -2139,18 +2174,18 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                                 children: [
                                   Text(
                                     gw['name'].toString(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14.5,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     'Định danh: ${gw['merchant']} • Webhook: ${gw['webhookUrl']}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -2161,7 +2196,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       ),
                       Switch(
                         value: isActive,
-                        activeThumbColor: const Color(0xFF003FB1),
+                        activeThumbColor: AppColors.brand(context),
                         onChanged: (v) => setState(() => gw['isActive'] = v),
                       ),
                     ],
@@ -2175,10 +2210,10 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                     children: [
                       Text(
                         gw['fee'].toString(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF475569),
+                          color: AppColors.textBody(context),
                         ),
                       ),
                       Wrap(
@@ -2232,24 +2267,28 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final securityCard = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.security_rounded, color: Color(0xFF003FB1), size: 20),
-              SizedBox(width: 8),
+              Icon(
+                Icons.security_rounded,
+                color: AppColors.brand(context),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Chính Sách Bảo Mật & Phiên Đăng Nhập (JWT Auth)',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -2259,14 +2298,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _enforceStrongPassword,
-            activeThumbColor: const Color(0xFF003FB1),
+            activeThumbColor: AppColors.brand(context),
             title: const Text(
               'Bắt buộc mật khẩu mạnh (Tối thiểu 8 ký tự, chữ hoa & chữ số)',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Áp dụng khi tạo mới hoặc đổi mật khẩu tài khoản người dùng.',
-              style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textSecondary(context),
+              ),
             ),
             onChanged: (v) => setState(() => _enforceStrongPassword = v),
           ),
@@ -2274,14 +2316,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _lockoutAfter5Attempts,
-            activeThumbColor: const Color(0xFF003FB1),
+            activeThumbColor: AppColors.brand(context),
             title: const Text(
               'Khóa tạm thời 15 phút khi đăng nhập sai quá 5 lần liên tiếp',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Bảo vệ hệ thống khỏi tấn công dò mật khẩu (Brute-force).',
-              style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textSecondary(context),
+              ),
             ),
             onChanged: (v) => setState(() => _lockoutAfter5Attempts = v),
           ),
@@ -2289,14 +2334,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _enableAuditLog,
-            activeThumbColor: const Color(0xFF003FB1),
+            activeThumbColor: AppColors.brand(context),
             title: const Text(
               'Ghi nhật ký kiểm toán (Audit Log) mọi thao tác sửa điểm & hóa đơn',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Lưu vết người thực hiện, thời gian và giá trị trước/sau chỉnh sửa.',
-              style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textSecondary(context),
+              ),
             ),
             onChanged: (v) => setState(() => _enableAuditLog = v),
           ),
@@ -2304,14 +2352,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: _alertNewDeviceLogin,
-            activeThumbColor: const Color(0xFF003FB1),
+            activeThumbColor: AppColors.brand(context),
             title: const Text(
               'Gửi cảnh báo khi tài khoản Admin đăng nhập từ thiết bị mới',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Gửi thông báo xác nhận tới email quản trị viên.',
-              style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textSecondary(context),
+              ),
             ),
             onChanged: (v) => setState(() => _alertNewDeviceLogin = v),
           ),
@@ -2352,9 +2403,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final backupCard = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2365,21 +2416,21 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Row(
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.storage_rounded,
-                    color: Color(0xFF047857),
+                    color: AppColors.successFg(context),
                     size: 20,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'Sao Lưu Cơ Sở Dữ Liệu PostgreSQL',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                 ],
@@ -2401,7 +2452,10 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           const SizedBox(height: 8),
           Text(
             'Trạng thái DB: lms_postgres (lms_db) • Đang lưu trữ ${_users.length} người dùng, ${_branches.length} cơ sở, ${_invoices.length} hóa đơn.',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary(context),
+            ),
           ),
           const SizedBox(height: 16),
           ..._backupSnapshots.map(
@@ -2409,9 +2463,9 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.surfaceElevated(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2422,10 +2476,10 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                       Expanded(
                         child: Text(
                           bk['name'].toString(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                       ),
@@ -2435,15 +2489,15 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
+                          color: AppColors.successBg(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           bk['status'].toString(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF047857),
+                            color: AppColors.successFg(context),
                           ),
                         ),
                       ),
@@ -2452,17 +2506,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                   const SizedBox(height: 4),
                   Text(
                     '${bk['type']} • Lúc: ${bk['timestamp']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
-                      color: Color(0xFF64748B),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Bản ghi: ${bk['summary']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
-                      color: Color(0xFF334155),
+                      color: AppColors.textBody(context),
                     ),
                   ),
                 ],
@@ -2496,15 +2550,18 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final merchant = gateway['merchant']?.toString() ?? '';
     final fee = gateway['fee']?.toString() ?? '';
     final initials = gateway['initials']?.toString() ?? 'GW';
-    final badgeColor = gateway['color'] as Color? ?? const Color(0xFF003FB1);
+    final badgeColor = AppColors.adaptAccent(
+      context,
+      gateway['color'] as Color? ?? const Color(0xFF003FB1),
+    );
     final isActive = gateway['isActive'] == true;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.surfaceElevated(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2521,7 +2578,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.1),
+                        color: badgeColor.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -2540,17 +2597,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                         children: [
                           Text(
                             name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
-                              color: Color(0xFF0F172A),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                           Text(
                             merchant,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -2563,8 +2620,8 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? const Color(0xFFECFDF5)
-                      : const Color(0xFFF1F5F9),
+                      ? AppColors.successBg(context)
+                      : AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -2573,8 +2630,8 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: isActive
-                        ? const Color(0xFF047857)
-                        : const Color(0xFF64748B),
+                        ? AppColors.successFg(context)
+                        : AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -2587,17 +2644,17 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               Expanded(
                 child: Text(
                   fee,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ),
               TextButton(
                 onPressed: onConfigure,
-                child: const Text(
+                child: Text(
                   'Cấu hình',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF003FB1)),
+                  style: TextStyle(fontSize: 11, color: AppColors.brand(context)),
                 ),
               ),
             ],
@@ -2616,6 +2673,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
     final enabledCount = (_rolePermissions[roleKey] ?? {}).values
         .where((v) => v)
         .length;
+    final adaptedAccent = AppColors.adaptAccent(context, accent);
     return InkWell(
       onTap: () {
         setState(() {
@@ -2632,18 +2690,18 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   desc,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -2652,7 +2710,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
+              color: adaptedAccent.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -2660,7 +2718,7 @@ class _SystemSettingsViewState extends State<SystemSettingsView> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: accent,
+                color: adaptedAccent,
               ),
             ),
           ),

@@ -160,10 +160,13 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.brandBg(ctx),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.school_rounded, color: AppColors.primary),
+                child: Icon(
+                  Icons.school_rounded,
+                  color: AppColors.primaryOf(ctx),
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -185,9 +188,9 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: AppColors.surfaceElevated(ctx),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: AppColors.border(ctx)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,12 +202,12 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                         const SizedBox(height: 4),
                         Text(
                           'Mã lớp: ${offering['code']} • Khóa học: ${course?['title'] ?? ""}',
-                          style: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+                          style: TextStyle(color: AppColors.textSecondary(ctx), fontSize: 13),
                         ),
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+                            Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary(ctx)),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -217,7 +220,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF64748B)),
+                            Icon(Icons.schedule_rounded, size: 16, color: AppColors.textSecondary(ctx)),
                             const SizedBox(width: 6),
                             Text(
                               'Giờ học: ${offering['startTime'] ?? ""} - ${offering['endTime'] ?? ""}',
@@ -231,23 +234,23 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.payments_outlined, size: 16, color: Color(0xFF64748B)),
+                                Icon(Icons.payments_outlined, size: 16, color: AppColors.textSecondary(ctx)),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Học phí: $feeStr',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryOf(ctx), fontSize: 14),
                                 ),
                               ],
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
+                                color: AppColors.successBg(ctx),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 'Còn ${offering['remainingSeats']} chỗ',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D)),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.successFg(ctx)),
                               ),
                             ),
                           ],
@@ -261,13 +264,13 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: AppColors.brandBg(ctx),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                      border: Border.all(color: AppColors.infoFg(ctx).withValues(alpha: 0.35)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.account_circle_rounded, color: Color(0xFF2563EB)),
+                        Icon(Icons.account_circle_rounded, color: AppColors.infoFg(ctx)),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -275,12 +278,12 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                             children: [
                               Text(
                                 'Học viên: ${user?.fullName ?? "Học viên hiện tại"} (${user?.userCode ?? "HV"})',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A)),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary(ctx)),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
+                              Text(
                                 'Đăng ký 1-chạm: Hồ sơ cá nhân và lịch sử học tập được đồng bộ trực tiếp.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF1D4ED8)),
+                                style: TextStyle(fontSize: 11, color: AppColors.infoFg(ctx)),
                               ),
                             ],
                           ),
@@ -373,7 +376,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.error),
+            Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.errorFg(context)),
             const SizedBox(height: 12),
             Text('Không tải được danh mục: $_errorMessage'),
             const SizedBox(height: 12),
@@ -388,12 +391,12 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           // Sub-header navigation with Tabs
           Container(
-            color: Colors.white,
+            color: AppColors.surface(context),
             padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 16, vertical: 8),
             child: Row(
               children: [
@@ -401,10 +404,10 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                   child: TabBar(
                     controller: _tabController,
                     isScrollable: true,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: const Color(0xFF64748B),
+                    labelColor: AppColors.primaryOf(context),
+                    unselectedLabelColor: AppColors.textSecondary(context),
                     labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    indicatorColor: AppColors.primary,
+                    indicatorColor: AppColors.primaryOf(context),
                     indicatorWeight: 3,
                     tabs: [
                       const Tab(
@@ -426,7 +429,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          Divider(height: 1, color: AppColors.border(context)),
 
           // Tab Bar View
           Expanded(
@@ -534,9 +537,9 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Wrap(
               spacing: 12,
@@ -600,23 +603,23 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
               padding: const EdgeInsets.all(48),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border(context)),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF94A3B8)),
-                  SizedBox(height: 12),
-                  Text(
+                  Icon(Icons.search_off_rounded, size: 48, color: AppColors.textMuted(context)),
+                  const SizedBox(height: 12),
+                  const Text(
                     'Không tìm thấy lớp học nào phù hợp.',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Vui lòng thử điều chỉnh bộ lọc hoặc liên hệ học vụ để mở thêm ca học.',
-                    style: TextStyle(color: AppColors.textSecondaryLight),
+                    style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                 ],
               ),
@@ -660,11 +663,11 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
         : '${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} đ';
 
     return Card(
-      color: Colors.white,
+      color: AppColors.surface(context),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        side: BorderSide(color: AppColors.border(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -685,7 +688,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                       const SizedBox(height: 2),
                       Text(
                         '${course?['title'] ?? ""} • Mã: ${item['code']}',
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondaryLight),
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary(context)),
                       ),
                     ],
                   ),
@@ -693,7 +696,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: remaining <= 3 ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+                    color: remaining <= 3 ? AppColors.errorBg(context) : AppColors.successBg(context),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -701,7 +704,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
-                      color: remaining <= 3 ? const Color(0xFFB91C1C) : const Color(0xFF15803D),
+                      color: remaining <= 3 ? AppColors.errorFg(context) : AppColors.successFg(context),
                     ),
                   ),
                 ),
@@ -710,7 +713,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
             const Divider(height: 20),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+                Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -723,7 +726,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF64748B)),
+                Icon(Icons.schedule_rounded, size: 16, color: AppColors.textSecondary(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -737,7 +740,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF64748B)),
+                  Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textSecondary(context)),
                   const SizedBox(width: 6),
                   Text(
                     'Khai giảng: ${start.day.toString().padLeft(2, '0')}/${start.month.toString().padLeft(2, '0')}/${start.year}',
@@ -752,10 +755,10 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
               children: [
                 Text(
                   feeFormatted,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
                 FilledButton.icon(
@@ -780,17 +783,17 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.inbox_outlined, size: 56, color: Color(0xFF94A3B8)),
+              Icon(Icons.inbox_outlined, size: 56, color: AppColors.textMuted(context)),
               const SizedBox(height: 16),
               const Text(
                 'Bạn chưa gửi yêu cầu đăng ký lớp nào.',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Chuyển sang tab "Khám phá & Đăng ký" để chọn khóa học phù hợp với lộ trình của bạn.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondaryLight),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
@@ -817,9 +820,9 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Học vụ sẽ đối chiếu lộ trình, kiểm tra số lượng học viên và xác nhận nhập học chính thức.',
-                style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
               ),
               const SizedBox(height: 20),
               for (final req in _myRegistrations)
@@ -843,40 +846,40 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
     final statusConfig = switch (status) {
       'APPROVED' => (
         'Đã duyệt & Ghi danh',
-        const Color(0xFF15803D),
-        const Color(0xFFDCFCE7),
+        AppColors.successFg(context),
+        AppColors.successBg(context),
         Icons.check_circle_rounded,
         'Yêu cầu đã được học vụ duyệt. Bạn đã là học viên chính thức của lớp này.',
       ),
       'CONTACTED' => (
         'Học vụ đã liên hệ',
-        const Color(0xFF1D4ED8),
-        const Color(0xFFDBEAFE),
+        AppColors.infoFg(context),
+        AppColors.infoBg(context),
         Icons.phone_in_talk_rounded,
         'Tư vấn viên đã tiếp nhận và liên hệ tư vấn/sắp xếp lịch thi đầu vào.',
       ),
       'REJECTED' => (
         'Từ chối',
-        const Color(0xFFB91C1C),
-        const Color(0xFFFEE2E2),
+        AppColors.errorFg(context),
+        AppColors.errorBg(context),
         Icons.cancel_rounded,
         'Rất tiếc yêu cầu chưa được chấp thuận do lớp đã đủ sĩ số hoặc không phù hợp lịch.',
       ),
       _ => (
         'Chờ học vụ xử lý',
-        const Color(0xFFB45309),
-        const Color(0xFFFEF3C7),
+        AppColors.warningFg(context),
+        AppColors.warningBg(context),
         Icons.schedule_rounded,
         'Đơn đang được phòng Đào tạo rà soát hồ sơ và kiểm tra chỗ trống.',
       ),
     };
 
     return Card(
-      color: Colors.white,
+      color: AppColors.surface(context),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        side: BorderSide(color: AppColors.border(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -918,17 +921,17 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
             const SizedBox(height: 6),
             Text(
               '${course?['title'] ?? ""} • ${branch?['name'] ?? ""}',
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
             ),
             const Divider(height: 20),
             Row(
               children: [
-                const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF64748B)),
+                Icon(Icons.info_outline_rounded, size: 16, color: AppColors.textSecondary(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     statusConfig.$5,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textBody(context)),
                   ),
                 ),
               ],
@@ -937,7 +940,7 @@ class _StudentCourseDiscoveryViewState extends State<StudentCourseDiscoveryView>
               const SizedBox(height: 8),
               Text(
                 'Ghi chú của bạn: ${req['notes']}',
-                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.textSecondary(context)),
               ),
             ],
           ],

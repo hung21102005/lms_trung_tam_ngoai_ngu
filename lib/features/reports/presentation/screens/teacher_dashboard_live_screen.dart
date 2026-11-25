@@ -61,7 +61,7 @@ class _TeacherDashboardLiveScreenState
     final auth = context.watch<AuthBloc>().state;
     final name = auth is AuthenticatedState ? auth.user.fullName : 'Giảng viên';
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background(context),
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text('Tổng quan giảng dạy'),
@@ -390,7 +390,7 @@ class _TeacherDashboardLiveScreenState
           const SizedBox(height: 4),
           Text(
             DateFormat('dd/MM/yyyy').format(DateTime.now()),
-            style: const TextStyle(color: AppColors.neutral600),
+            style: TextStyle(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: MobileTokens.sectionGap),
           Container(
@@ -492,7 +492,7 @@ class _TeacherDashboardLiveScreenState
                     const SizedBox(height: 5),
                     Text(
                       '${session['date'] ?? ''} · ${session['startTime'] ?? ''}–${session['endTime'] ?? ''}',
-                      style: const TextStyle(color: AppColors.neutral600),
+                      style: TextStyle(color: AppColors.textSecondary(context)),
                     ),
                     TextButton.icon(
                       onPressed: () => context.push(
@@ -606,7 +606,7 @@ class _TeacherDashboardLiveScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 20, color: AppColors.primary),
+              Icon(icon, size: 20, color: AppColors.primaryOf(context)),
               Text(
                 value,
                 style: const TextStyle(

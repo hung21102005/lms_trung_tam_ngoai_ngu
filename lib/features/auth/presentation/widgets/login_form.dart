@@ -91,7 +91,7 @@ class _LoginFormState extends State<LoginForm> {
                   child: Text(
                     'Quên mật khẩu?',
                     style: AppTextStyles.label(context).copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.primaryOf(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

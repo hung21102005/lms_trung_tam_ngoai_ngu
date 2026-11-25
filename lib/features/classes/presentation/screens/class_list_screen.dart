@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/mobile/mobile_ui.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -644,13 +645,13 @@ class _ClassListScreenState extends State<ClassListScreen> {
     if (!isDesktop) return _buildMobileScreen();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text('Lớp học & Xếp lịch tự động'),
               elevation: 0,
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF0F172A),
+              backgroundColor: AppColors.surface(context),
+              foregroundColor: AppColors.textPrimary(context),
               actions: [
                 IconButton(
                   onPressed: () => context.read<ClassesBloc>().add(
@@ -691,9 +692,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 // 1. PAGE HEADING TOOLBAR (Stitch Layout)
                 Container(
                   padding: const EdgeInsets.only(bottom: 16),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                      bottom: BorderSide(color: AppColors.border(context)),
                     ),
                   ),
                   child: isDesktop
@@ -715,7 +716,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                         style: AppTextStyles.h2(context)
                                             .copyWith(
                                               fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF0F172A),
+                                              color: AppColors.textPrimary(context),
                                             ),
                                       ),
                                       Container(
@@ -724,15 +725,15 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFE8F5E9),
+                                          color: AppColors.successBg(context),
                                           borderRadius: BorderRadius.circular(
                                             20,
                                           ),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           '● Thuật toán xếp lịch tự động thông minh',
                                           style: TextStyle(
-                                            color: Color(0xFF2E7D32),
+                                            color: AppColors.successFg(context),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 11,
                                           ),
@@ -743,18 +744,18 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.today_rounded,
                                         size: 16,
-                                        color: Color(0xFF64748B),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           'Hôm nay: $todayStr • Tổng số ${liveClasses.length} lớp đang vận hành trong hệ thống',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: Color(0xFF64748B),
+                                            color: AppColors.textSecondary(context),
                                           ),
                                         ),
                                       ),
@@ -778,18 +779,18 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       ),
                                     );
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.file_download_outlined,
                                     size: 18,
-                                    color: Color(0xFF003FB1),
+                                    color: AppColors.brand(context),
                                   ),
                                   label: const Text('Xuất TKB (.xlsx)'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF0F172A),
-                                    side: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
+                                    foregroundColor: AppColors.textPrimary(context),
+                                    side: BorderSide(
+                                      color: AppColors.borderStrong(context),
                                     ),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: AppColors.surface(context),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 14,
                                       vertical: 12,
@@ -810,7 +811,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       '+ Tạo lớp & Xếp lịch tự động',
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF003FB1),
+                                      backgroundColor: AppColors.isDark(context)
+                                          ? AppColors.primaryLight
+                                          : const Color(0xFF003FB1),
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 16,
@@ -839,7 +842,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   style: AppTextStyles.h2(context).copyWith(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
-                                    color: const Color(0xFF0F172A),
+                                    color: AppColors.textPrimary(context),
                                   ),
                                 ),
                                 Container(
@@ -848,22 +851,22 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE8F5E9),
+                                    color: AppColors.successBg(context),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       CircleAvatar(
                                         radius: 3.5,
-                                        backgroundColor: Color(0xFF2E7D32),
+                                        backgroundColor: AppColors.successFg(context),
                                       ),
-                                      SizedBox(width: 6),
+                                      const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
                                           'Thuật toán xếp lịch tự động thông minh',
                                           style: TextStyle(
-                                            color: Color(0xFF2E7D32),
+                                            color: AppColors.successFg(context),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 11,
                                           ),
@@ -878,21 +881,21 @@ class _ClassListScreenState extends State<ClassListScreen> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 2),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
                                   child: Icon(
                                     Icons.today_rounded,
                                     size: 15,
-                                    color: Color(0xFF64748B),
+                                    color: AppColors.textSecondary(context),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     'Hôm nay: $todayStr • Tổng số ${liveClasses.length} lớp đang vận hành trong hệ thống',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12.5,
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ),
@@ -913,18 +916,18 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       ),
                                     );
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.file_download_outlined,
                                     size: 16,
-                                    color: Color(0xFF003FB1),
+                                    color: AppColors.brand(context),
                                   ),
                                   label: const Text('Xuất TKB (.xlsx)'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF0F172A),
-                                    side: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
+                                    foregroundColor: AppColors.textPrimary(context),
+                                    side: BorderSide(
+                                      color: AppColors.borderStrong(context),
                                     ),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: AppColors.surface(context),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
                                       vertical: 10,
@@ -945,7 +948,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                       '+ Tạo lớp & Xếp lịch tự động',
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF003FB1),
+                                      backgroundColor: AppColors.isDark(context)
+                                          ? AppColors.primaryLight
+                                          : const Color(0xFF003FB1),
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 14,
@@ -1008,8 +1013,8 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           subtext:
                               '$inProgressCount đang học • $openCount mở tuyển sinh',
                           icon: Icons.school_rounded,
-                          iconBg: const Color(0xFFEEF2FF),
-                          iconColor: const Color(0xFF003FB1),
+                          iconBg: AppColors.infoBg(context),
+                          iconColor: AppColors.brand(context),
                           width: cardWidth,
                         ),
                         _buildStatCard(
@@ -1017,10 +1022,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           value: '$totalSessions buổi',
                           subtext: '100% không trùng phòng & GV',
                           icon: Icons.check_circle_rounded,
-                          iconBg: const Color(0xFFF0FDF4),
-                          iconColor: const Color(0xFF16A34A),
-                          pillColor: const Color(0xFFDCFCE7),
-                          pillTextColor: const Color(0xFF15803D),
+                          iconBg: AppColors.successBg(context),
+                          iconColor: AppColors.successFg(context),
+                          pillColor: AppColors.successBg(context),
+                          pillTextColor: AppColors.successFg(context),
                           width: cardWidth,
                         ),
                         _buildStatCard(
@@ -1028,10 +1033,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           value: '$totalStudents học viên',
                           subtext: 'Sức chứa TB: $avgCapacity HV/lớp',
                           icon: Icons.group_rounded,
-                          iconBg: const Color(0xFFEFF6FF),
-                          iconColor: const Color(0xFF2563EB),
-                          pillColor: const Color(0xFFEFF6FF),
-                          pillTextColor: const Color(0xFF1D4ED8),
+                          iconBg: AppColors.brandBg(context),
+                          iconColor: AppColors.infoFg(context),
+                          pillColor: AppColors.brandBg(context),
+                          pillTextColor: AppColors.infoFg(context),
                           width: cardWidth,
                         ),
                         _buildStatCard(
@@ -1039,10 +1044,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           value: '0 buổi',
                           subtext: 'Lịch học vận hành ổn định',
                           icon: Icons.verified_rounded,
-                          iconBg: const Color(0xFFECFDF5),
-                          iconColor: const Color(0xFF059669),
-                          pillColor: const Color(0xFFECFDF5),
-                          pillTextColor: const Color(0xFF047857),
+                          iconBg: AppColors.successBg(context),
+                          iconColor: AppColors.successFg(context),
+                          pillColor: AppColors.successBg(context),
+                          pillTextColor: AppColors.successFg(context),
                           width: cardWidth,
                         ),
                       ],
@@ -1055,14 +1060,14 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: const [
+                    border: Border.all(color: AppColors.border(context)),
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x06000000),
+                        color: AppColors.shadow(context),
                         blurRadius: 4,
-                        offset: Offset(0, 1),
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
@@ -1109,31 +1114,31 @@ class _ClassListScreenState extends State<ClassListScreen> {
                               decoration: InputDecoration(
                                 hintText:
                                     'Tìm theo mã lớp, tên khóa, giáo viên, phòng...',
-                                hintStyle: const TextStyle(
+                                hintStyle: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textMuted(context),
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.search,
                                   size: 20,
-                                  color: Color(0xFF64748B),
+                                  color: AppColors.textSecondary(context),
                                 ),
                                 filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
+                                fillColor: AppColors.surfaceSubtle(context),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 10,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
+                                  borderSide: BorderSide(
+                                    color: AppColors.borderStrong(context),
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
+                                  borderSide: BorderSide(
+                                    color: AppColors.borderStrong(context),
                                   ),
                                 ),
                               ),
@@ -1143,14 +1148,15 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
+                                dropdownColor: AppColors.surface(context),
                                 isExpanded: true,
                                 value: activeBranchFilter,
                                 items: [
@@ -1179,14 +1185,15 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
+                                dropdownColor: AppColors.surface(context),
                                 isExpanded: true,
                                 value: _selectedShift,
                                 items: const [
@@ -1218,14 +1225,15 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.borderStrong(context),
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
+                                dropdownColor: AppColors.surface(context),
                                 isExpanded: true,
                                 value: _selectedStatus,
                                 items: const [
@@ -1318,9 +1326,12 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   Widget _buildMobileScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: AppColors.background(context),
       appBar: widget.showAppBar
-          ? AppBar(title: const Text('Lớp học'), backgroundColor: Colors.white)
+          ? AppBar(
+              title: const Text('Lớp học'),
+              backgroundColor: AppColors.surface(context),
+            )
           : null,
       body: BlocBuilder<ClassesBloc, ClassesState>(
         builder: (context, state) {
@@ -1344,7 +1355,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1353,11 +1364,14 @@ class _ClassListScreenState extends State<ClassListScreen> {
                             style: TextStyle(
                               fontSize: 23,
                               fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                           Text(
                             'Lớp, giáo viên và lịch học',
-                            style: TextStyle(color: Color(0xFF64748B)),
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
+                            ),
                           ),
                         ],
                       ),
@@ -1375,9 +1389,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 MobileSectionCard(
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.school_rounded,
-                        color: Color(0xFF003FB1),
+                        color: AppColors.brand(context),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1417,7 +1431,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                             icon: const Icon(Icons.close_rounded),
                           ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surface(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1532,11 +1546,12 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   Widget _buildMobileClassCard(ClassModel classItem) {
     final status = switch (classItem.status) {
-      'IN_PROGRESS' => ('Đang học', const Color(0xFF047857)),
-      'OPEN_FOR_ENROLLMENT' => ('Đang tuyển', const Color(0xFF003FB1)),
-      'COMPLETED' => ('Đã kết thúc', const Color(0xFF64748B)),
-      'PLANNING' => ('Sắp mở', const Color(0xFFD97706)),
-      _ => (classItem.status, const Color(0xFF64748B)),
+      'IN_PROGRESS' => ('Đang học', AppColors.successFg(context)),
+      'OPEN_FOR_ENROLLMENT' => ('Đang tuyển', AppColors.brand(context)),
+      'COMPLETED' => ('Đã kết thúc', AppColors.textSecondary(context)),
+      'PLANNING' => ('Sắp mở', AppColors.warningFg(context)),
+      'CANCELLED' => ('Đã hủy', AppColors.errorFg(context)),
+      _ => (classItem.status, AppColors.textSecondary(context)),
     };
     final capacity = classItem.maxCapacity;
     final ratio = capacity > 0
@@ -1553,10 +1568,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 Expanded(
                   child: Text(
                     classItem.code,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF003FB1),
+                      color: AppColors.brand(context),
                     ),
                   ),
                 ),
@@ -1571,7 +1586,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
             if (classItem.courseTitle != null)
               Text(
                 classItem.courseTitle!,
-                style: const TextStyle(color: Color(0xFF64748B)),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
             const SizedBox(height: 14),
             _mobileClassInfo(
@@ -1607,7 +1622,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 if (classItem.status == 'PLANNING' && classItem.studentsCount == 0 && classItem.activeRegistrationsCount == 0) ...[
                   IconButton.outlined(
                     tooltip: 'Xóa lớp học',
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFDC2626)),
+                    icon: Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.errorFg(context)),
                     onPressed: () => _showDeleteClassDialog(
                       classItem.id,
                       classItem.name,
@@ -1618,7 +1633,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 ] else if (classItem.status != 'CANCELLED' && classItem.status != 'COMPLETED') ...[
                   IconButton.outlined(
                     tooltip: 'Hủy lớp học',
-                    icon: const Icon(Icons.cancel_outlined, size: 18, color: Color(0xFFD97706)),
+                    icon: Icon(Icons.cancel_outlined, size: 18, color: AppColors.warningFg(context)),
                     onPressed: () => _showCancelClassDialog(
                       classItem.id,
                       classItem.name,
@@ -1630,7 +1645,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 if (classItem.effectiveIsArchived) ...[
                   IconButton.outlined(
                     tooltip: 'Khôi phục lớp khỏi lưu trữ',
-                    icon: const Icon(Icons.unarchive_outlined, size: 18, color: Color(0xFF003FB1)),
+                    icon: Icon(Icons.unarchive_outlined, size: 18, color: AppColors.brand(context)),
                     onPressed: () => _unarchiveClass(
                       classItem.id,
                       classItem.name,
@@ -1641,7 +1656,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 ] else if (classItem.canArchive) ...[
                   IconButton.outlined(
                     tooltip: 'Lưu trữ lớp học',
-                    icon: const Icon(Icons.archive_outlined, size: 18, color: Color(0xFF475569)),
+                    icon: Icon(Icons.archive_outlined, size: 18, color: AppColors.textSecondary(context)),
                     onPressed: () => _archiveClass(
                       classItem.id,
                       classItem.name,
@@ -1672,7 +1687,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 17, color: const Color(0xFF64748B)),
+        Icon(icon, size: 17, color: AppColors.textSecondary(context)),
         const SizedBox(width: 8),
         Expanded(child: Text(value)),
       ],
@@ -1712,14 +1727,14 @@ class _ClassListScreenState extends State<ClassListScreen> {
       width: width,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x05000000),
+            color: AppColors.shadow(context),
             blurRadius: 3,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -1732,9 +1747,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1754,10 +1769,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -1780,7 +1795,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
           else
             Text(
               subtext,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary(context),
+              ),
             ),
         ],
       ),
@@ -1789,16 +1807,19 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   Widget _buildViewBtn(int index, String title, IconData icon) {
     final isActive = _activeViewIndex == index;
+    final activeBg = AppColors.isDark(context)
+        ? AppColors.primaryLight
+        : const Color(0xFF003FB1);
     return InkWell(
       onTap: () => setState(() => _activeViewIndex = index),
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF003FB1) : const Color(0xFFF1F5F9),
+          color: isActive ? activeBg : AppColors.surfaceSubtle(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isActive ? const Color(0xFF003FB1) : const Color(0xFFE2E8F0),
+            color: isActive ? activeBg : AppColors.border(context),
           ),
         ),
         child: Row(
@@ -1807,7 +1828,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
             Icon(
               icon,
               size: 16,
-              color: isActive ? Colors.white : const Color(0xFF64748B),
+              color: isActive ? Colors.white : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 8),
             Text(
@@ -1815,7 +1836,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isActive ? Colors.white : const Color(0xFF475569),
+                color: isActive ? Colors.white : AppColors.textBody(context),
               ),
             ),
           ],
@@ -1828,24 +1849,29 @@ class _ClassListScreenState extends State<ClassListScreen> {
     List<Map<String, dynamic>> classes,
     bool isDesktop,
   ) {
+    final headerTextStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textSecondary(context),
+    );
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x06000000),
+            color: AppColors.shadow(context),
             blurRadius: 4,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final tableWidth = constraints.maxWidth > 1050
+          final tableWidth = constraints.maxWidth > 1120
               ? constraints.maxWidth
-              : 1050.0;
+              : 1120.0;
           return SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: SizedBox(
@@ -1857,82 +1883,46 @@ class _ClassListScreenState extends State<ClassListScreen> {
                       horizontal: 20,
                       vertical: 12,
                     ),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.vertical(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated(context),
+                      borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(12),
                       ),
                       border: Border(
-                        bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                        bottom: BorderSide(color: AppColors.border(context)),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         SizedBox(
                           width: 140,
-                          child: Text(
-                            'MÃ LỚP',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('MÃ LỚP', style: headerTextStyle),
                         ),
                         Expanded(
                           flex: 3,
                           child: Text(
                             'TÊN LỚP & KHÓA HỌC',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
+                            style: headerTextStyle,
                           ),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'GIÁO VIÊN',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('GIÁO VIÊN', style: headerTextStyle),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'LỊCH HỌC & CA',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('LỊCH HỌC & CA', style: headerTextStyle),
                         ),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'PHÒNG & CƠ SỞ',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                          child: Text('PHÒNG & CƠ SỞ', style: headerTextStyle),
                         ),
                         SizedBox(
                           width: 120,
                           child: Text(
                             'SĨ SỐ',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
+                            style: headerTextStyle,
                           ),
                         ),
                         SizedBox(
@@ -1940,23 +1930,15 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           child: Text(
                             'TRẠNG THÁI',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
+                            style: headerTextStyle,
                           ),
                         ),
                         SizedBox(
-                          width: 180,
+                          width: 210,
                           child: Text(
                             'THAO TÁC',
                             textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
+                            style: headerTextStyle,
                           ),
                         ),
                       ],
@@ -1967,7 +1949,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: classes.length,
                     separatorBuilder: (_, index) =>
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        Divider(height: 1, color: AppColors.divider(context)),
                     itemBuilder: (ctx, idx) {
                       final c = classes[idx];
                       final classId = c['id']?.toString() ?? '';
@@ -1989,39 +1971,39 @@ class _ClassListScreenState extends State<ClassListScreen> {
                       final statusConfig = switch (classStatus) {
                         'IN_PROGRESS' => (
                           'Đang học',
-                          const Color(0xFF047857),
-                          const Color(0xFFECFDF5),
-                          const Color(0xFFA7F3D0),
+                          AppColors.successFg(context),
+                          AppColors.successBg(context),
+                          AppColors.successFg(context).withAlpha(90),
                         ),
                         'OPEN_FOR_ENROLLMENT' => (
                           'Đang tuyển',
-                          const Color(0xFF003FB1),
-                          const Color(0xFFEFF6FF),
-                          const Color(0xFFBFDBFE),
+                          AppColors.brand(context),
+                          AppColors.brandBg(context),
+                          AppColors.brand(context).withAlpha(90),
                         ),
                         'PLANNING' => (
                           'Sắp mở',
-                          const Color(0xFFD97706),
-                          const Color(0xFFFFFBEB),
-                          const Color(0xFFFDE68A),
+                          AppColors.warningFg(context),
+                          AppColors.warningBg(context),
+                          AppColors.warningFg(context).withAlpha(90),
                         ),
                         'COMPLETED' => (
                           'Đã kết thúc',
-                          const Color(0xFF64748B),
-                          const Color(0xFFF1F5F9),
-                          const Color(0xFFCBD5E1),
+                          AppColors.textSecondary(context),
+                          AppColors.surfaceSubtle(context),
+                          AppColors.borderStrong(context),
                         ),
                         'CANCELLED' => (
                           'Đã hủy',
-                          const Color(0xFFDC2626),
-                          const Color(0xFFFEF2F2),
-                          const Color(0xFFFECACA),
+                          AppColors.errorFg(context),
+                          AppColors.errorBg(context),
+                          AppColors.errorFg(context).withAlpha(90),
                         ),
                         _ => (
                           classStatus,
-                          const Color(0xFF64748B),
-                          const Color(0xFFF1F5F9),
-                          const Color(0xFFCBD5E1),
+                          AppColors.textSecondary(context),
+                          AppColors.surfaceSubtle(context),
+                          AppColors.borderStrong(context),
                         ),
                       };
 
@@ -2040,16 +2022,16 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEEF2FF),
+                                  color: AppColors.infoBg(context),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   code,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'monospace',
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11,
-                                    color: Color(0xFF003FB1),
+                                    color: AppColors.brand(context),
                                   ),
                                 ),
                               ),
@@ -2061,17 +2043,17 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                 children: [
                                   Text(
                                     name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   Text(
                                     course,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -2083,13 +2065,13 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 12,
-                                    backgroundColor: const Color(0xFFEFF6FF),
+                                    backgroundColor: AppColors.brandBg(context),
                                     child: Text(
                                       teacher.isNotEmpty ? teacher[0] : 'G',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF003FB1),
+                                        color: AppColors.brand(context),
                                       ),
                                     ),
                                   ),
@@ -2114,17 +2096,17 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                 children: [
                                   Text(
                                     days,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   Text(
                                     shift,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -2137,18 +2119,18 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                 children: [
                                   Text(
                                     room,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 12,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   Text(
                                     c['branchName']?.toString() ??
                                         'Chi nhánh trung tâm',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
-                                      color: Color(0xFF94A3B8),
+                                      color: AppColors.textMuted(context),
                                     ),
                                   ),
                                 ],
@@ -2169,7 +2151,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                   LinearProgressIndicator(
                                     value: ratio,
                                     minHeight: 4,
-                                    backgroundColor: const Color(0xFFE2E8F0),
+                                    backgroundColor: AppColors.border(context),
                                     valueColor: const AlwaysStoppedAnimation(
                                       Color(0xFF10B981),
                                     ),
@@ -2202,14 +2184,16 @@ class _ClassListScreenState extends State<ClassListScreen> {
                               ),
                             ),
                             SizedBox(
-                              width: 180,
+                              width: 210,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   ElevatedButton(
                                     onPressed: () => _openClassDetail(classId),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF003FB1),
+                                      backgroundColor: AppColors.isDark(context)
+                                          ? AppColors.primaryLight
+                                          : const Color(0xFF003FB1),
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -2225,10 +2209,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                     ),
                                   ),
                                   PopupMenuButton<String>(
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.more_vert,
                                       size: 18,
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                     tooltip: 'Tùy chọn lớp học',
                                     onSelected: (value) async {
@@ -2320,57 +2304,57 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                         ),
                                       ),
                                       if (c['isArchived'] == true)
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'unarchive',
                                           child: Row(
                                             children: [
                                               Icon(
                                                 Icons.unarchive_outlined,
                                                 size: 16,
-                                                color: Color(0xFF003FB1),
+                                                color: AppColors.brand(context),
                                               ),
-                                              SizedBox(width: 8),
+                                              const SizedBox(width: 8),
                                               Text(
                                                 'Khôi phục khỏi lưu trữ',
                                                 style: TextStyle(
-                                                  color: Color(0xFF003FB1),
+                                                  color: AppColors.brand(context),
                                                 ),
                                               ),
                                             ],
                                           ),
                                         )
                                       else if (c['canArchive'] == true)
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'archive',
                                           child: Row(
                                             children: [
                                               Icon(
                                                 Icons.archive_outlined,
                                                 size: 16,
-                                                color: Color(0xFF475569),
+                                                color: AppColors.textSecondary(context),
                                               ),
-                                              SizedBox(width: 8),
-                                              Text('Lưu trữ lớp học'),
+                                              const SizedBox(width: 8),
+                                              const Text('Lưu trữ lớp học'),
                                             ],
                                           ),
                                         ),
                                       if (classStatus == 'PLANNING' &&
                                           enrolled == 0 &&
                                           ((c['activeRegistrationsCount'] as int?) ?? 0) == 0)
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'delete',
                                           child: Row(
                                             children: [
                                               Icon(
                                                 Icons.delete_outline_rounded,
                                                 size: 16,
-                                                color: Color(0xFFDC2626),
+                                                color: AppColors.errorFg(context),
                                               ),
-                                              SizedBox(width: 8),
+                                              const SizedBox(width: 8),
                                               Text(
                                                 'Xóa lớp học',
                                                 style: TextStyle(
-                                                  color: Color(0xFFDC2626),
+                                                  color: AppColors.errorFg(context),
                                                 ),
                                               ),
                                             ],
@@ -2378,20 +2362,20 @@ class _ClassListScreenState extends State<ClassListScreen> {
                                         )
                                       else if (classStatus != 'CANCELLED' &&
                                           classStatus != 'COMPLETED')
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'cancel',
                                           child: Row(
                                             children: [
                                               Icon(
                                                 Icons.cancel_outlined,
                                                 size: 16,
-                                                color: Color(0xFFD97706),
+                                                color: AppColors.warningFg(context),
                                               ),
-                                              SizedBox(width: 8),
+                                              const SizedBox(width: 8),
                                               Text(
                                                 'Hủy lớp học',
                                                 style: TextStyle(
-                                                  color: Color(0xFFD97706),
+                                                  color: AppColors.warningFg(context),
                                                 ),
                                               ),
                                             ],
@@ -2420,11 +2404,11 @@ class _ClassListScreenState extends State<ClassListScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -2432,11 +2416,11 @@ class _ClassListScreenState extends State<ClassListScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary(context),
             ),
           ),
-          SizedBox(height: 12),
-          Text(
+          const SizedBox(height: 12),
+          const Text(
             'Hệ thống tự động theo dõi số giờ dạy thực tế / định mức quy định (24h/tuần) của từng giảng viên.',
           ),
         ],

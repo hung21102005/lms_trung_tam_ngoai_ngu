@@ -27,6 +27,9 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDisabled = onPressed == null || isLoading;
+    final isDark = AppColors.isDark(context);
+    final primaryBg = isDark ? AppColors.primaryLight : AppColors.primary;
+    final primaryFg = AppColors.primaryOf(context);
 
     switch (variant) {
       case AppButtonVariant.primary:
@@ -36,9 +39,9 @@ class AppButton extends StatelessWidget {
           child: ElevatedButton(
             onPressed: isDisabled ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: primaryBg,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.primary.withAlpha(128),
+              disabledBackgroundColor: primaryBg.withAlpha(128),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -73,13 +76,13 @@ class AppButton extends StatelessWidget {
           child: OutlinedButton(
             onPressed: isDisabled ? null : onPressed,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary, width: 1.5),
+              foregroundColor: primaryFg,
+              side: BorderSide(color: primaryFg, width: 1.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: _buildChild(context, AppColors.primary),
+            child: _buildChild(context, primaryFg),
           ),
         );
 
@@ -89,7 +92,7 @@ class AppButton extends StatelessWidget {
           child: Text(
             text,
             style: AppTextStyles.label(context).copyWith(
-              color: AppColors.primary,
+              color: primaryFg,
               fontWeight: FontWeight.w600,
             ),
           ),

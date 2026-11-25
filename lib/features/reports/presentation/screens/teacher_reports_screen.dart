@@ -339,16 +339,18 @@ class _TeacherReportsScreenState extends State<TeacherReportsScreen> {
                       ),
                       Text(
                         '${item.studentCode} · ${item.examTitle}',
-                        style: const TextStyle(color: AppColors.neutral600),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Text(
                   item.score.toStringAsFixed(1),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                    color: AppColors.primaryOf(context),
                   ),
                 ),
               ],
@@ -366,7 +368,7 @@ class _TeacherReportsScreenState extends State<TeacherReportsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 18, color: AppColors.primary),
+            Icon(icon, size: 18, color: AppColors.primaryOf(context)),
             Text(
               value,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),

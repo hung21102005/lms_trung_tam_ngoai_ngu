@@ -263,9 +263,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const MobileStatusPill(
+                      MobileStatusPill(
                         label: 'Bài kiểm tra mới',
-                        color: AppColors.primary,
+                        color: AppColors.primaryOf(context),
                       ),
                       const SizedBox(height: 10),
                       Text(

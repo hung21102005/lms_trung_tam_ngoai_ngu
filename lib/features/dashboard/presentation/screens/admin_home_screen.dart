@@ -197,17 +197,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         if (isDesktop) {
           // ==================== WEB DESKTOP PORTAL LAYOUT ====================
           return Scaffold(
-            backgroundColor: AppColors.backgroundLight,
+            backgroundColor: AppColors.background(context),
             body: Row(
               children: [
                 // Persistent Sidebar (260px)
                 Material(
-                  color: Theme.of(context).cardColor,
+                  color: AppColors.surface(context),
                   child: Container(
                     width: 260,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
-                        right: BorderSide(color: AppColors.neutral200),
+                        right: BorderSide(color: AppColors.border(context)),
                       ),
                     ),
                     child: Column(
@@ -215,9 +215,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         // Sidebar Header & Brand
                         Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(
-                              bottom: BorderSide(color: AppColors.neutral200),
+                              bottom: BorderSide(color: AppColors.border(context)),
                             ),
                           ),
                           child: Column(
@@ -228,7 +228,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary,
+                                      color: AppColors.isDark(context)
+                                          ? AppColors.primaryLight
+                                          : AppColors.primary,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: const Icon(
@@ -250,7 +252,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                               style: AppTextStyles.h4(context)
                                                   .copyWith(
                                                     fontWeight: FontWeight.bold,
-                                                    color: AppColors.primary,
+                                                    color: AppColors.primaryOf(context),
                                                   ),
                                             ),
                                             const SizedBox(width: 4),
@@ -261,27 +263,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                                     vertical: 1,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: AppColors.primary
-                                                    .withValues(alpha: 0.1),
+                                                color: AppColors.brandBg(context),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
-                                              child: const Text(
+                                              child: Text(
                                                 'v2.4',
                                                 style: TextStyle(
                                                   fontSize: 10,
-                                                  color: AppColors.primary,
+                                                  color: AppColors.primaryOf(context),
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const Text(
+                                        Text(
                                           'Hệ thống Đào tạo Ngoại ngữ',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: AppColors.textSecondaryLight,
+                                            color: AppColors.textSecondary(context),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -302,7 +303,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                   ),
                                   label: const Text('Mở Lớp Học Mới'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
+                                    backgroundColor: AppColors.isDark(context)
+                                        ? AppColors.primaryLight
+                                        : AppColors.primary,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 12,
@@ -341,9 +344,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? AppColors.primary.withValues(
-                                              alpha: 0.1,
-                                            )
+                                          ? AppColors.brandBg(context)
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -353,8 +354,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                           item['icon'] as IconData,
                                           size: 20,
                                           color: isSelected
-                                              ? AppColors.primary
-                                              : AppColors.textSecondaryLight,
+                                              ? AppColors.primaryOf(context)
+                                              : AppColors.textSecondary(context),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
@@ -366,8 +367,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                                   : FontWeight.w500,
                                               fontSize: 13,
                                               color: isSelected
-                                                  ? AppColors.primary
-                                                  : AppColors.textPrimaryLight,
+                                                  ? AppColors.primaryOf(context)
+                                                  : AppColors.textPrimary(context),
                                             ),
                                           ),
                                         ),
@@ -378,16 +379,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppColors.error.withValues(
-                                                alpha: 0.1,
-                                              ),
+                                              color: AppColors.errorBg(context),
                                               borderRadius:
                                                   BorderRadius.circular(10),
                                             ),
                                             child: Text(
                                               item['badge'] as String,
-                                              style: const TextStyle(
-                                                color: AppColors.error,
+                                              style: TextStyle(
+                                                color: AppColors.errorFg(context),
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -405,9 +404,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         // Sidebar Footer
                         Container(
                           padding: const EdgeInsets.all(16),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(
-                              top: BorderSide(color: AppColors.neutral200),
+                              top: BorderSide(color: AppColors.border(context)),
                             ),
                           ),
                           child: Column(
@@ -423,8 +422,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                     ),
                                   );
                                 },
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 10,
                                   ),
@@ -433,10 +432,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       Icon(
                                         Icons.support_agent_rounded,
                                         size: 20,
-                                        color: AppColors.textSecondaryLight,
+                                        color: AppColors.textSecondary(context),
                                       ),
-                                      SizedBox(width: 12),
-                                      Flexible(
+                                      const SizedBox(width: 12),
+                                      const Flexible(
                                         child: Text(
                                           'Hỗ trợ kỹ thuật',
                                           style: TextStyle(fontSize: 13),
@@ -451,8 +450,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 onTap: () => context.read<AuthBloc>().add(
                                   LogoutRequestedEvent(),
                                 ),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 10,
                                   ),
@@ -461,14 +460,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       Icon(
                                         Icons.logout_rounded,
                                         size: 20,
-                                        color: AppColors.error,
+                                        color: AppColors.errorFg(context),
                                       ),
-                                      SizedBox(width: 12),
+                                      const SizedBox(width: 12),
                                       Text(
                                         'Đăng xuất',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: AppColors.error,
+                                          color: AppColors.errorFg(context),
                                         ),
                                       ),
                                     ],
@@ -492,9 +491,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         height: 64,
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          border: const Border(
-                            bottom: BorderSide(color: AppColors.neutral200),
+                          color: AppColors.surface(context),
+                          border: Border(
+                            bottom: BorderSide(color: AppColors.border(context)),
                           ),
                         ),
                         child: Row(
@@ -538,22 +537,21 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                               hintText: isCompactDesktop
                                                   ? 'Tìm kiếm...'
                                                   : 'Tìm kiếm nhanh học viên, lớp học, hóa đơn...',
-                                              hintStyle: const TextStyle(
+                                              hintStyle: TextStyle(
                                                 fontSize: 13,
-                                                color: AppColors.neutral400,
+                                                color: AppColors.textMuted(context),
                                               ),
-                                              prefixIcon: const Icon(
+                                              prefixIcon: Icon(
                                                 Icons.search_rounded,
                                                 size: 18,
-                                                color: AppColors.neutral500,
+                                                color: AppColors.textSecondary(context),
                                               ),
                                               suffixIcon: value.text.isNotEmpty
                                                   ? IconButton(
-                                                      icon: const Icon(
+                                                      icon: Icon(
                                                         Icons.clear_rounded,
                                                         size: 16,
-                                                        color: AppColors
-                                                            .neutral500,
+                                                        color: AppColors.textSecondary(context),
                                                       ),
                                                       tooltip: 'Xóa tìm kiếm',
                                                       onPressed: () =>
@@ -566,7 +564,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                                     horizontal: 12,
                                                   ),
                                               filled: true,
-                                              fillColor: AppColors.neutral100,
+                                              fillColor: AppColors.surfaceSubtle(context),
                                               border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
@@ -580,8 +578,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                               focusedBorder: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
-                                                borderSide: const BorderSide(
-                                                  color: AppColors.primary,
+                                                borderSide: BorderSide(
+                                                  color: AppColors.primaryOf(context),
                                                   width: 1.5,
                                                 ),
                                               ),
@@ -600,19 +598,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.neutral100,
+                                color: AppColors.surfaceSubtle(context),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.neutral200),
+                                border: Border.all(color: AppColors.border(context)),
                               ),
-                              child: const Row(
+                              child: Row(
                                 children: [
                                   Icon(
                                     Icons.location_on_outlined,
                                     size: 16,
-                                    color: AppColors.primary,
+                                    color: AppColors.primaryOf(context),
                                   ),
-                                  SizedBox(width: 6),
-                                  Text(
+                                  const SizedBox(width: 6),
+                                  const Text(
                                     'CN 1: Quận 1',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -634,7 +632,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 18,
-                                    backgroundColor: AppColors.primary,
+                                    backgroundColor: AppColors.isDark(context)
+                                        ? AppColors.primaryLight
+                                        : AppColors.primary,
                                     child: Text(
                                       user.fullName.isNotEmpty
                                           ? user.fullName[0].toUpperCase()
@@ -666,9 +666,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                           user.isSuperAdmin
                                               ? 'Super Admin'
                                               : 'Quản trị chi nhánh',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11,
-                                            color: AppColors.textSecondaryLight,
+                                            color: AppColors.textSecondary(context),
                                           ),
                                         ),
                                       ],
@@ -740,14 +740,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                     return ListTile(
                       selected: isSel,
-                      selectedTileColor: AppColors.primary.withValues(
-                        alpha: 0.1,
-                      ),
+                      selectedTileColor: AppColors.brandBg(context),
                       leading: Icon(
                         item['icon'] as IconData,
                         color: isSel
-                            ? AppColors.primary
-                            : AppColors.textSecondaryLight,
+                            ? AppColors.primaryOf(context)
+                            : AppColors.textSecondary(context),
                       ),
                       title: Text(
                         item['title'] as String,
@@ -755,6 +753,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           fontWeight: isSel
                               ? FontWeight.bold
                               : FontWeight.normal,
+                          color: isSel
+                              ? AppColors.primaryOf(context)
+                              : AppColors.textPrimary(context),
                         ),
                       ),
                       onTap: () {
@@ -765,13 +766,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   }),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.logout_rounded,
-                      color: AppColors.error,
+                      color: AppColors.errorFg(context),
                     ),
-                    title: const Text(
+                    title: Text(
                       'Đăng xuất',
-                      style: TextStyle(color: AppColors.error),
+                      style: TextStyle(color: AppColors.errorFg(context)),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -794,8 +795,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 _ => 0,
               },
               type: BottomNavigationBarType.fixed,
-              selectedItemColor: AppColors.primary,
-              unselectedItemColor: AppColors.textSecondaryLight,
+              backgroundColor: AppColors.surface(context),
+              selectedItemColor: AppColors.primaryOf(context),
+              unselectedItemColor: AppColors.textMuted(context),
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.dashboard_rounded),

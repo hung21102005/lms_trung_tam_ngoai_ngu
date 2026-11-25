@@ -97,6 +97,24 @@ class _LinkifiedTextState extends State<LinkifiedText> {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText.rich(TextSpan(children: _spans), style: widget.style);
+    final linkColor = AppColors.primaryOf(context);
+    final themedSpans = _spans
+        .map(
+          (span) => span.recognizer != null
+              ? TextSpan(
+                  text: span.text,
+                  style: TextStyle(
+                    color: linkColor,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: span.recognizer,
+                )
+              : span,
+        )
+        .toList();
+    return SelectableText.rich(
+      TextSpan(children: themedSpans),
+      style: widget.style,
+    );
   }
 }

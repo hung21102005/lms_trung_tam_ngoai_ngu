@@ -5,70 +5,64 @@ import 'app_colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
-  // Headings
+  // Headings: when context is omitted, leave color null so DefaultTextStyle /
+  // Theme.textTheme supplies the proper onSurface color in both light and dark mode.
   static TextStyle h1([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 28,
       fontWeight: FontWeight.w700,
-      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      color: context == null ? null : AppColors.textPrimary(context),
       letterSpacing: -0.5,
     );
   }
 
   static TextStyle h2([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 22,
       fontWeight: FontWeight.w600,
-      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      color: context == null ? null : AppColors.textPrimary(context),
       letterSpacing: -0.3,
     );
   }
 
   static TextStyle h3([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 18,
       fontWeight: FontWeight.w600,
-      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      color: context == null ? null : AppColors.textPrimary(context),
     );
   }
 
   static TextStyle h4([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 16,
       fontWeight: FontWeight.w600,
-      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      color: context == null ? null : AppColors.textPrimary(context),
     );
   }
 
   // Body Texts
   static TextStyle bodyLarge([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 16,
       fontWeight: FontWeight.w400,
-      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      color: context == null ? null : AppColors.textPrimary(context),
     );
   }
 
   static TextStyle bodyMedium([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 14,
       fontWeight: FontWeight.w400,
-      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+      color: context == null ? null : AppColors.textSecondary(context),
     );
   }
 
   static TextStyle bodySmall([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 12,
       fontWeight: FontWeight.w400,
-      color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+      color: context == null ? null : AppColors.textMuted(context),
     );
   }
 
@@ -83,20 +77,18 @@ class AppTextStyles {
   }
 
   static TextStyle label([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 13,
       fontWeight: FontWeight.w500,
-      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+      color: context == null ? null : AppColors.textSecondary(context),
     );
   }
 
   static TextStyle caption([BuildContext? context]) {
-    final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
     return GoogleFonts.beVietnamPro(
       fontSize: 11,
       fontWeight: FontWeight.w500,
-      color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+      color: context == null ? null : AppColors.textMuted(context),
     );
   }
 }

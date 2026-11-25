@@ -227,8 +227,8 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _recordingState == AudioRecordingState.recording
-              ? AppColors.error.withAlpha(120)
-              : AppColors.neutral300,
+              ? AppColors.errorFg(context).withAlpha(120)
+              : AppColors.borderStrong(context),
         ),
       ),
       child: Column(
@@ -270,7 +270,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget>
         Text(
           'Thời lượng tối đa 3 phút. Trình duyệt hoặc Android sẽ yêu cầu quyền micro.',
           style: AppTextStyles.caption(context)
-              .copyWith(color: AppColors.neutral500),
+              .copyWith(color: AppColors.textSecondary(context)),
           textAlign: TextAlign.center,
         ),
       ],

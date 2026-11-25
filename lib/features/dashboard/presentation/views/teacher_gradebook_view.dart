@@ -155,17 +155,17 @@ class _TeacherGradebookViewContentState
               children: [
                 Text(
                   'Cập nhật điểm: ${student['name']}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary(ctx),
                   ),
                 ),
                 Text(
                   'Mã HV: ${student['id']} • Lớp IELTS Fighter B2',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(ctx),
                   ),
                 ),
               ],
@@ -179,12 +179,12 @@ class _TeacherGradebookViewContentState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Điểm 4 kỹ năng IELTS (Thang 0.0 - 9.0)',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF003FB1),
+                    color: AppColors.brand(ctx),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -306,7 +306,7 @@ class _TeacherGradebookViewContentState
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 4),
         TextField(
@@ -329,11 +329,11 @@ class _TeacherGradebookViewContentState
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.forward_to_inbox, color: Color(0xFF003FB1)),
-            SizedBox(width: 8),
-            Text('Gửi học bạ đến Phụ huynh'),
+            Icon(Icons.forward_to_inbox, color: AppColors.brand(ctx)),
+            const SizedBox(width: 8),
+            const Text('Gửi học bạ đến Phụ huynh'),
           ],
         ),
         content: const Text(
@@ -375,7 +375,7 @@ class _TeacherGradebookViewContentState
     final filteredList = _getFilteredStudents();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background(context),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: isDesktop ? 24 : 16,
@@ -414,22 +414,22 @@ class _TeacherGradebookViewContentState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Wrap(
+        Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               'Trang chủ',
-              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
             ),
-            SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 14, color: Color(0xFF94A3B8)),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 14, color: AppColors.textMuted(context)),
+            const SizedBox(width: 4),
             Text(
               'Bảng điểm & Đánh giá',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF475569),
+                color: AppColors.textBody(context),
               ),
             ),
           ],
@@ -439,7 +439,7 @@ class _TeacherGradebookViewContentState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -448,14 +448,14 @@ class _TeacherGradebookViewContentState
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary(context),
                       letterSpacing: -0.4,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Theo dõi điểm quá trình, điểm thi 4 kỹ năng (IELTS Listening, Reading, Writing, Speaking), nhận xét học lực và xuất học bạ.',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary(context)),
                   ),
                 ],
               ),
@@ -467,8 +467,8 @@ class _TeacherGradebookViewContentState
                 icon: const Icon(Icons.forward_to_inbox, size: 16),
                 label: const Text('Gửi học bạ đến Phụ huynh'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF334155),
-                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  foregroundColor: AppColors.textBody(context),
+                  side: BorderSide(color: AppColors.borderStrong(context)),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -493,15 +493,15 @@ class _TeacherGradebookViewContentState
                     ),
                   );
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.description,
                   size: 16,
-                  color: Color(0xFF059669),
+                  color: AppColors.successFg(context),
                 ),
                 label: const Text('Xuất bảng điểm (Excel)'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF334155),
-                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  foregroundColor: AppColors.textBody(context),
+                  side: BorderSide(color: AppColors.borderStrong(context)),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -557,12 +557,12 @@ class _TeacherGradebookViewContentState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -584,30 +584,31 @@ class _TeacherGradebookViewContentState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'LỚP GIẢNG DẠY',
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: AppColors.surfaceSubtle(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                        border: Border.all(color: AppColors.borderStrong(context)),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           isExpanded: true,
                           value: _selectedClassId,
-                          style: const TextStyle(
+                          dropdownColor: AppColors.surface(context),
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary(context),
                             fontFamily: 'Be Vietnam Pro',
                           ),
                           items: const [
@@ -648,30 +649,31 @@ class _TeacherGradebookViewContentState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'KỲ THI / ĐỢT ĐÁNH GIÁ',
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: AppColors.surfaceSubtle(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                        border: Border.all(color: AppColors.borderStrong(context)),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           isExpanded: true,
                           value: _selectedExamPeriod,
-                          style: const TextStyle(
+                          dropdownColor: AppColors.surface(context),
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
+                            color: AppColors.textBody(context),
                             fontFamily: 'Be Vietnam Pro',
                           ),
                           items: const [
@@ -712,30 +714,31 @@ class _TeacherGradebookViewContentState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'THANG ĐIỂM CHUẨN',
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: AppColors.surfaceSubtle(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                        border: Border.all(color: AppColors.borderStrong(context)),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           isExpanded: true,
                           value: _selectedGradingScale,
-                          style: const TextStyle(
+                          dropdownColor: AppColors.surface(context),
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
+                            color: AppColors.textBody(context),
                             fontFamily: 'Be Vietnam Pro',
                           ),
                           items: const [
@@ -783,8 +786,8 @@ class _TeacherGradebookViewContentState
                 icon: const Icon(Icons.save_outlined, size: 15),
                 label: const Text('Lưu thay đổi tạm thời'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEFF6FF),
-                  foregroundColor: const Color(0xFF003FB1),
+                  backgroundColor: AppColors.brandBg(context),
+                  foregroundColor: AppColors.brand(context),
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -814,8 +817,8 @@ class _TeacherGradebookViewContentState
                 icon: const Icon(Icons.lock_outline, size: 15),
                 label: const Text('Khóa sổ điểm'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF475569),
-                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  foregroundColor: AppColors.textBody(context),
+                  side: BorderSide(color: AppColors.borderStrong(context)),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 10,
@@ -861,8 +864,8 @@ class _TeacherGradebookViewContentState
         subtitle: 'Tính trên $total học viên chính thức',
         isPositive: true,
         icon: Icons.bar_chart_rounded,
-        iconBg: const Color(0xFFEFF6FF),
-        iconColor: const Color(0xFF003FB1),
+        iconBg: AppColors.brandBg(context),
+        iconColor: AppColors.brand(context),
       ),
       _buildKpiCard(
         title: 'Điểm cao nhất đợt thi',
@@ -870,10 +873,10 @@ class _TeacherGradebookViewContentState
         subtitle: topStudent != null
             ? 'Học viên: ${topStudent['name']} (${topStudent['id']})'
             : 'Chưa có học viên',
-        valueColor: const Color(0xFFB45309),
+        valueColor: AppColors.warningFg(context),
         icon: Icons.military_tech,
-        iconBg: const Color(0xFFFEF3C7),
-        iconColor: const Color(0xFFD97706),
+        iconBg: AppColors.warningBg(context),
+        iconColor: AppColors.warningFg(context),
       ),
       _buildProgressKpiCard(
         title: 'Tỷ lệ đạt mục tiêu (≥6.0)',
@@ -881,8 +884,8 @@ class _TeacherGradebookViewContentState
         fractionText: '$passedCount/$total học viên',
         progress: passRate,
         icon: Icons.check_circle_outline,
-        iconBg: const Color(0xFFECFDF5),
-        iconColor: const Color(0xFF059669),
+        iconBg: AppColors.successBg(context),
+        iconColor: AppColors.successFg(context),
       ),
       _buildKpiCard(
         title: 'Học viên cần phụ đạo',
@@ -891,12 +894,12 @@ class _TeacherGradebookViewContentState
             ? 'Band < 6.0 (Cần kèm Writing/Speaking)'
             : 'Tất cả học viên đạt chuẩn đầu ra',
         valueColor: needHelpCount > 0
-            ? const Color(0xFFDC2626)
-            : const Color(0xFF059669),
+            ? AppColors.errorFg(context)
+            : AppColors.successFg(context),
         isAlertTag: needHelpCount > 0,
         icon: Icons.warning_amber_rounded,
-        iconBg: const Color(0xFFFEF2F2),
-        iconColor: const Color(0xFFDC2626),
+        iconBg: AppColors.errorBg(context),
+        iconColor: AppColors.errorFg(context),
       ),
     ];
 
@@ -958,12 +961,12 @@ class _TeacherGradebookViewContentState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -977,10 +980,10 @@ class _TeacherGradebookViewContentState
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               Container(
@@ -1000,7 +1003,7 @@ class _TeacherGradebookViewContentState
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: valueColor ?? const Color(0xFF0F172A),
+              color: valueColor ?? AppColors.textPrimary(context),
               letterSpacing: -0.5,
             ),
           ),
@@ -1009,35 +1012,37 @@ class _TeacherGradebookViewContentState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: AppColors.warningBg(context),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: const Color(0xFFFDE68A)),
+                border: Border.all(
+                  color: AppColors.warningFg(context).withValues(alpha: 0.35),
+                ),
               ),
               child: Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF92400E),
+                  color: AppColors.warningFg(context),
                 ),
               ),
             )
           else if (isPositive)
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.trending_up,
                   size: 14,
-                  color: Color(0xFF059669),
+                  color: AppColors.successFg(context),
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF059669),
+                      color: AppColors.successFg(context),
                     ),
                   ),
                 ),
@@ -1046,7 +1051,10 @@ class _TeacherGradebookViewContentState
           else
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary(context),
+              ),
               overflow: TextOverflow.ellipsis,
             ),
         ],
@@ -1066,12 +1074,12 @@ class _TeacherGradebookViewContentState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -1086,10 +1094,10 @@ class _TeacherGradebookViewContentState
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -1112,19 +1120,19 @@ class _TeacherGradebookViewContentState
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary(context),
                   letterSpacing: -0.5,
                 ),
               ),
               Text(
                 fractionText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -1135,9 +1143,9 @@ class _TeacherGradebookViewContentState
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 5,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF059669),
+              backgroundColor: AppColors.surfaceSubtle(context),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.successFg(context),
               ),
             ),
           ),
@@ -1148,14 +1156,19 @@ class _TeacherGradebookViewContentState
 
   // --- 4. GRADEBOOK TABLE CARD ---
   Widget _buildGradebookTableCard(List<Map<String, dynamic>> students) {
+    final headerStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textSecondary(context),
+    );
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.shadow(context),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1177,12 +1190,12 @@ class _TeacherGradebookViewContentState
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Danh Sách Điểm Chi Tiết Học Viên',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                     // Filter tabs
@@ -1191,7 +1204,7 @@ class _TeacherGradebookViewContentState
                       child: Container(
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: AppColors.surfaceSubtle(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -1224,25 +1237,25 @@ class _TeacherGradebookViewContentState
                     style: const TextStyle(fontSize: 12),
                     decoration: InputDecoration(
                       hintText: 'Tìm theo tên, mã học viên...',
-                      hintStyle: const TextStyle(
+                      hintStyle: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted(context),
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search,
                         size: 16,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted(context),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
+                      fillColor: AppColors.surfaceSubtle(context),
                       contentPadding: EdgeInsets.zero,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        borderSide: BorderSide(color: AppColors.border(context)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        borderSide: BorderSide(color: AppColors.border(context)),
                       ),
                     ),
                   ),
@@ -1250,7 +1263,7 @@ class _TeacherGradebookViewContentState
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: AppColors.divider(context)),
 
           // Main Table
           SingleChildScrollView(
@@ -1261,136 +1274,37 @@ class _TeacherGradebookViewContentState
               dataRowMaxHeight: 66,
               horizontalMargin: 16,
               columnSpacing: 18,
-              headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-              columns: const [
-                DataColumn(
-                  label: Text(
-                    'STT',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'MÃ HV & HỌC VIÊN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'CHUYÊN CẦN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'BTVN (10%)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'LISTENING',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'READING',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'WRITING',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'SPEAKING',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'OVERALL BAND',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'XẾP LOẠI',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'NHẬN XÉT GIẢNG VIÊN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'THAO TÁC',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
+              headingRowColor: WidgetStateProperty.all(
+                AppColors.surfaceElevated(context),
+              ),
+              columns: [
+                DataColumn(label: Text('STT', style: headerStyle)),
+                DataColumn(label: Text('MÃ HV & HỌC VIÊN', style: headerStyle)),
+                DataColumn(label: Text('CHUYÊN CẦN', style: headerStyle)),
+                DataColumn(label: Text('BTVN (10%)', style: headerStyle)),
+                DataColumn(label: Text('LISTENING', style: headerStyle)),
+                DataColumn(label: Text('READING', style: headerStyle)),
+                DataColumn(label: Text('WRITING', style: headerStyle)),
+                DataColumn(label: Text('SPEAKING', style: headerStyle)),
+                DataColumn(label: Text('OVERALL BAND', style: headerStyle)),
+                DataColumn(label: Text('XẾP LOẠI', style: headerStyle)),
+                DataColumn(label: Text('NHẬN XÉT GIẢNG VIÊN', style: headerStyle)),
+                DataColumn(label: Text('THAO TÁC', style: headerStyle)),
               ],
               rows: students.map((s) {
                 final isWarning = (s['overall'] as double) < 6.0;
+                final classifFg = AppColors.adaptAccent(
+                  context,
+                  s['classifColor'] as Color,
+                );
+                final classifBg = AppColors.isDark(context)
+                    ? classifFg.withValues(alpha: 0.18)
+                    : (s['classifBg'] as Color);
 
                 return DataRow(
                   color: WidgetStateProperty.resolveWith<Color?>((states) {
                     if (isWarning) {
-                      return const Color(0xFFFEF3C7).withValues(alpha: 0.2);
+                      return AppColors.warningBg(context).withValues(alpha: 0.35);
                     }
                     return null;
                   }),
@@ -1399,9 +1313,9 @@ class _TeacherGradebookViewContentState
                     DataCell(
                       Text(
                         s['stt'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ),
@@ -1429,17 +1343,17 @@ class _TeacherGradebookViewContentState
                             children: [
                               Text(
                                 s['name'],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary(context),
                                 ),
                               ),
                               Text(
                                 '${s['id']} • ${s['phone']}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textMuted(context),
                                 ),
                               ),
                             ],
@@ -1457,8 +1371,8 @@ class _TeacherGradebookViewContentState
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: (s['attendance'] as double) < 80.0
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFF059669),
+                                ? AppColors.errorFg(context)
+                                : AppColors.successFg(context),
                           ),
                         ),
                       ),
@@ -1512,8 +1426,8 @@ class _TeacherGradebookViewContentState
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
                             color: (s['writing'] as double) < 5.0
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFF0F172A),
+                                ? AppColors.errorFg(context)
+                                : AppColors.textPrimary(context),
                           ),
                         ),
                       ),
@@ -1542,11 +1456,15 @@ class _TeacherGradebookViewContentState
                           ),
                           decoration: BoxDecoration(
                             color: isWarning
-                                ? const Color(0xFFFEF3C7)
+                                ? AppColors.warningBg(context)
                                 : const Color(0xFF003FB1),
                             borderRadius: BorderRadius.circular(6),
                             border: isWarning
-                                ? Border.all(color: const Color(0xFFFDE68A))
+                                ? Border.all(
+                                    color: AppColors.warningFg(
+                                      context,
+                                    ).withValues(alpha: 0.35),
+                                  )
                                 : null,
                           ),
                           child: Text(
@@ -1555,7 +1473,7 @@ class _TeacherGradebookViewContentState
                               fontSize: 11.5,
                               fontWeight: FontWeight.w900,
                               color: isWarning
-                                  ? const Color(0xFF92400E)
+                                  ? AppColors.warningFg(context)
                                   : Colors.white,
                             ),
                           ),
@@ -1572,12 +1490,10 @@ class _TeacherGradebookViewContentState
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: s['classifBg'],
+                            color: classifBg,
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                              color: (s['classifColor'] as Color).withValues(
-                                alpha: 0.3,
-                              ),
+                              color: classifFg.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -1585,7 +1501,7 @@ class _TeacherGradebookViewContentState
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
-                              color: s['classifColor'],
+                              color: classifFg,
                             ),
                           ),
                         ),
@@ -1598,9 +1514,9 @@ class _TeacherGradebookViewContentState
                         constraints: const BoxConstraints(maxWidth: 280),
                         child: Text(
                           s['notes'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
-                            color: Color(0xFF475569),
+                            color: AppColors.textBody(context),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -1616,7 +1532,7 @@ class _TeacherGradebookViewContentState
                           IconButton(
                             onPressed: () => _showEditScoreModal(s),
                             icon: const Icon(Icons.edit_outlined, size: 16),
-                            color: const Color(0xFF003FB1),
+                            color: AppColors.brand(context),
                             tooltip: 'Chỉnh sửa điểm',
                           ),
                           IconButton(
@@ -1633,7 +1549,7 @@ class _TeacherGradebookViewContentState
                               Icons.visibility_outlined,
                               size: 16,
                             ),
-                            color: const Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                             tooltip: 'Xem học bạ',
                           ),
                           IconButton(
@@ -1647,7 +1563,7 @@ class _TeacherGradebookViewContentState
                               );
                             },
                             icon: const Icon(Icons.print_outlined, size: 16),
-                            color: const Color(0xFF64748B),
+                            color: AppColors.textSecondary(context),
                             tooltip: 'In phiếu điểm',
                           ),
                         ],
@@ -1679,7 +1595,7 @@ class _TeacherGradebookViewContentState
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            color: isActive ? Colors.white : const Color(0xFF475569),
+            color: isActive ? Colors.white : AppColors.textBody(context),
           ),
         ),
       ),
